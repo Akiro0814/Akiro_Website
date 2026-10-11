@@ -28,7 +28,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
       </div>
     </form>
 
-    <p class="search-status" data-search-status>正在加载索引...</p>
+    <p class="search-status" data-search-status role="status" aria-live="polite">正在加载索引...</p>
     <div class="search-results post-list" data-search-results></div>
   </section>
 </BaseLayout>
@@ -81,7 +81,24 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     const renderIdle = () => {
       status.textContent = `已索引 ${posts.length} 篇文章。`;
+      status.classList.remove('is-error');
       results.innerHTML = '';
+    };
+
+    const renderEmpty = (query: string) => {
+      status.textContent = `没有找到匹配「${query}」的文章。`;
+      status.classList.remove('is-error');
+      // 「分类」入口从索引里现算：写死某个分类名在别人的站点上会指向不存在的页面。
+      const firstCategory = posts.find((post) => post.category)?.category;
+      const categoryLink = firstCategory
+        ? `、<a href="/categories/${encodeURIComponent(firstCategory)}/">${esc(firstCategory)}</a> 分类`
+        : '';
+      // 给出可继续操作的入口，而不是留一片空白。
+      results.innerHTML = `
+        <p class="empty-hint">
+          试试其他关键词，或从 <a href="/archive/">归档</a>${categoryLink} 继续浏览。
+        </p>
+      `;
     };
 
     const renderResults = (query: string) => {
@@ -107,9 +124,13 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         .filter((item) => item.score > 0)
         .sort((a, b) => b.score - a.score || a.post.title.localeCompare(b.post.title, 'zh-CN'));
 
-      status.textContent = matches.length
-        ? `找到 ${matches.length} 篇相关文章。`
-        : '没有找到匹配文章。';
+      if (!matches.length) {
+        renderEmpty(query.trim());
+        return;
+      }
+
+      status.textContent = `找到 ${matches.length} 篇相关文章。`;
+      status.classList.remove('is-error');
 
       results.innerHTML = matches
         .map(({ post }) => {
@@ -169,14 +190,33 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 
     input.value = initialQuery;
 
-    loadPosts()
-      .then((items) => {
-        posts = items;
-        renderResults(input.value);
-      })
-      .catch(() => {
-        status.textContent = '搜索索引加载失败。';
-      });
+    // 统一的索引加载入口：成功与失败都由此收口，重试时复用同一段逻辑。
+    const loadIndex = () => {
+      statusText('正在加载索引...');
+      postsPromise = null;
+      loadPosts()
+        .then((items) => {
+          posts = items;
+          renderResults(input.value);
+        })
+        .catch(() => {
+          // 索引加载失败与「没有结果」必须区分：标记错误态并给出重试入口。
+          statusText('搜索索引加载失败，请检查网络后重试。', true);
+          results.innerHTML = `
+            <p class="empty-hint">
+              索引没能加载成功。<button type="button" class="text-link" data-search-retry>重新加载</button>
+            </p>
+          `;
+          results.querySelector('[data-search-retry]')?.addEventListener('click', loadIndex);
+        });
+    };
+
+    function statusText(message: string, isError = false) {
+      status.textContent = message;
+      status.classList.toggle('is-error', isError);
+    }
+
+    loadIndex();
   };
 
   initSearch();

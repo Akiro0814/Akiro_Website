@@ -211,7 +211,6 @@ function renderTrend(container, points) {
   const tipDate = tip.querySelector('[data-tip-date]');
   const tipPv = tip.querySelector('[data-tip-pv]');
   const tipUv = tip.querySelector('[data-tip-uv]');
-  const cursorEls = [pvCursor, uvCursor].filter(Boolean);
 
   // —— 无缝跟随 ——
   // 光标事件绑定在整个绘图区（不是内部矩形）：在图表内移动时悬浮窗绝不
@@ -896,12 +895,26 @@ function bindControls() {
     });
   }
 
+  // 分段切换按钮的选中态：底色 + aria-pressed 一同写入。
+  // 读屏用户看不到 .seg__btn--active 的背景色，必须显式给出选中状态。
+  const markSegActive = (btn, active) => {
+    btn.classList.toggle('seg__btn--active', active);
+    btn.setAttribute('aria-pressed', String(active));
+  };
+
+  // 骨架里的初始选中项（近 30 天 / 全部）同步一次 aria-pressed。
+  rootEl.querySelectorAll('.seg').forEach((seg) => {
+    seg.querySelectorAll('.seg__btn').forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.classList.contains('seg__btn--active')));
+    });
+  });
+
   // 时间范围 / 分布范围切换（事件委托，按钮是静态骨架里的）。
   rootEl.addEventListener('click', (e) => {
     const trendBtn = e.target.closest('#dash-trend-range [data-range]');
     if (trendBtn) {
       trendState.range = trendBtn.getAttribute('data-range');
-      trendBtn.parentElement.querySelectorAll('.seg__btn').forEach((b) => b.classList.toggle('seg__btn--active', b === trendBtn));
+      trendBtn.parentElement.querySelectorAll('.seg__btn').forEach((b) => markSegActive(b, b === trendBtn));
       renderTrendByRange(lastData || {});
       return;
     }
@@ -909,7 +922,7 @@ function bindControls() {
     if (distBtn) {
       const group = distBtn.closest('[data-dash-dist]').getAttribute('data-dash-dist');
       distState[group] = distBtn.getAttribute('data-range');
-      distBtn.parentElement.querySelectorAll('.seg__btn').forEach((b) => b.classList.toggle('seg__btn--active', b === distBtn));
+      distBtn.parentElement.querySelectorAll('.seg__btn').forEach((b) => markSegActive(b, b === distBtn));
       renderDistribution(lastData || {});
     }
   });

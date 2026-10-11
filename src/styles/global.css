@@ -5,10 +5,20 @@
    600 以上的粗体请求由浏览器仿粗渲染，保留标题与正文的层级对比。 */
 @import "./fonts.css";
 
-/* 空状态占位提示：列表为空时的访客视角文案（各页面共用）。 */
+/* 空状态占位提示：列表为空、筛选无结果、加载失败时的访客视角文案。
+   各页面共用一个定义 —— 之前 nav / friends / projects 三处各自复制了一份
+   同名规则（内边距还不一致），组件一旦调整就会漏改。 */
 .empty-hint {
   color: var(--text-muted);
-  padding: 1.2rem 0;
+  padding: 2rem 0;
+  margin: 0;
+  /* 卡片网格里作为整行提示（不属于网格时该声明无副作用）。 */
+  grid-column: 1 / -1;
+}
+
+/* 失败态与"空内容"必须能一眼分开：空是正常情况，失败需要用户重试。 */
+.empty-hint--error {
+  color: var(--danger);
 }
 
 :root {
@@ -19,15 +29,20 @@
   --surface-muted: #f0ede6;
   --text: #1b1c1e;
   --text-muted: #5f6166;
-  --text-faint: #7f8187;
+  /* 三级文字色用于日期、计数、图注等小字。原值 #7f8187 在米白底上只有
+     3.64:1，未达 WCAG AA 的 4.5:1；压深到 #6b6d75 后最浅的底色上也过线。 */
+  --text-faint: #6b6d75;
   --border: #e6e3da;
   --border-strong: #d3cfc3;
   --accent: #1b1c1e;
   --accent-strong: #000000;
   --accent-soft: #efece4;
   --accent-line: rgba(27, 28, 30, 0.22);
-  --brand: #b0532b;
-  --brand-soft: rgba(176, 83, 43, 0.12);
+  /* 品牌色既用于图标按钮的底色（配白字），也大量用作强调文字色（眉标、
+     链接、计数）。原值 #b0532b 在浅米色的强调面上只有 4.32:1，差一点没过
+     AA；压深到 #a34b25 后最深的底色上仍有 5.09:1，白字底色 6.1:1。 */
+  --brand: #a34b25;
+  --brand-soft: rgba(163, 75, 37, 0.12);
   --shadow-sm: 0 1px 2px rgba(20, 24, 32, 0.05), 0 1px 3px rgba(20, 24, 32, 0.05);
   --shadow: 0 6px 18px rgba(20, 24, 32, 0.07), 0 2px 6px rgba(20, 24, 32, 0.04);
   --shadow-lg: 0 22px 48px rgba(20, 24, 32, 0.13), 0 8px 18px rgba(20, 24, 32, 0.06);
@@ -38,6 +53,21 @@
   --code-text: #f5f7fb;
   --inline-code: #a8482a;
   --button-text-on-accent: #ffffff;
+  /* 语义色：错误与成功。后台面板本就有一套同名令牌，这里补上前台的，
+     让表单报错、失败提示与危险操作不再各自硬编码颜色。 */
+  --danger: #b23b3b;
+  --danger-soft: rgba(178, 59, 59, 0.1);
+  --ok: #2f7d54;
+  --ok-soft: rgba(47, 125, 84, 0.12);
+  /* 品牌色实心小徽标上的文字色。浅色主题品牌色偏深，用白字；
+     深色主题品牌色偏亮，必须换深字，否则白字只有 2.12:1。 */
+  --badge-text: #ffffff;
+  /* 间距阶梯：页内纵向节奏统一走这几个值，避免 1.7rem / 1.8rem / 2rem 混用。 */
+  --gap-xs: 0.5rem;
+  --gap-sm: 0.85rem;
+  --gap: 1.25rem;
+  --gap-lg: 2rem;
+  --gap-xl: 3rem;
   --radius-sm: 10px;
   --radius: 16px;
   --radius-lg: 22px;
@@ -84,7 +114,8 @@ html[data-theme="dark"] {
   --surface-muted: #1e242d;
   --text: #eef1f6;
   --text-muted: #a3acb8;
-  --text-faint: #79828f;
+  /* 深色下原值在卡片表面只有 4.45:1（略低于阈值），提亮一档到 #8b94a1。 */
+  --text-faint: #8b94a1;
   --border: #28303b;
   --border-strong: #3a444f;
   --accent: #f0f2f6;
@@ -103,6 +134,12 @@ html[data-theme="dark"] {
   --code-text: #f3f7fb;
   --inline-code: #f0a98a;
   --button-text-on-accent: #0a1322;
+  /* 深色主题下提高明度，保证在深色面板上仍有足够的对比度。 */
+  --danger: #e0736f;
+  --danger-soft: rgba(224, 115, 111, 0.16);
+  --ok: #57b383;
+  --ok-soft: rgba(87, 179, 131, 0.16);
+  --badge-text: #241206;
   --page-glow: radial-gradient(
     62% 100% at 50% -8%,
     rgba(231, 163, 124, 0.12),
@@ -600,11 +637,15 @@ html[data-theme-mode="auto"] .theme-toggle .theme-toggle__auto {
   text-transform: uppercase;
 }
 
-/* 文本链接（非按钮） */
+/* 文本链接（非按钮）
+   它是独立的操作入口（不是句中链接），因此要满足 WCAG 2.2 的
+   24px 目标尺寸下限：靠上下内边距把命中区撑到 25px 以上。 */
 .text-link {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+  min-height: 1.55rem;
+  padding-block: 0.25rem;
   color: var(--text);
   font-weight: 650;
   font-size: 0.98rem;
@@ -627,6 +668,8 @@ html[data-theme-mode="auto"] .theme-toggle .theme-toggle__auto {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+  min-height: 1.55rem;
+  padding-block: 0.25rem;
   margin-top: 1.6rem;
   color: var(--text-muted);
   font-weight: 650;
@@ -1322,6 +1365,24 @@ html[data-theme-mode="auto"] .theme-toggle .theme-toggle__auto {
   margin: 0 0 1rem;
   color: var(--text-muted);
   font-size: 0.92rem;
+}
+
+/* 索引加载失败要能被一眼看到（配合 JS 写入的 .is-error）。
+   颜色之外还加了左侧标记：状态不能只靠颜色传达。 */
+.search-status.is-error {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--danger);
+}
+
+.search-status.is-error::before {
+  content: "";
+  flex-shrink: 0;
+  width: 0.42rem;
+  height: 0.42rem;
+  border-radius: 50%;
+  background: currentColor;
 }
 
 /* ---------- 归档 ---------- */
@@ -2768,7 +2829,11 @@ html[data-theme-mode="auto"] .theme-toggle .theme-toggle__auto {
 @media (max-width: 460px) {
   .site-nav__pill {
     width: 100%;
+    /* 内容放得下时居中；放不下时必须回到起点对齐 —— 居中 + 横向滚动
+       会让最左边的「首页」被推出视口且滚不回去（flex 溢出的经典陷阱）。
+       safe center 是渐进增强：不支持的浏览器仍用上一行的 center。 */
     justify-content: center;
+    justify-content: safe center;
     gap: 0;
     /* 项目/导航/友链加入后窄屏允许横向滑动，避免压缩变形 */
     overflow-x: auto;
@@ -2783,6 +2848,51 @@ html[data-theme-mode="auto"] .theme-toggle .theme-toggle__auto {
     padding-inline: 0.7rem;
     white-space: nowrap;
     flex-shrink: 0;
+  }
+  /* 图标按钮的触摸尺寸统一由下方的「触摸目标」区块给出。 */
+}
+
+/* ---------- 触摸目标 ----------
+   指针设备靠悬停就能确认命中，触摸设备没有这个反馈，
+   目标过小会直接点错。此处只放大"独立操作入口"，
+   正文里的行内链接保持排版现状不受影响。
+   两个条件取或：触摸设备（平板横屏可能很宽），以及窄视口
+   （几乎必然是触摸使用，或在窄窗口下用鼠标）。 */
+@media (pointer: coarse), (max-width: 860px) {
+  /* 导航图标按钮是首页外最主要的入口，统一撑到 44px 见方 */
+  .site-nav__pill .site-nav__icon {
+    width: 2.75rem;
+    height: 2.75rem;
+    flex-shrink: 0;
+  }
+
+  /* 页脚站点地址、归属文字里的链接 */
+  .site-footer__bar a {
+    display: inline-block;
+    padding: 0.3rem 0.15rem;
+  }
+
+  .back-link,
+  .text-link,
+  .section__more {
+    min-height: 2.5rem;
+  }
+
+  /* 归档页"展开其余标签"按钮 */
+  .term-toggle {
+    min-height: 2.5rem;
+  }
+
+  /* 项目卡片里的「详情 / 笔记」与项目标题链接都是独立操作入口
+     （不是正文内联链接），需要满足 24px 目标尺寸下限 */
+  .proj__note {
+    min-height: 2.25rem;
+    padding-block: 0.35rem;
+  }
+
+  .proj__title a {
+    /* 根字号是 14px，1.75rem = 24.5px，正好过 WCAG 2.2 的 24px 下限 */
+    min-height: 1.75rem;
   }
 }
 
@@ -3330,8 +3440,24 @@ html[data-theme-mode="auto"] .theme-toggle .theme-toggle__auto {
   font-size: 0.88rem;
 }
 
+/* 发送失败是错误态，用语义色而不是品牌色 —— 品牌色在这里会被读成"提示"。
+   前缀标记让状态不只依赖颜色（色觉障碍用户同样能分辨）。 */
 .cform__status.is-error {
-  color: var(--brand);
+  color: var(--danger);
+}
+
+.cform__status.is-error::before {
+  content: "!";
+  display: inline-grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  margin-right: 0.4rem;
+  border-radius: 50%;
+  background: var(--danger);
+  color: var(--surface);
+  font-size: 0.72rem;
+  font-weight: 700;
 }
 
 .clist {

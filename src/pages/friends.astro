@@ -95,22 +95,33 @@ import BaseLayout from '../layouts/BaseLayout.astro';
         .join('');
     };
 
-    // 走 API 哨兵门控：无后端时跳过请求，直接显示失败提示（不产生控制台报错）。
-    const api = window.__blogApi;
-    const request = api?.gateFetch ? api.gateFetch('/api/public/friends') : fetch('/api/public/friends');
-    Promise.resolve(request)
-      .then((r) => (r && r.ok ? r.json() : Promise.reject(new Error('load fail'))))
-      .then((data: { notice?: string; items?: Array<Record<string, string>> }) => {
-        if (data.notice && noticeBox && noticeText) {
-          noticeText.textContent = data.notice;
-          noticeBox.hidden = false;
-        }
-        render(data.items ?? []);
-      })
-      .catch(() => {
-        // 与「暂无友链」区分：接口不可达时如实告知，而不是误导访客以为没有友链。
-        grid.innerHTML = '<p class="empty-hint">友链暂时加载失败，请稍后刷新重试。</p>';
-      });
+    // 统一的加载入口：成功、空列表、失败三种结果各自有明确表现，重试复用同一段逻辑。
+    const load = () => {
+      // 走 API 哨兵门控：无后端时跳过请求，直接显示失败提示（不产生控制台报错）。
+      const api = window.__blogApi;
+      const request = api?.gateFetch ? api.gateFetch('/api/public/friends') : fetch('/api/public/friends');
+      Promise.resolve(request)
+        .then((r) => (r && r.ok ? r.json() : Promise.reject(new Error('load fail'))))
+        .then((data: { notice?: string; items?: Array<Record<string, string>> }) => {
+          if (data.notice && noticeBox && noticeText) {
+            noticeText.textContent = data.notice;
+            noticeBox.hidden = false;
+          }
+          render(data.items ?? []);
+        })
+        .catch(() => {
+          // 与「暂无友链」区分：接口不可达时如实告知并给出重试入口，
+          // 而不是误导访客以为这里本来就没有友链。
+          grid.innerHTML = `
+            <p class="empty-hint empty-hint--error">
+              友链暂时加载失败。
+              <button type="button" class="text-link" data-friends-retry>重新加载</button>
+            </p>
+          `;
+          grid.querySelector('[data-friends-retry]')?.addEventListener('click', load);
+        });
+    };
+    load();
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -165,11 +176,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 </script>
 
 <style>
-  :global(.empty-hint) {
-    color: var(--text-muted);
-    padding: 2rem 0;
-    grid-column: 1 / -1;
-  }
+  /* 空状态样式由 global.css 的 .empty-hint 统一提供 */
   .card-soft {
     display: flex;
     gap: 0.7rem;
@@ -312,7 +319,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     color: var(--brand);
   }
   .friend-form__status.is-error {
-    color: var(--danger, #b23b3b);
+    color: var(--danger);
   }
 
   @media (max-width: 560px) {

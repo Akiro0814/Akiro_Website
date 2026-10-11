@@ -15,11 +15,11 @@ const { title = '评论' } = Astro.props;
 </section>
 
 <script>
-  import { mountComments } from '../lib/comments.js';
+  import { mountComments, commentsBackendId } from '../lib/comments.js';
 
   // 配置 PUBLIC_TWIKOO_ENV_ID 时直连外部 Twikoo；未配置则使用博客内置的
   // Twikoo 协议后端（/api/public/twikoo），评论由后台「评论」模块自由管理。
-  const ENV_ID = import.meta.env.PUBLIC_TWIKOO_ENV_ID || '/api/public/twikoo';
+  const ENV_ID = commentsBackendId();
   let activeRoot = null;
   let cleanup = () => {};
 

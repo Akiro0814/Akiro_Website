@@ -4,25 +4,33 @@
 // 无刷新导航的页面请求走 /admin-assets/page-loader.js（路由白名单在彼处校验）。
 import { sanitizeHtml } from '/admin-assets/shared/sanitize.js';
 import { isAllowedAdminRoute, loadAdminPage } from '/admin-assets/page-loader.js';
-import { initDashboard, stopDashboard } from '/admin-assets/dashboard.js?v=1918';
-import { initDateTimePickers } from '/admin-assets/picker.js?v=1910';
+import { initDashboard, stopDashboard } from '/admin-assets/dashboard.js?v=1920';
+import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
 
 (() => {
   // 页面级启动数据：无刷新导航换页后由 initPage 重新读取（boot / csrf 都是活值）。
   let boot = window.__BOOT__ || {};
 
-  const toastEl = () => document.getElementById('toast');
+  // 提示条分两个常驻节点：成功/中性走 polite 状态区，错误走 assertive 警报区，
+  // 让读屏软件在两种情形下都能可靠播报（见 views.mjs 的注释）。
+  const toastEl = (isError) => document.getElementById(isError ? 'toast-alert' : 'toast');
   function toast(message, isError) {
-    const el = toastEl();
+    const el = toastEl(!!isError);
     if (!el) return;
+    // 另一条提示同时在场时先收起，避免两个提示条叠在同一位置。
+    const other = toastEl(!isError);
+    if (other && !other.hidden) {
+      clearTimeout(other._t);
+      other.hidden = true;
+      other.classList.remove('is-in', 'is-out');
+    }
     el.textContent = message;
-    el.classList.toggle('toast--error', !!isError);
     el.hidden = false;
     // 滑入 → 停留 → 滑出（两段式，避免 display 切换的生硬感）。
     el.classList.remove('is-out');
     requestAnimationFrame(() => el.classList.add('is-in'));
-    clearTimeout(toast._t);
-    toast._t = setTimeout(() => {
+    clearTimeout(el._t);
+    el._t = setTimeout(() => {
       el.classList.remove('is-in');
       el.classList.add('is-out');
       setTimeout(() => {
@@ -148,10 +156,10 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1910';
 
   // 社交链接行的新增/删除用事件委托（文档级，只绑一次；行可任意重渲染）。
   const socialRowHtml = (ns, i) => `<div class="kv-row" data-social="${ns}" data-index="${i}">
-        <input class="input" data-sfield="icon" value="" placeholder="图标名 如 bilibili" />
-        <input class="input" data-sfield="label" value="" placeholder="显示名" />
-        <input class="input" data-sfield="href" value="" placeholder="链接地址" />
-        <button type="button" class="btn btn--sm btn--danger" data-social-remove="${ns}" data-index="${i}">删</button>
+        <input class="input" data-sfield="icon" value="" placeholder="图标名 如 bilibili" aria-label="图标名" />
+        <input class="input" data-sfield="label" value="" placeholder="显示名" aria-label="显示名" />
+        <input class="input" data-sfield="href" value="" placeholder="链接地址" aria-label="链接地址" />
+        <button type="button" class="btn btn--sm btn--danger" data-social-remove="${ns}" data-index="${i}" aria-label="删除这条社交链接">删</button>
       </div>`;
 
   document.addEventListener('click', (e) => {
@@ -173,6 +181,29 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1910';
   // 用 signal 绑定，换页时自动清理，不会跨页面累积。
   let pageController = null;
 
+  // —— 编辑器未保存改动跟踪 ——
+  // 保存过的内容快照（JSON 字符串）。任何字段/正文与快照不一致即为「有未保存改动」，
+  // 离开页面前（整页卸载或在站内无刷新跳转）提醒。快照在保存成功时更新。
+  let editorSnapshot = null;
+  const editorDirty = () => editorSnapshot !== null && captureEditorState() !== editorSnapshot;
+
+  const captureEditorState = () => {
+    const fields = {};
+    for (const el of document.querySelectorAll('[data-field]')) {
+      const name = el.getAttribute('data-field');
+      fields[name] = el.type === 'checkbox' ? el.checked : el.value;
+    }
+    return JSON.stringify([fields, document.getElementById('body')?.value ?? '']);
+  };
+
+  const markSaved = () => {
+    editorSnapshot = captureEditorState();
+  };
+
+  const resetEditorTracking = () => {
+    editorSnapshot = null;
+  };
+
   function initPage() {
     boot = window.__BOOT__ || {};
     pageController?.abort();
@@ -193,6 +224,9 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1910';
   const urlPreview = document.getElementById('url-preview');
   const collection = boot.collection;
   const isEditor = !!bodyArea && !!collection;
+
+  // 非编辑器页面（或换页后）不保留上一页的未保存状态。
+  if (!isEditor) resetEditorTracking();
 
   if (isEditor) {
     // slug 与 URL 预览（位于设置抽屉内）。
@@ -247,8 +281,20 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1910';
             body: { id, originalId: boot.originalId || null, fields, body: bodyArea.value },
           });
           toast(result.message || '已保存');
-          if (boot.isNew) navigate(`/admin/${collection}/edit?path=${encodeURIComponent(result.id)}`);
-          else saveBtn.textContent = '已保存';
+          if (boot.isNew) {
+            // 保存成功后再跳转：先清空未保存标记，否则跳转会被自己的确认框拦下。
+            resetEditorTracking();
+            navigate(`/admin/${collection}/edit?path=${encodeURIComponent(result.id)}`);
+          } else {
+            markSaved();
+            saveBtn.textContent = '已保存';
+            // 与「个人资料」保存按钮保持一致：短暂回显后恢复可点击，
+            // 否则保存一次就永久禁用，无法再次保存。
+            setTimeout(() => {
+              saveBtn.disabled = false;
+              saveBtn.textContent = '保存';
+            }, 1500);
+          }
         } catch (err) {
           toast(err.message, true);
           saveBtn.disabled = false;
@@ -269,6 +315,9 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1910';
     };
     bodyArea.addEventListener('input', updateCount);
     updateCount();
+
+    // 未保存改动的基线：进入编辑器时的初始内容即「已保存」状态。
+    markSaved();
 
     // —— 多级撤销 / 重做 ——
     // 插入图片、格式包裹这类程序化改写会清空浏览器原生撤销栈，因此自带快照
@@ -439,13 +488,26 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1910';
       }
     };
 
+    // 打开前的焦点位置：关闭时还回去，键盘用户的浏览顺序才不会断在弹窗里。
+    let modalReturnFocus = null;
+
+    const modalCard = modal.querySelector('.modal__card');
+    const FOCUSABLE =
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusablesIn = () => [...modalCard.querySelectorAll(FOCUSABLE)].filter((el) => el.offsetParent !== null);
+
     const openModal = () => {
+      modalReturnFocus = document.activeElement;
       modal.hidden = false;
       document.getElementById('img-insert-btn')?.classList.add('is-active');
-      reveal(modal.querySelector('.modal__card'));
+      reveal(modalCard);
+      // 焦点移入弹窗（落到「关闭」上：位置固定、始终可见）。aria-modal 只是
+      // 声明，真正的"焦点不跑到背后"要靠把焦点移进来 + Esc 可退出。
+      modalCard.querySelector('.modal__close')?.focus();
       loadGallery();
     };
     const closeModal = () => {
+      const wasOpen = !modal.hidden;
       modal.hidden = true;
       document.getElementById('img-insert-btn')?.classList.remove('is-active');
       imgState.url = '';
@@ -454,7 +516,35 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1910';
       selectedNameEl.textContent = '尚未选择图片';
       insertBtn.disabled = true;
       captionInput.value = '';
+      // 焦点还给触发按钮（若该节点已被换页移除，则退回编辑器工具栏）。
+      if (wasOpen) {
+        const target = modalReturnFocus?.isConnected
+          ? modalReturnFocus
+          : document.getElementById('img-insert-btn');
+        target?.focus?.();
+      }
+      modalReturnFocus = null;
     };
+
+    // 弹窗内 Tab 循环：焦点不逃到背后的表单上（模态语义）。
+    // 同时支持 Home / End 跳到首尾，符合常见对话框键盘约定。
+    modal.addEventListener('keydown', (e) => {
+      if (e.key !== 'Tab' || modal.hidden) return;
+      const items = focusablesIn();
+      if (!items.length) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const current = document.activeElement;
+      if (e.shiftKey) {
+        if (current === first || !modalCard.contains(current)) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else if (current === last || !modalCard.contains(current)) {
+        e.preventDefault();
+        first.focus();
+      }
+    });
 
     document.getElementById('img-insert-btn')?.addEventListener('click', openModal);
     modal.querySelectorAll('[data-img-close]').forEach((el) => el.addEventListener('click', closeModal));
@@ -463,7 +553,12 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1910';
     modal.querySelectorAll('.chips .chip').forEach((chip) => {
       chip.addEventListener('click', () => {
         const group = chip.closest('.chips').getAttribute('data-chip-group');
-        chip.parentElement.querySelectorAll('.chip').forEach((c) => c.classList.toggle('is-active', c === chip));
+        chip.parentElement.querySelectorAll('.chip').forEach((c) => {
+          const active = c === chip;
+          c.classList.toggle('is-active', active);
+          // aria-pressed 与底色同步：读屏用户看不到 is-active，只能靠这个属性。
+          c.setAttribute('aria-pressed', String(active));
+        });
         imgState[group] = chip.getAttribute(`data-${group}`);
       });
     });
@@ -997,17 +1092,17 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1910';
   if (navCats) {
     const catHtml = (ci) => `<div class="navcat" data-cat-index="${ci}">
         <div class="navcat__head">
-          <input class="input navcat__name" value="" placeholder="分类名" />
+          <input class="input navcat__name" value="" placeholder="分类名" aria-label="分类名" />
           <button type="button" class="btn btn--sm btn--danger" data-cat-remove="${ci}">删除分类</button>
         </div>
         <div class="navcat__links"></div>
         <button type="button" class="btn btn--sm" data-link-add="${ci}">+ 添加网址</button>
       </div>`;
     const linkHtml = (ci, li) => `<div class="kv-row" data-cat-link="${ci}" data-link-index="${li}">
-        <input class="input" data-lfield="name" value="" placeholder="网站名" />
-        <input class="input" data-lfield="url" value="" placeholder="https://…" />
-        <input class="input" data-lfield="desc" value="" placeholder="简介（选填）" />
-        <button type="button" class="btn btn--sm btn--danger" data-link-remove="${ci}" data-link-index="${li}">删</button>
+        <input class="input" data-lfield="name" value="" placeholder="网站名" aria-label="网站名" />
+        <input class="input" data-lfield="url" value="" placeholder="https://…" aria-label="网站地址" />
+        <input class="input" data-lfield="desc" value="" placeholder="简介（选填）" aria-label="网站简介" />
+        <button type="button" class="btn btn--sm btn--danger" data-link-remove="${ci}" data-link-index="${li}" aria-label="删除这条网址">删</button>
       </div>`;
 
     navCats.addEventListener('click', (e) => {
@@ -1569,6 +1664,12 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1910';
   async function navigate(url, { push = true } = {}) {
     const target = new URL(String(url), location.origin);
     const rel = target.pathname + target.search;
+    // 编辑器有未保存改动时先确认，避免无刷新跳转静默丢弃内容。
+    // 仅在目标确实是站内另一条路由时询问（同地址的刷新不打断）。
+    if (editorDirty() && rel !== currentRel()) {
+      if (!window.confirm('这篇内容有尚未保存的修改，确定离开并丢弃吗？')) return;
+      resetEditorTracking();
+    }
     // 白名单校验（独立早退）：路由形状不符直接整页跳转交回浏览器。
     if (!isAllowedAdminRoute(rel)) {
       location.href = target.href;
@@ -1663,6 +1764,15 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1910';
   window.addEventListener('popstate', () => {
     const rel = currentRel();
     if (rel) navigate(rel, { push: false });
+  });
+
+  // 编辑器有未保存改动时，整页卸载（关闭标签页 / 刷新 / 外部链接）也让浏览器
+  // 弹出离开确认。仅在确有改动时注册，避免无谓的拦截。
+  window.addEventListener('beforeunload', (e) => {
+    if (!editorDirty()) return;
+    e.preventDefault();
+    // 部分旧版 Chromium 依赖 returnValue 才会显示确认框。
+    e.returnValue = '';
   });
 
   // 首次进入也走同样的入场编排。

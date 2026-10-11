@@ -48,7 +48,7 @@ const asArray = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
 // 静态资源版本号：改 admin.css / admin.js 后递增即可让浏览器绕开 1 小时缓存，
 // 避免「改了样式但看到的还是旧文件」的排查成本（后台资源带 maxAge 缓存）。
-export const ASSET_V = '1918';
+export const ASSET_V = '1920';
 
 function renderField(name, value) {
   const meta = FIELD_META[name];
@@ -61,7 +61,7 @@ function renderField(name, value) {
       // 自定义日期时间选择器（picker.js）：日历 + 时分步进，替代原生日期控件。
       return `<label class="field"><span class="field__label">${esc(meta.label)}</span>
         <div class="picker-wrap">
-          <input class="input picker-input" type="text" data-field="${esc(name)}" data-picker="datetime" value="${esc(val)}" placeholder="选择日期与时间" readonly />
+          <input class="input picker-input" type="text" data-field="${esc(name)}" data-picker="datetime" aria-label="${esc(meta.label)}" value="${esc(val)}" placeholder="选择日期与时间" readonly />
           <span class="picker-wrap__icon" aria-hidden="true">📅</span>
         </div>
       </label>`;
@@ -157,7 +157,10 @@ export function layout({ title, active, user, boot, content }) {
       ${content}
     </main>
   </div>
-  <div class="toast" id="toast" hidden></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <!-- 错误提示用独立的断言式播报区：同一个容器在 polite / assertive 之间
+       切换时，部分读屏软件会漏掉播报，因此拆成两个常驻节点。 -->
+  <div class="toast toast--error" id="toast-alert" role="alert" hidden></div>
   <script>window.__BOOT__ = ${JSON.stringify(boot || {}).replace(/</g, '\\u003c')}</script>
   <script type="module" src="/admin-assets/admin.js?v=${ASSET_V}"></script>
 </body>
@@ -206,7 +209,7 @@ export function dashboardPage({ user, boot }) {
         <div><h1>仪表盘</h1><p>博客运营数据总览：访问、内容与服务器状态，自动刷新不打断操作。</p></div>
         <div class="dash-controls">
           <span class="dash-updated" id="dash-updated">数据加载中…</span>
-          <select class="input dash-select" id="dash-interval" title="自动刷新间隔">
+          <select class="input dash-select" id="dash-interval" title="自动刷新间隔" aria-label="自动刷新间隔">
             <option value="0">自动刷新：关</option>
             <option value="15">每 15 秒刷新</option>
             <option value="30">每 30 秒刷新</option>
@@ -376,7 +379,7 @@ export function listPage({ user, boot, collection, entries, trash = [] }) {
       return `<tr>
         <td class="cell-title"><a href="/admin/${collection}/edit?path=${encodeURIComponent(e.id)}">${title}</a></td>
         <td>${draft}</td>
-        <td>${date}</td>
+        <td class="cell-date">${date}</td>
         <td class="cell-path"><code>${esc(e.id)}</code></td>
         <td class="cell-actions">
           <a class="btn btn--sm" href="/admin/${collection}/edit?path=${encodeURIComponent(e.id)}">编辑</a>
@@ -390,7 +393,7 @@ export function listPage({ user, boot, collection, entries, trash = [] }) {
     .map(
       (t) => `<tr>
         <td class="cell-title">${esc(t.title || '（无标题）')}<div class="cell-sub"><code>${esc(t.id)}</code></div></td>
-        <td>${t.deletedAt ? new Date(t.deletedAt).toLocaleString('zh-CN') : '—'}</td>
+        <td class="cell-date">${t.deletedAt ? new Date(t.deletedAt).toLocaleString('zh-CN') : '—'}</td>
         <td class="cell-actions">
           <button type="button" class="btn btn--sm" data-trash-restore="${esc(t.file)}" data-collection="${collection}">恢复</button>
           <button type="button" class="btn btn--sm btn--danger" data-trash-purge="${esc(t.file)}" data-collection="${collection}">彻底删除</button>
@@ -405,20 +408,20 @@ export function listPage({ user, boot, collection, entries, trash = [] }) {
       <a class="btn btn--primary" href="/admin/${collection}/new">新建${esc(col.label)}</a>
     </header>
     <div class="card">
-      <table class="table">
-        <thead><tr><th>标题</th><th>状态</th><th>日期</th><th>路径</th><th></th></tr></thead>
+      <div class="table-wrap" role="region" tabindex="0" aria-label="数据表格"><table class="table">
+        <thead><tr><th scope="col">标题</th><th scope="col">状态</th><th scope="col">日期</th><th scope="col">路径</th><th scope="col" aria-label="操作"></th></tr></thead>
         <tbody>${rows || `<tr><td colspan="5" class="empty">还没有内容，点击右上角新建。</td></tr>`}</tbody>
-      </table>
+      </table></div>
     </div>
     <section class="card" id="trash-card" ${trash.length ? '' : 'hidden'}>
       <div class="card__head">
         <h2 class="card__title">回收站（${trash.length}）</h2>
         <button type="button" class="btn btn--sm btn--danger" id="trash-purge-all" data-collection="${collection}">清空回收站</button>
       </div>
-      <table class="table">
-        <thead><tr><th>标题</th><th>删除时间</th><th></th></tr></thead>
+      <div class="table-wrap" role="region" tabindex="0" aria-label="数据表格"><table class="table">
+        <thead><tr><th scope="col">标题</th><th scope="col">删除时间</th><th scope="col" aria-label="操作"></th></tr></thead>
         <tbody id="trash-rows">${trashRows || `<tr><td colspan="3" class="empty">回收站为空。</td></tr>`}</tbody>
-      </table>
+      </table></div>
       <span class="field__hint">恢复时若原路径已被新内容占用会提示失败；彻底删除后无法找回。</span>
     </section>`;
   return layout({ title: col.label, active: collection, user, boot, content });
@@ -456,6 +459,7 @@ export function editorPage({ user, boot, collection, entry, isNew }) {
     <div class="editor">
       <div class="editor__canvas">
         <input class="editor__title" type="text" data-field="title" value="${esc(data.title || '')}"
+          aria-label="${collection === 'posts' ? '文章标题' : '随笔标题'}"
           placeholder="${collection === 'posts' ? '起个标题…' : '随笔标题（可留空）'}" />
         <div class="editor__meta">${metaFields}</div>
 
@@ -472,7 +476,7 @@ export function editorPage({ user, boot, collection, entry, isNew }) {
           <span class="editor__count" id="editor-count"></span>
         </div>
 
-        <textarea id="body" class="body-area" spellcheck="false" placeholder="从这里开始写正文（支持 Markdown）…&#10;把图片拖进或粘贴到此处即可直接插图。&#10;Ctrl+Z 撤销、Ctrl+Y 重做。">${esc(body)}</textarea>
+        <textarea id="body" class="body-area" spellcheck="false" aria-label="正文（支持 Markdown）" placeholder="从这里开始写正文（支持 Markdown）…&#10;把图片拖进或粘贴到此处即可直接插图。&#10;Ctrl+Z 撤销、Ctrl+Y 重做。">${esc(body)}</textarea>
         <div id="preview" class="preview prose" hidden></div>
       </div>
 
@@ -512,19 +516,21 @@ export function editorPage({ user, boot, collection, entry, isNew }) {
               <img id="img-thumb" alt="选中图片预览" hidden />
               <span id="img-selected-name" class="field__hint">尚未选择图片</span>
             </div>
+            <!-- 尺寸 / 对齐是单选语义：用 aria-pressed 把「当前选中」传达给读屏，
+                 不能只靠 .is-active 的底色（纯视觉信息对读屏不可见）。 -->
             <div class="img-options__row">
-              <span class="field__label">尺寸</span>
-              <div class="chips" data-chip-group="size">
-                <button type="button" class="chip is-active" data-size="33">小</button>
-                <button type="button" class="chip" data-size="50">中</button>
-                <button type="button" class="chip" data-size="75">大</button>
-                <button type="button" class="chip" data-size="100">全宽</button>
+              <span class="field__label" id="img-size-label">尺寸</span>
+              <div class="chips" data-chip-group="size" role="group" aria-labelledby="img-size-label">
+                <button type="button" class="chip is-active" data-size="33" aria-pressed="true">小</button>
+                <button type="button" class="chip" data-size="50" aria-pressed="false">中</button>
+                <button type="button" class="chip" data-size="75" aria-pressed="false">大</button>
+                <button type="button" class="chip" data-size="100" aria-pressed="false">全宽</button>
               </div>
-              <span class="field__label">对齐</span>
-              <div class="chips" data-chip-group="align">
-                <button type="button" class="chip" data-align="left">居左</button>
-                <button type="button" class="chip is-active" data-align="center">居中</button>
-                <button type="button" class="chip" data-align="right">居右</button>
+              <span class="field__label" id="img-align-label">对齐</span>
+              <div class="chips" data-chip-group="align" role="group" aria-labelledby="img-align-label">
+                <button type="button" class="chip" data-align="left" aria-pressed="false">居左</button>
+                <button type="button" class="chip is-active" data-align="center" aria-pressed="true">居中</button>
+                <button type="button" class="chip" data-align="right" aria-pressed="false">居右</button>
               </div>
             </div>
             <label class="field">
@@ -591,7 +597,7 @@ export function buildPage({ user, boot, status, releases, backupConfig }) {
       <h2 class="card__title">数据备份</h2>
       <p>每次「构建并发布」成功后，自动把个人数据（文章随笔、上传媒体、动态数据、头像、.env）直接推送到上面的私人仓库（建议 GitHub 私有仓库），全程使用系统临时目录、本地不留备份缓存；推送失败不影响发布，下次发布自动重试。留空则使用默认地址（主仓库地址 + <code>-backup</code>）。</p>
       <div class="field__row">
-        <input class="input" id="backup-remote" value="${esc(bk.remoteUrl || '')}" placeholder="https://github.com/用户名/仓库名.git" spellcheck="false" />
+        <input class="input" id="backup-remote" value="${esc(bk.remoteUrl || '')}" placeholder="https://github.com/用户名/仓库名.git" spellcheck="false" aria-label="备份仓库地址" />
         <button type="button" class="btn" id="backup-save">保存仓库地址</button>
       </div>
       <p>当前生效：<code id="backup-effective">${esc(bk.effective || '（未配置，暂不备份）')}</code>（来源：${esc(bk.sourceLabel || '未配置')}）</p>
@@ -636,10 +642,10 @@ export function siteContentPage({ user, boot, profile }) {
     list
       .map(
         (s, i) => `<div class="kv-row" data-social="${ns}" data-index="${i}">
-        <input class="input" data-sfield="icon" value="${esc(s.icon)}" placeholder="图标名 如 bilibili" />
-        <input class="input" data-sfield="label" value="${esc(s.label)}" placeholder="显示名" />
-        <input class="input" data-sfield="href" value="${esc(s.href)}" placeholder="链接地址" />
-        <button type="button" class="btn btn--sm btn--danger" data-social-remove="${ns}" data-index="${i}">删</button>
+        <input class="input" data-sfield="icon" value="${esc(s.icon)}" placeholder="图标名 如 bilibili" aria-label="图标名" />
+        <input class="input" data-sfield="label" value="${esc(s.label)}" placeholder="显示名" aria-label="显示名" />
+        <input class="input" data-sfield="href" value="${esc(s.href)}" placeholder="链接地址" aria-label="链接地址" />
+        <button type="button" class="btn btn--sm btn--danger" data-social-remove="${ns}" data-index="${i}" aria-label="删除这条社交链接">删</button>
       </div>`,
       )
       .join('\n');
@@ -719,10 +725,10 @@ export function projectsPage({ user, boot, projects }) {
     </header>
 
     <div class="card">
-      <table class="table">
-        <thead><tr><th>名称</th><th>路径</th><th>状态</th><th>技术栈</th><th></th></tr></thead>
+      <div class="table-wrap" role="region" tabindex="0" aria-label="数据表格"><table class="table">
+        <thead><tr><th scope="col">名称</th><th scope="col">路径</th><th scope="col">状态</th><th scope="col">技术栈</th><th scope="col" aria-label="操作"></th></tr></thead>
         <tbody id="project-rows">${rows || '<tr><td colspan="5" class="empty">还没有项目，点击右上角新建。</td></tr>'}</tbody>
-      </table>
+      </table></div>
     </div>
 
     <section class="card" id="project-editor" hidden>
@@ -762,17 +768,17 @@ export function linksPage({ user, boot, nav, friends }) {
     .map(
       (cat, ci) => `<div class="navcat" data-cat-index="${ci}">
         <div class="navcat__head">
-          <input class="input navcat__name" value="${esc(cat.name)}" placeholder="分类名" />
+          <input class="input navcat__name" value="${esc(cat.name)}" placeholder="分类名" aria-label="分类名" />
           <button type="button" class="btn btn--sm btn--danger" data-cat-remove="${ci}">删除分类</button>
         </div>
         <div class="navcat__links">
           ${cat.links
             .map(
               (l, li) => `<div class="kv-row" data-cat-link="${ci}" data-link-index="${li}">
-                <input class="input" data-lfield="name" value="${esc(l.name)}" placeholder="网站名" />
-                <input class="input" data-lfield="url" value="${esc(l.url)}" placeholder="https://…" />
-                <input class="input" data-lfield="desc" value="${esc(l.desc)}" placeholder="简介（选填）" />
-                <button type="button" class="btn btn--sm btn--danger" data-link-remove="${ci}" data-link-index="${li}">删</button>
+                <input class="input" data-lfield="name" value="${esc(l.name)}" placeholder="网站名" aria-label="网站名" />
+                <input class="input" data-lfield="url" value="${esc(l.url)}" placeholder="https://…" aria-label="网站地址" />
+                <input class="input" data-lfield="desc" value="${esc(l.desc)}" placeholder="简介（选填）" aria-label="网站简介" />
+                <button type="button" class="btn btn--sm btn--danger" data-link-remove="${ci}" data-link-index="${li}" aria-label="删除这条网址">删</button>
               </div>`,
             )
             .join('\n')}
@@ -794,7 +800,7 @@ export function linksPage({ user, boot, nav, friends }) {
         </td>
         <td><code>${esc(f.url)}</code></td>
         <td>${badge[f.status] || esc(f.status)}</td>
-        <td>${f.createdAt ? new Date(f.createdAt).toLocaleDateString('zh-CN') : '—'}</td>
+        <td class="cell-date">${f.createdAt ? new Date(f.createdAt).toLocaleDateString('zh-CN') : '—'}</td>
         <td class="cell-actions">
           ${f.status !== 'approved' ? `<button type="button" class="btn btn--sm btn--primary" data-friend-review="${esc(f.id)}" data-status="approved">通过</button>` : ''}
           ${f.status !== 'rejected' ? `<button type="button" class="btn btn--sm" data-friend-review="${esc(f.id)}" data-status="rejected">拒绝</button>` : ''}
@@ -824,16 +830,16 @@ export function linksPage({ user, boot, nav, friends }) {
 
     <section class="card">
       <h2 class="card__title">申请须知（展示在前台友链申请表单上方）</h2>
-      <textarea class="input" id="friend-notice" rows="3">${esc(friends.notice)}</textarea>
+      <textarea class="input" id="friend-notice" rows="3" aria-label="友链申请须知">${esc(friends.notice)}</textarea>
       <div class="actions"><button type="button" class="btn" id="friend-notice-save">保存须知</button></div>
     </section>
 
     <div class="card">
       <h2 class="card__title">友链列表</h2>
-      <table class="table">
-        <thead><tr><th>站点</th><th>链接</th><th>状态</th><th>提交时间</th><th></th></tr></thead>
+      <div class="table-wrap" role="region" tabindex="0" aria-label="数据表格"><table class="table">
+        <thead><tr><th scope="col">站点</th><th scope="col">链接</th><th scope="col">状态</th><th scope="col">提交时间</th><th scope="col" aria-label="操作"></th></tr></thead>
         <tbody>${rows || '<tr><td colspan="5" class="empty">暂无友链。</td></tr>'}</tbody>
-      </table>
+      </table></div>
     </div>
 
     <section class="card" id="friend-editor" hidden>
@@ -910,10 +916,10 @@ export function musicPage({ user, boot, tracks }) {
 
     <div class="card">
       <h2 class="card__title">管理歌单（拖动排序可保存顺序）</h2>
-      <table class="table" id="music-table">
-        <thead><tr><th>曲目</th><th>歌手</th><th>来源</th><th>状态</th><th></th></tr></thead>
+      <div class="table-wrap" role="region" tabindex="0" aria-label="数据表格"><table class="table" id="music-table">
+        <thead><tr><th scope="col">曲目</th><th scope="col">歌手</th><th scope="col">来源</th><th scope="col">状态</th><th scope="col" aria-label="操作"></th></tr></thead>
         <tbody>${rows || '<tr><td colspan="5" class="empty">管理歌单为空。上传本地音乐，或在上方「导入网易云」粘贴歌曲 / 歌单链接。</td></tr>'}</tbody>
-      </table>
+      </table></div>
       <div class="actions">
         <button type="button" class="btn" id="music-reorder-up">上移所选</button>
         <button type="button" class="btn" id="music-reorder-down">下移所选</button>
@@ -949,7 +955,7 @@ export function announcementsPage({ user, boot, items }) {
         <td class="cell-title">${esc(a.title || '（无标题）')}
           <div class="cell-sub">${esc(a.content.slice(0, 60))}${a.content.length > 60 ? '…' : ''}</div></td>
         <td>${a.enabled ? '<span class="badge badge--pub">发布中</span>' : '<span class="badge badge--draft">已停用</span>'}</td>
-        <td>${a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN') : '—'}</td>
+        <td class="cell-date">${a.createdAt ? new Date(a.createdAt).toLocaleDateString('zh-CN') : '—'}</td>
         <td class="cell-actions">
           <button type="button" class="btn btn--sm" data-ann-edit="${esc(a.id)}">编辑</button>
           <button type="button" class="btn btn--sm btn--danger" data-ann-delete="${esc(a.id)}">删除</button>
@@ -965,10 +971,10 @@ export function announcementsPage({ user, boot, items }) {
     </header>
 
     <div class="card">
-      <table class="table">
-        <thead><tr><th>公告</th><th>状态</th><th>创建时间</th><th></th></tr></thead>
+      <div class="table-wrap" role="region" tabindex="0" aria-label="数据表格"><table class="table">
+        <thead><tr><th scope="col">公告</th><th scope="col">状态</th><th scope="col">创建时间</th><th scope="col" aria-label="操作"></th></tr></thead>
         <tbody>${rows || '<tr><td colspan="4" class="empty">暂无公告。</td></tr>'}</tbody>
-      </table>
+      </table></div>
     </div>
 
     <section class="card" id="ann-editor" hidden>
@@ -982,13 +988,13 @@ export function announcementsPage({ user, boot, items }) {
       <div class="field__row">
         <label class="field" style="flex:1"><span class="field__label">生效时间（选填）</span>
           <div class="picker-wrap">
-            <input class="input picker-input" id="an-start" data-picker="datetime" placeholder="选择生效日期与时间" readonly />
+            <input class="input picker-input" id="an-start" data-picker="datetime" aria-label="公告生效时间" placeholder="选择生效日期与时间" readonly />
             <span class="picker-wrap__icon" aria-hidden="true">📅</span>
           </div>
         </label>
         <label class="field" style="flex:1"><span class="field__label">失效时间（选填）</span>
           <div class="picker-wrap">
-            <input class="input picker-input" id="an-end" data-picker="datetime" placeholder="选择失效日期与时间" readonly />
+            <input class="input picker-input" id="an-end" data-picker="datetime" aria-label="公告失效时间" placeholder="选择失效日期与时间" readonly />
             <span class="picker-wrap__icon" aria-hidden="true">📅</span>
           </div>
         </label>
@@ -1014,7 +1020,7 @@ export function commentsPage({ user, boot, items, counts, filter = {} }) {
           <div class="cell-sub">${esc((c.commentMd || '').slice(0, 80))}${(c.commentMd || '').length > 80 ? '…' : ''}</div>
         </td>
         <td>${c.mail ? esc(c.mail) : '—'}</td>
-        <td>${new Date(c.created).toLocaleString('zh-CN')}</td>
+        <td class="cell-date">${new Date(c.created).toLocaleString('zh-CN')}</td>
         <td>${c.like || 0}</td>
         <td class="cell-actions">
           <button type="button" class="btn btn--sm" data-comment-reply="${esc(c.id)}">回复</button>
@@ -1029,7 +1035,7 @@ export function commentsPage({ user, boot, items, counts, filter = {} }) {
     <header class="page__head page__head--row">
       <div><h1>评论</h1><p>先显后审：访客评论即时展示，可在此隐藏或删除。共 ${counts.total} 条（可见 ${counts.visible} / 隐藏 ${counts.hidden}）。</p></div>
       <div class="actions">
-        <input class="input" id="comment-search" placeholder="搜索昵称 / 内容 / 页面" style="width:220px" value="${esc(filter.keyword || '')}" />
+        <input class="input" id="comment-search" placeholder="搜索昵称 / 内容 / 页面" aria-label="搜索评论" style="width:220px" value="${esc(filter.keyword || '')}" />
         <button type="button" class="btn${filter.status !== 'visible' && filter.status !== 'hidden' ? ' btn--primary' : ''}" data-comment-filter="all">全部</button>
         <button type="button" class="btn${filter.status === 'visible' ? ' btn--primary' : ''}" data-comment-filter="visible">可见</button>
         <button type="button" class="btn${filter.status === 'hidden' ? ' btn--primary' : ''}" data-comment-filter="hidden">已隐藏</button>
@@ -1037,10 +1043,10 @@ export function commentsPage({ user, boot, items, counts, filter = {} }) {
     </header>
 
     <div class="card">
-      <table class="table">
-        <thead><tr><th>评论</th><th>邮箱</th><th>时间</th><th>赞</th><th></th></tr></thead>
+      <div class="table-wrap" role="region" tabindex="0" aria-label="数据表格"><table class="table">
+        <thead><tr><th scope="col">评论</th><th scope="col">邮箱</th><th scope="col">时间</th><th scope="col">赞</th><th scope="col" aria-label="操作"></th></tr></thead>
         <tbody id="comment-rows">${rows || '<tr><td colspan="5" class="empty">暂无评论。</td></tr>'}</tbody>
-      </table>
+      </table></div>
     </div>
 
     <section class="card" id="comment-reply-editor" hidden>
@@ -1112,27 +1118,27 @@ export function siteStatsPage({ user, boot, meta, preview, stats }) {
       <div class="date-pick">
         <div class="date-pick__steppers">
           <div class="date-stepper" data-step-unit="year">
-            <button type="button" class="date-stepper__btn" data-date-step="-1" aria-label="年份减一">−</button>
-            <input class="input date-stepper__input" type="number" id="site-year" min="1970" max="9999" />
+            <button type="button" class="date-stepper__btn" data-date-step="-1" aria-label="开站年份减一">−</button>
+            <input class="input date-stepper__input" type="number" id="site-year" min="1970" max="9999" aria-label="开站年份" />
             <span class="date-stepper__unit">年</span>
-            <button type="button" class="date-stepper__btn" data-date-step="1" aria-label="年份加一">＋</button>
+            <button type="button" class="date-stepper__btn" data-date-step="1" aria-label="开站年份加一">＋</button>
           </div>
           <div class="date-stepper" data-step-unit="month">
-            <button type="button" class="date-stepper__btn" data-date-step="-1" aria-label="月份减一">−</button>
-            <input class="input date-stepper__input" type="number" id="site-month" min="1" max="12" />
+            <button type="button" class="date-stepper__btn" data-date-step="-1" aria-label="开站月份减一">−</button>
+            <input class="input date-stepper__input" type="number" id="site-month" min="1" max="12" aria-label="开站月份" />
             <span class="date-stepper__unit">月</span>
-            <button type="button" class="date-stepper__btn" data-date-step="1" aria-label="月份加一">＋</button>
+            <button type="button" class="date-stepper__btn" data-date-step="1" aria-label="开站月份加一">＋</button>
           </div>
           <div class="date-stepper" data-step-unit="day">
-            <button type="button" class="date-stepper__btn" data-date-step="-1" aria-label="日期减一">−</button>
-            <input class="input date-stepper__input" type="number" id="site-day" min="1" max="31" />
+            <button type="button" class="date-stepper__btn" data-date-step="-1" aria-label="开站日期减一">−</button>
+            <input class="input date-stepper__input" type="number" id="site-day" min="1" max="31" aria-label="开站日" />
             <span class="date-stepper__unit">日</span>
-            <button type="button" class="date-stepper__btn" data-date-step="1" aria-label="日期加一">＋</button>
+            <button type="button" class="date-stepper__btn" data-date-step="1" aria-label="开站日期加一">＋</button>
           </div>
         </div>
         <div class="date-pick__row">
           <div class="picker-wrap">
-            <input class="input picker-input" id="site-since" data-picker="date" value="${esc(meta.since)}" placeholder="选择开站日期" readonly />
+            <input class="input picker-input" id="site-since" data-picker="date" aria-label="开站日期" value="${esc(meta.since)}" placeholder="选择开站日期" readonly />
             <span class="picker-wrap__icon" aria-hidden="true">📅</span>
           </div>
           <button type="button" class="btn" id="site-since-today">今天</button>
@@ -1156,18 +1162,18 @@ export function siteStatsPage({ user, boot, meta, preview, stats }) {
 
     <section class="card">
       <h2 class="card__title">访问排行 · 页面</h2>
-      <table class="table">
-        <thead><tr><th>页面</th><th></th><th>访问</th></tr></thead>
+      <div class="table-wrap" role="region" tabindex="0" aria-label="数据表格"><table class="table">
+        <thead><tr><th scope="col">页面</th><th scope="col" aria-label="占比"></th><th scope="col">访问</th></tr></thead>
         <tbody>${pathRows || '<tr><td colspan="3" class="empty">暂无数据。</td></tr>'}</tbody>
-      </table>
+      </table></div>
     </section>
 
     <section class="card">
       <h2 class="card__title">访问排行 · 归属地</h2>
-      <table class="table">
-        <thead><tr><th>地区</th><th></th><th>访问</th></tr></thead>
+      <div class="table-wrap" role="region" tabindex="0" aria-label="数据表格"><table class="table">
+        <thead><tr><th scope="col">地区</th><th scope="col" aria-label="占比"></th><th scope="col">访问</th></tr></thead>
         <tbody>${regionRows || '<tr><td colspan="3" class="empty">暂无数据。</td></tr>'}</tbody>
-      </table>
+      </table></div>
       <span class="field__hint">归属地由 IP 解析（不保存原始 IP），解析失败记为「未知」。</span>
     </section>`;
   return layout({ title: '站点数据', active: 'site-stats', user, boot, content });

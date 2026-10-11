@@ -47,8 +47,8 @@ export default function rehypeImgAttrs() {
       node.tagName = 'figure';
       if (title) {
         // title 从图片上移除（浏览器原生 tooltip 会与图注重复），转为图注文本。
-        const { title: _removed, ...rest } = img.properties;
-        img.properties = rest;
+        img.properties = { ...img.properties };
+        delete img.properties.title;
         node.children = [
           img,
           {

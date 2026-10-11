@@ -5,6 +5,16 @@ import { esc, sanitizeHtml } from './sanitize.js';
 
 const avatar = (md5) => `https://cravatar.cn/avatar/${encodeURIComponent(md5 || '')}?d=mp&s=80`;
 
+// 评论后端地址：配置了 PUBLIC_TWIKOO_ENV_ID 就用外部 Twikoo；
+// 留空 / 未配置则回落到博客内置的 Twikoo 协议后端（开箱即用）。
+// 评论框与划词引用按钮必须用同一个判定 —— 之前两处各写一套，
+// 结果「未配置」时评论框正常显示而引用按钮静默消失（README 宣称该功能常开）。
+export const commentsBackendId = () => import.meta.env.PUBLIC_TWIKOO_ENV_ID || '/api/public/twikoo';
+
+// 评论是否可用。当前版本内置评论始终可用，故恒为 true；
+// 抽成函数是为了让"整体停用评论"时只有一个开关要改。
+export const commentsAvailable = () => true;
+
 const rel = (ts) => {
   const d = (Date.now() - ts) / 1000;
   if (d < 60) return '刚刚';
@@ -73,12 +83,12 @@ const FORM = `
   <form class="cform" data-form>
     <span class="cform__avatar" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0"/></svg></span>
     <div class="cform__main">
-      <textarea class="cform__text" data-text rows="2" maxlength="500" placeholder="写下你的看法…"></textarea>
+      <textarea class="cform__text" data-text rows="2" maxlength="500" placeholder="写下你的看法…" aria-label="评论内容"></textarea>
       <div class="cform__extra">
         <div class="cform__meta">
-          <input type="text" data-nick placeholder="昵称" autocomplete="nickname" />
-          <input type="email" data-mail placeholder="邮箱（选填）" autocomplete="email" />
-          <input type="url" data-link placeholder="网址（选填）" autocomplete="url" />
+          <input type="text" data-nick placeholder="昵称" autocomplete="nickname" aria-label="昵称" />
+          <input type="email" data-mail placeholder="邮箱（选填）" autocomplete="email" aria-label="邮箱（选填）" />
+          <input type="url" data-link placeholder="网址（选填）" autocomplete="url" aria-label="网址（选填）" />
         </div>
         <div class="cform__foot">
           <span class="cform__hint" data-hint>支持 Markdown</span>

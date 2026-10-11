@@ -103,7 +103,11 @@
     padding: 0.1rem 0.62rem;
     border-radius: 999px;
     background: var(--brand);
-    color: #fff;
+    /* 徽标底色是品牌色，而品牌色在深浅两个主题里明暗相反：
+       浅色主题的陶土色能承白字（5.1:1），深色主题的亮橙底配白字只有
+       2.12:1。统一改用随主题切换的 --badge-text（与主色按钮同一套取值），
+       两边都达到 AA。 */
+    color: var(--badge-text);
     font-size: 0.76rem;
     font-weight: 650;
     letter-spacing: 0.04em;

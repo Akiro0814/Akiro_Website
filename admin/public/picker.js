@@ -31,6 +31,8 @@ export function initDateTimePickers(signal) {
   const withTime = () => currentInput?.getAttribute('data-picker') === 'datetime';
 
   const close = () => {
+    // 折叠时把触发器的展开态一起复位，否则下次打开前读屏会念错状态。
+    currentInput?.setAttribute('aria-expanded', 'false');
     if (pop) pop.remove();
     pop = null;
     currentInput = null;
@@ -83,6 +85,13 @@ export function initDateTimePickers(signal) {
 
     pop = document.createElement('div');
     pop.className = 'picker-pop pop-in';
+    // 面板是弹出式选择器：给读屏一个对话框语义与名称，并在触发器上反映
+    // 展开状态（aria-expanded / aria-haspopup），"已展开"这个状态才可被感知。
+    pop.setAttribute('role', 'dialog');
+    const triggerLabel = input.getAttribute('aria-label') || input.placeholder || '选择日期';
+    pop.setAttribute('aria-label', `${triggerLabel}：日历`);
+    input.setAttribute('aria-expanded', 'true');
+    input.setAttribute('aria-haspopup', 'dialog');
     pop.innerHTML = `
       <div class="picker-pop__head">
         <button type="button" class="date-stepper__btn" data-nav="-1" aria-label="上个月">‹</button>
@@ -181,7 +190,16 @@ export function initDateTimePickers(signal) {
   triggers.forEach((input) => {
     input.readOnly = true;
     input.classList.add('picker-input');
+    // 初始折叠态：配合 open()/close() 的 aria-expanded 更新。
+    input.setAttribute('aria-expanded', 'false');
     input.addEventListener('click', () => open(input));
+    // 只读输入框不会自己响应键盘：键盘用户按 Enter / ↓ 也能打开面板。
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === 'ArrowDown') {
+        e.preventDefault();
+        open(input);
+      }
+    });
   });
 
   // 点面板与触发框之外、或按 Esc 关闭面板。
@@ -189,6 +207,10 @@ export function initDateTimePickers(signal) {
     if (pop && !e.target.closest('.picker-pop') && !e.target.closest('[data-picker]')) close();
   }, { signal });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') close();
+    if (e.key !== 'Escape') return;
+    // Esc 关闭后把焦点还给触发框：否则焦点会留在已移除的面板里，键盘用户丢失位置。
+    const trigger = currentInput;
+    close();
+    trigger?.focus();
   }, { signal });
 }
