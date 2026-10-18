@@ -12,6 +12,8 @@ dist/
 .vscode/
 .idea/
 .mimosa/
+# 本地 Agent 沟通、交接与执行清单
+/docs/superpowers/
 
 # Deploy / build-on-publish artifacts (admin backend)
 releases/
