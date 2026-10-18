@@ -20,11 +20,11 @@ const { title = '评论' } = Astro.props;
   // 配置 PUBLIC_TWIKOO_ENV_ID 时直连外部 Twikoo；未配置则使用博客内置的
   // Twikoo 协议后端（/api/public/twikoo），评论由后台「评论」模块自由管理。
   const ENV_ID = commentsBackendId();
-  let activeRoot = null;
+  let activeRoot: HTMLElement | null = null;
   let cleanup = () => {};
 
   const initComments = () => {
-    const root = document.querySelector('[data-cbox]');
+    const root = document.querySelector<HTMLElement>('[data-cbox]');
     if (root === activeRoot) return;
 
     cleanup();
@@ -34,8 +34,9 @@ const { title = '评论' } = Astro.props;
     const controller = new AbortController();
     const mountEl = root.querySelector('[data-c-mount]');
     const countEl = root.querySelector('[data-c-count]');
+    if (!mountEl || !countEl) return;
     let started = false;
-    let api = null;
+    let api: ReturnType<typeof mountComments> | null = null;
 
     const start = () => {
       if (started) return api;
@@ -43,14 +44,14 @@ const { title = '评论' } = Astro.props;
       api = mountComments(mountEl, {
         envId: ENV_ID,
         url: location.pathname,
-        onCount: (n) => {
+        onCount: (n: number) => {
           countEl.textContent = n ? `· ${n}` : '';
         },
       });
       return api;
     };
 
-    const quoteComment = (detail) => {
+    const quoteComment = (detail: WindowEventMap['blog:quote-comment']['detail']) => {
       const instance = start();
       root.scrollIntoView({ behavior: 'smooth', block: 'start' });
       window.setTimeout(() => instance?.quote(detail), 180);

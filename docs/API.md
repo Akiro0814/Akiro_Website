@@ -22,12 +22,13 @@
 | GET | `/api/public/playlist/lyric/:id` | 网易云曲目歌词（LRC 文本，`{ lyric }`，无歌词返回空串） |
 | POST | `/api/public/view` | 访问统计打点：body `{ path, title }`；失败静默返回 `{ ok: true }` |
 | GET | `/api/public/site-info` | 站点信息聚合（profile + 导航 + 公告），前端少发请求 |
+| GET | `/api/public/site-stats` | 运行时间、已发布文章数、评论数、总访问与今日访问（北京时间日界线） |
 
 ## 认证
 
 | 方法 | 路径 | 鉴权 | 说明 |
 | --- | --- | --- | --- |
-| POST | `/api/login` | 会话+CSRF | body `{ username, password }`；失败 401（含剩余尝试次数提示），8 次失败锁定 15 分钟 |
+| POST | `/api/login` | CSRF（无需已登录） | 先访问 `/admin/login` 获取会话与 CSRF；body `{ username, password, remember? }`，`remember: true` 签发记住令牌（界面默认勾选）；失败 401，8 次失败锁定 15 分钟 |
 | POST | `/api/logout` | 会话+CSRF | 销毁会话并清除 cookie |
 
 ## 内容管理（文章 / 随笔）
@@ -37,7 +38,10 @@
 | GET | `/api/list/:collection` | 会话 | 内容列表（`posts` / `notes`） |
 | GET | `/api/entry/:collection?path=` | 会话 | 单篇内容（frontmatter + 正文） |
 | POST | `/api/save/:collection` | 会话+CSRF | 保存/新建；body `{ id?, originalId?, fields, body }`；slug 自动净化（Windows 非法字符） |
-| POST | `/api/delete/:collection` | 会话+CSRF | 删除；body `{ id }` |
+| POST | `/api/delete/:collection` | 会话+CSRF | 移入回收站；body `{ id }` |
+| GET | `/api/trash/:collection` | 会话 | 回收站列表 |
+| POST | `/api/trash/restore` | 会话+CSRF | 恢复；body `{ collection, file }`，冲突时拒绝覆盖 |
+| POST | `/api/trash/purge` | 会话+CSRF | 彻底删除；body `{ collection, file }`，或 `{ collection, all: true }` 清空 |
 | POST | `/api/preview` | 会话+CSRF | Markdown → HTML 预览（前端展示前再过 DOM 白名单净化） |
 
 ## 媒体
@@ -45,7 +49,7 @@
 | 方法 | 路径 | 鉴权 | 说明 |
 | --- | --- | --- | --- |
 | GET | `/api/media` | 会话 | 已上传文件列表 |
-| POST | `/api/upload?filename=` | 会话+CSRF | 图片上传（原始二进制 body，≤15MB）；扩展名白名单 + 文件头校验，SVG 自动剥离脚本能力；按内容哈希去重复用 |
+| POST | `/api/upload?filename=` | 会话+CSRF | 图片上传（原始二进制 body，≤10MB）；扩展名白名单 + 文件头校验，SVG 自动剥离脚本能力；按内容哈希去重复用 |
 | POST | `/api/media/delete` | 会话+CSRF | 删除文件；仍被内容引用时返回 409 并列出引用位置 |
 
 ## 动态模块管理（/api/manage）
@@ -62,6 +66,8 @@
 | 公告 | GET `/api/manage/announcements` | POST `/api/manage/announcements/save`、`/announcements/delete` |
 | 评论 | GET `/api/manage/comments` | POST `/api/manage/comments/status`、`/comments/delete`、`/comments/reply` |
 | 访问统计 | GET `/api/manage/stats` | —（公开打点写入） |
+| 仪表盘 | GET `/api/manage/dashboard` | — |
+| 开站日期 | GET `/api/manage/site-meta` | POST `/api/manage/site-meta`，body `{ since }` |
 
 ## 构建发布与备份
 
@@ -69,7 +75,7 @@
 | --- | --- | --- | --- |
 | POST | `/api/build` | 会话+CSRF | 触发「构建并发布」（`astro build` + 原子切换）；构建中重复调用返回 409 |
 | GET | `/api/build/status` | 会话 | 构建状态 / 日志 / 发布版本列表 |
-| POST | `/api/build/rollback` | 会话+CSRF | 回滚到上一发布版本 |
+| POST | `/api/build/rollback` | 会话+CSRF | 只回滚静态产物；构建占锁时拒绝操作，不改源文件和动态数据 |
 | GET | `/api/backup/config` | 会话 | 备份仓库配置（保存值 / 生效值 / 来源） |
 | POST | `/api/backup/config` | 会话+CSRF | 保存备份仓库地址（留空回落默认来源） |
 
@@ -81,4 +87,4 @@
 
 ## 后台页面
 
-`/admin/login`（登录）、`/admin`（仪表盘）、`/admin/posts`、`/admin/notes`（内容列表）、`/admin/media`、`/admin/build`、`/admin/site-content`、`/admin/projects`、`/admin/nav-links`、`/admin/friends`、`/admin/music`、`/admin/announcements`、`/admin/comments`、`/admin/stats`。
+`/admin/login`（登录）、`/admin`（仪表盘）、`/admin/posts`、`/admin/notes`（内容列表与回收站）、`/admin/media`、`/admin/build`、`/admin/site-content`、`/admin/projects`、`/admin/links`、`/admin/music`、`/admin/announcements`、`/admin/comments`、`/admin/site-stats`。旧地址 `/admin/nav-links`、`/admin/friends` 跳转至 `/admin/links`，`/admin/stats` 跳转至 `/admin/site-stats`。

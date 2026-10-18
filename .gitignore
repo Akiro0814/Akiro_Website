@@ -19,6 +19,9 @@ current
 .build-lock/
 dist-*/
 .content-build-manifest.json
+.test-tmp-*/
+.current-tmp
+.current-old
 *.log
 
 # 个人博客数据：内容与媒体不进仓库（详见 DEPLOY.md「内容与媒体备份」）

@@ -66,7 +66,7 @@ npm run admin        # http://localhost:4000/admin
 
 ## 四、服务器部署
 
-前置：一台 Linux 服务器，已安装 **Node.js ≥ 20**、**git**、**nginx**。
+前置：一台 Linux 服务器，已安装 **Node.js ≥ 22.12.0**、**git**、**nginx**。建议先运行 `npm ci` 与 `npm run verify` 再发布。
 
 ### 1. 拉取项目并配置
 
@@ -140,7 +140,7 @@ server {
 
 > **安全响应头**：后台服务自带基础安全头（`X-Content-Type-Options`、`X-Frame-Options`、`Referrer-Policy`、`Permissions-Policy`、`HSTS`（`COOKIE_SECURE=true` 时）、CSP report-only），nginx 无需重复配置——即使跳过 nginx 直连 4000 端口也有基本防护。前台静态文件可按需在 nginx 补充缓存与压缩策略。
 >
-> **会话存储**：后台会话使用 express-session 默认的内存存储（MemoryStore）——服务重启后所有登录态失效（单管理员场景可接受）；如需重启不掉线可自行接入持久化 store（如 `connect-sqlite3`）。会话 cookie 为 `httpOnly + SameSite=Strict`，有效期 7 天。
+> **会话存储**：会话使用 express-session 的 MemoryStore，滚动有效期为 30 分钟。默认勾选「记住登录状态」时，另发持久化令牌（存 `data/remember-tokens.json`），在有效期内可在服务重启后恢复登录。退出登录会撤销令牌。cookie 为 `HttpOnly + SameSite=Strict`；生产 HTTPS 环境还启用 `Secure`。
 
 启用并配置 HTTPS（推荐 certbot）：
 
@@ -198,7 +198,7 @@ sudo systemctl status blog-admin
 - 「构建并发布」执行 `astro build`，成功后把 `dist/` 移入 `releases/<时间戳>/`，并把 `current` 软链接原子地指向它。
 - nginx 始终服务 `current/`，所以构建过程中线上不受影响；构建失败则 `current` 保持原样。
 - 默认保留最近 **5** 个发布版本，旧的自动清理，便于回滚。
-- 「回滚上一版」把 `current` 指回上一个版本。
+- 「回滚上一版」把 `current` 指回上一个版本，与构建共用锁。只回滚静态产物，不恢复 Markdown 源文件、评论、歌单、统计等运行数据；后续重新构建仍使用当前源文件。
 
 也可以用命令行手动发布（例如配合 cron 或 webhook）：
 
@@ -238,14 +238,14 @@ npm run deploy
 | `public/uploads/` | 后台上传的媒体 |
 | `data/` | 动态数据（评论/友链/歌单/公告/统计/项目/导航/页面文案） |
 | `profile.jpg` | 个人头像 |
-| `.env` | 站点配置与后台凭据（含密码哈希；可用 `BACKUP_INCLUDE_ENV=false` 关闭） |
+| `.env` | 默认不备份；显式设置 `BACKUP_INCLUDE_ENV=true` 才包含配置与凭据 |
 
 构建产物（`dist/`、`releases/`）不在备份范围——源码 + 上表数据即可随时完整重建。
 
 ### 备份到哪
 
 - **本地**：不保留。备份在系统临时目录里建临时 git 仓库完成（拉取远端历史衔接 → 复制数据 → 提交 → 推送），推送完整个删除，本地不留任何备份缓存。
-- **远端**：GitHub 私有仓库。地址在后台**「构建发布 → 数据备份」**卡片里直接填写保存（存 `data/backup-config.json`，随数据一起备份）；留空时依次回落 `.env` 的 `BACKUP_REMOTE_URL`、自动推导（`<owner>/<repo>-backup`）。改完地址下一次发布自动改推新仓库，旧仓库里的历史提交不受影响。
+- **远端**：GitHub 私有仓库。地址在后台**「构建发布 → 数据备份」**卡片里填写保存（存 `data/backup-config.json`）；留空时依次回落 `.env` 的 `BACKUP_REMOTE_URL`、GitHub 主仓库 origin 推导的 `<owner>/<repo>-backup.git`。无法推导且未配置时跳过备份。改完地址下一次发布生效。
 
 每次发布一个提交，远端历史完整可回溯；已删除的文章/媒体也会同步从备份中移除（纯镜像）。
 
@@ -262,13 +262,13 @@ npm run backup
 | 变量 | 默认 | 说明 |
 | --- | --- | --- |
 | `BACKUP_ENABLED` | `true` | 设为 `false` 关闭自动备份 |
-| `BACKUP_REMOTE_URL` | 自动推导 | 后台「构建发布」页未填写仓库地址时的回落配置；整体未配置时跳过备份 |
-| `BACKUP_INCLUDE_ENV` | `true` | 是否连 `.env` 一起备份 |
+| `BACKUP_REMOTE_URL` | 从 GitHub origin 推导 | 后台未填写时的回落配置；无配置且无法推导时跳过备份 |
+| `BACKUP_INCLUDE_ENV` | `false` | 显式开启后才连 `.env` 一起备份 |
 
 > 推送失败（网络断、仓库未建、凭据过期）不影响发布结果：该次备份作废（临时目录已清理，数据源在项目内不会丢失），下次发布或手动 `npm run backup` 时自动全量重试。具体原因会写进构建日志。
 
 ### 恢复步骤
 
 1. `git clone` 公开源码仓库，`npm install`
-2. `git clone` 私有备份仓库，把 `src/content`、`public/uploads`、`data`、`profile.jpg`、`.env` 拷贝到项目对应位置
+2. `git clone` 私有备份仓库，把 `src/content`、`public/uploads`、`data`、`profile.jpg` 拷贝到项目对应位置；默认不含 `.env`，需从安全保存的配置恢复，或基于 `.env.example` 重新配置
 3. `npm run deploy` 重新构建发布

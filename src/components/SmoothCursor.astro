@@ -146,7 +146,7 @@
 
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-    function tick(now) {
+    function tick(now: number) {
       const dt = Math.min(64, now - lastTime) || 16;
       lastTime = now;
 

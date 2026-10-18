@@ -3,6 +3,7 @@
 // 预览的文章/随笔编辑器、媒体库，以及构建/发布控制台。
 import { COLLECTIONS } from './lib/content.mjs';
 import { stripAnsi } from './lib/build.mjs';
+import { navIcon } from './lib/ui-icons.mjs';
 
 export const esc = (v) =>
   String(v ?? '')
@@ -48,7 +49,11 @@ const asArray = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
 // 静态资源版本号：改 admin.css / admin.js 后递增即可让浏览器绕开 1 小时缓存，
 // 避免「改了样式但看到的还是旧文件」的排查成本（后台资源带 maxAge 缓存）。
-export const ASSET_V = '1920';
+export const ASSET_V = '20261013-pearl-1';
+
+const UI_ASSETS = `<link rel="stylesheet" href="/admin-assets/pearl.css?v=${ASSET_V}" />
+  <script src="/admin-assets/vendor/gsap.js?v=${ASSET_V}" defer></script>
+  <script src="/admin-assets/vendor/flip.js?v=${ASSET_V}" defer></script>`;
 
 function renderField(name, value) {
   const meta = FIELD_META[name];
@@ -62,7 +67,7 @@ function renderField(name, value) {
       return `<label class="field"><span class="field__label">${esc(meta.label)}</span>
         <div class="picker-wrap">
           <input class="input picker-input" type="text" data-field="${esc(name)}" data-picker="datetime" aria-label="${esc(meta.label)}" value="${esc(val)}" placeholder="选择日期与时间" readonly />
-          <span class="picker-wrap__icon" aria-hidden="true">📅</span>
+          <span class="picker-wrap__icon" aria-hidden="true">${navIcon('calendar')}</span>
         </div>
       </label>`;
     case 'number':
@@ -124,7 +129,7 @@ export function layout({ title, active, user, boot, content }) {
       .map((item) => {
         const cls = item.key === active ? 'nav__item nav__item--active' : 'nav__item';
         const attrs = item.external ? ' target="_blank" rel="noopener"' : '';
-        return `<a class="${cls}" href="${item.href}"${attrs}><span class="nav__icon">${item.icon}</span>${item.label}</a>`;
+        return `<a class="${cls}" href="${item.href}" title="${item.label}"${item.key === active ? ' aria-current="page"' : ''}${attrs}><span class="nav__icon" aria-hidden="true">${navIcon(item.key)}</span><span class="nav__label">${item.label}</span></a>`;
       })
       .join('\n        ');
     return `${label}${items}`;
@@ -138,25 +143,38 @@ export function layout({ title, active, user, boot, content }) {
   <meta name="robots" content="noindex, nofollow" />
   <title>${esc(title)} · 博客后台</title>
   <link rel="stylesheet" href="/admin-assets/admin.css?v=${ASSET_V}" />
+  ${UI_ASSETS}
   <!-- 提前发现模块脚本（解析 body 前就开始下载，缩短登录后首屏等待） -->
   <link rel="modulepreload" href="/admin-assets/admin.js?v=${ASSET_V}" />
 </head>
 <body>
   <div class="app">
     <aside class="sidebar">
-      <div class="brand"><span class="brand__mark">◆</span> 博客后台</div>
+      <a class="brand" href="/admin"><span class="brand__mark">◆</span><span class="brand__text">博客后台<small>写作 · 记录 · 分享</small></span></a>
       <nav class="nav">
+        <span class="nav-thumb" aria-hidden="true"></span>
         ${nav}
       </nav>
       <div class="sidebar__foot">
-        <span class="who">${esc(user)}</span>
-        <button type="button" class="link" id="logout">退出登录</button>
+        <span>个人内容工作室</span><span aria-hidden="true">◇</span>
       </div>
     </aside>
-    <main class="main">
+    <div class="workspace">
+    <header class="pearl-topbar">
+      <button type="button" class="icon-button" id="rail-toggle" aria-label="切换导航" aria-expanded="true">☰</button>
+      <div class="crumbs" aria-label="当前位置"><span>博客后台</span><span aria-hidden="true">›</span><strong id="pearl-page-title">${esc(title)}</strong></div>
+      <div class="spacer"></div>
+      <button type="button" class="command-trigger" id="command-open" aria-label="搜索页面与快捷操作">⌕ <span>搜索与快捷操作</span><kbd>Ctrl K</kbd></button>
+      <button type="button" class="icon-button" id="appearance-open" aria-label="外观设置">◐</button>
+      <button type="button" class="user-chip" id="user-menu-open" aria-haspopup="menu" aria-expanded="false"><span class="user-avatar" aria-hidden="true">${esc(String(user || '博').slice(0,1).toUpperCase())}</span><span class="user-name">${esc(user)}</span><span aria-hidden="true">⌄</span></button>
+      <button type="button" id="logout" hidden>退出登录</button>
+    </header>
+    <main class="main" id="main-content" tabindex="-1">
       ${content}
     </main>
+    </div>
   </div>
+  <div class="pearl-grain" aria-hidden="true"></div>
   <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
   <!-- 错误提示用独立的断言式播报区：同一个容器在 polite / assertive 之间
        切换时，部分读屏软件会漏掉播报，因此拆成两个常驻节点。 -->
@@ -176,11 +194,19 @@ export function loginPage({ csrfToken, error }) {
   <meta name="robots" content="noindex, nofollow" />
   <title>登录 · 博客后台</title>
   <link rel="stylesheet" href="/admin-assets/admin.css?v=${ASSET_V}" />
+  ${UI_ASSETS}
 </head>
 <body class="login-body">
+  <section class="login-scene" aria-label="博客工作室">
+    <canvas id="login-network" aria-hidden="true"></canvas>
+    <div class="brand"><span class="brand__mark">◆</span><span>博客后台<small>个人内容工作室</small></span></div>
+    <div class="login-scene-copy"><h1>让每一次记录，<br />都有自己的光。</h1><p>把想法写下来，把作品分享出去。<br />在这里，专注于值得留下的内容。</p><div class="login-capabilities"><span>内容创作</span><span>读者互动</span><span>数据洞察</span><span>构建发布</span></div></div>
+    <div class="login-scene-foot"><div><div class="login-clock" id="login-clock"></div><span id="login-date"></span></div><span>◇ 写作，从此刻开始</span></div>
+  </section>
+  <section class="login-panel" aria-label="管理员登录">
   <div class="login-card">
     <div class="brand"><span class="brand__mark">◆</span> 博客后台</div>
-    <p class="login-sub">管理员登录</p>
+    <h2>欢迎回来</h2><p class="login-sub">登录你的内容工作室</p>
     <div class="alert alert--error" id="login-error"${error ? '' : ' hidden'} role="alert">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor" aria-hidden="true"><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-6h2v6z"/></svg>
       <span id="login-error-msg">${esc(error || '')}</span>
@@ -191,7 +217,10 @@ export function loginPage({ csrfToken, error }) {
       <label class="field field--inline login-remember"><input type="checkbox" name="remember" checked /><span class="field__label">30 分钟内记住登录状态（免重复输入密码）</span></label>
       <button class="btn btn--primary btn--block" type="submit">登录</button>
     </form>
+    <p class="login-note">专注创作，余下的交给这里。</p>
   </div>
+  </section>
+  <div class="pearl-grain" aria-hidden="true"></div>
   <script>window.__BOOT__ = { "csrfToken": ${JSON.stringify(csrfToken).replace(/</g, '\\u003c')} };</script>
   <script type="module" src="/admin-assets/admin.js?v=${ASSET_V}"></script>
 </body>
@@ -424,7 +453,7 @@ export function listPage({ user, boot, collection, entries, trash = [] }) {
       </table></div>
       <span class="field__hint">恢复时若原路径已被新内容占用会提示失败；彻底删除后无法找回。</span>
     </section>`;
-  return layout({ title: col.label, active: collection, user, boot, content });
+  return layout({ title: col.label, active: collection, user, boot: { ...boot, collection, visualEntries: entries.map(e => ({ id: e.id, data: { title:e.data.title, categories:e.data.categories, tags:e.data.tags, draft:e.data.draft, date:e.data.date } })) }, content });
 }
 
 // —— 编辑器（推倒重做：写作优先版式） ——
@@ -989,13 +1018,13 @@ export function announcementsPage({ user, boot, items }) {
         <label class="field" style="flex:1"><span class="field__label">生效时间（选填）</span>
           <div class="picker-wrap">
             <input class="input picker-input" id="an-start" data-picker="datetime" aria-label="公告生效时间" placeholder="选择生效日期与时间" readonly />
-            <span class="picker-wrap__icon" aria-hidden="true">📅</span>
+            <span class="picker-wrap__icon" aria-hidden="true">${navIcon('calendar')}</span>
           </div>
         </label>
         <label class="field" style="flex:1"><span class="field__label">失效时间（选填）</span>
           <div class="picker-wrap">
             <input class="input picker-input" id="an-end" data-picker="datetime" aria-label="公告失效时间" placeholder="选择失效日期与时间" readonly />
-            <span class="picker-wrap__icon" aria-hidden="true">📅</span>
+            <span class="picker-wrap__icon" aria-hidden="true">${navIcon('calendar')}</span>
           </div>
         </label>
         <label class="field field--inline" style="align-self:flex-end;margin-bottom:16px"><input type="checkbox" id="an-enabled" checked /><span class="field__label">启用</span></label>
@@ -1139,7 +1168,7 @@ export function siteStatsPage({ user, boot, meta, preview, stats }) {
         <div class="date-pick__row">
           <div class="picker-wrap">
             <input class="input picker-input" id="site-since" data-picker="date" aria-label="开站日期" value="${esc(meta.since)}" placeholder="选择开站日期" readonly />
-            <span class="picker-wrap__icon" aria-hidden="true">📅</span>
+            <span class="picker-wrap__icon" aria-hidden="true">${navIcon('calendar')}</span>
           </div>
           <button type="button" class="btn" id="site-since-today">今天</button>
           <button type="button" class="btn btn--primary" id="site-meta-save">保存开站日期</button>
@@ -1176,7 +1205,7 @@ export function siteStatsPage({ user, boot, meta, preview, stats }) {
       </table></div>
       <span class="field__hint">归属地由 IP 解析（不保存原始 IP），解析失败记为「未知」。</span>
     </section>`;
-  return layout({ title: '站点数据', active: 'site-stats', user, boot, content });
+  return layout({ title: '站点数据', active: 'site-stats', user, boot: { ...boot, visualDays: stats.days }, content });
 }
 
 // 运行时间格式化：与 src/lib/uptime.ts 同一算法，按日历借位计算「x年x月x天」。

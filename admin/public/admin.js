@@ -4,53 +4,29 @@
 // 无刷新导航的页面请求走 /admin-assets/page-loader.js（路由白名单在彼处校验）。
 import { sanitizeHtml } from '/admin-assets/shared/sanitize.js';
 import { isAllowedAdminRoute, loadAdminPage } from '/admin-assets/page-loader.js';
-import { initDashboard, stopDashboard } from '/admin-assets/dashboard.js?v=1920';
-import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
+import { initDashboard, stopDashboard } from '/admin-assets/dashboard.js?v=20261013-pearl-1';
+import { initDateTimePickers } from '/admin-assets/picker.js?v=20261013-pearl-1';
+import { initInterface, enhancePage, notify, confirmAction, loginSuccess } from '/admin-assets/interface.js?v=20261013-pearl-1';
+import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-assets/motion.js?v=20261013-pearl-1';
 
 (() => {
+  initInterface();
   // 页面级启动数据：无刷新导航换页后由 initPage 重新读取（boot / csrf 都是活值）。
   let boot = window.__BOOT__ || {};
 
   // 提示条分两个常驻节点：成功/中性走 polite 状态区，错误走 assertive 警报区，
   // 让读屏软件在两种情形下都能可靠播报（见 views.mjs 的注释）。
-  const toastEl = (isError) => document.getElementById(isError ? 'toast-alert' : 'toast');
   function toast(message, isError) {
-    const el = toastEl(!!isError);
-    if (!el) return;
-    // 另一条提示同时在场时先收起，避免两个提示条叠在同一位置。
-    const other = toastEl(!isError);
-    if (other && !other.hidden) {
-      clearTimeout(other._t);
-      other.hidden = true;
-      other.classList.remove('is-in', 'is-out');
-    }
-    el.textContent = message;
-    el.hidden = false;
-    // 滑入 → 停留 → 滑出（两段式，避免 display 切换的生硬感）。
-    el.classList.remove('is-out');
-    requestAnimationFrame(() => el.classList.add('is-in'));
-    clearTimeout(el._t);
-    el._t = setTimeout(() => {
-      el.classList.remove('is-in');
-      el.classList.add('is-out');
-      setTimeout(() => {
-        el.hidden = true;
-        el.classList.remove('is-out');
-      }, 250);
-    }, 3200);
+    notify(message, !!isError);
   }
 
   // 面板/编辑器露出时播放入场动画（每次调用都重新触发）。
   const reveal = (el) => {
     if (!el) return;
     el.hidden = false;
-    el.classList.remove('pop-in');
-    void el.offsetWidth;
-    el.classList.add('pop-in');
+    appear(el);
   };
 
-  const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
   // 后台 API 路由白名单：只允许 /api/ 下的相对路径（可带查询串）——
   // 所有请求都是发给本后台自身的接口，其余地址一律拒绝。
@@ -83,6 +59,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
     const ct = res.headers.get('content-type') || '';
     if (ct.includes('application/json')) data = await res.json();
     if (!res.ok) throw new Error((data && data.error) || `请求失败 (${res.status})`);
+    if (method !== 'GET') document.dispatchEvent(new CustomEvent('blog:saved', { detail: { path: endpoint } }));
     return data;
   }
 
@@ -133,6 +110,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
             remember: fd.get('remember') === 'on',
           },
         });
+        await loginSuccess(submitBtn);
         window.location.href = '/admin';
       } catch (err) {
         showLoginError(err.message || '登录失败，请重试。');
@@ -209,6 +187,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
     pageController?.abort();
     pageController = new AbortController();
     const { signal } = pageController;
+    enhancePage(document.querySelector('.main'), signal);
 
     // —— 仪表盘 ——
     // 换页后先停掉旧页面的自动刷新定时器，再按需初始化（离开仪表盘即静止）。
@@ -751,7 +730,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
   document.querySelectorAll('[data-media-delete]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const name = btn.getAttribute('data-media-delete');
-      if (!window.confirm(`确定删除「${name}」吗？若仍被文章或随笔引用，删除会被拒绝。`)) return;
+      if (!await confirmAction(`确定删除「${name}」吗？若仍被文章或随笔引用，删除会被拒绝。`)) return;
       btn.disabled = true;
       try {
         await api('/api/media/delete', { method: 'POST', body: { name } });
@@ -770,7 +749,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
     btn.addEventListener('click', async () => {
       const id = btn.getAttribute('data-delete');
       const coll = btn.getAttribute('data-collection');
-      if (!window.confirm(`确定删除「${id}」吗？删除后会移入回收站，可随时恢复。`)) return;
+      if (!await confirmAction(`确定删除「${id}」吗？删除后会移入回收站，可随时恢复。`)) return;
       try {
         const result = await api(`/api/delete/${coll}`, { method: 'POST', body: { id } });
         toast(result.message || '已移入回收站');
@@ -798,7 +777,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
   });
   document.querySelectorAll('[data-trash-purge]').forEach((btn) => {
     btn.addEventListener('click', async () => {
-      if (!window.confirm('彻底删除后无法找回，确定吗？')) return;
+      if (!await confirmAction('彻底删除后无法找回，确定吗？')) return;
       try {
         const result = await api('/api/trash/purge', {
           method: 'POST',
@@ -814,7 +793,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
   const purgeAllBtn = document.getElementById('trash-purge-all');
   if (purgeAllBtn) {
     purgeAllBtn.addEventListener('click', async () => {
-      if (!window.confirm('确定清空回收站吗？所有条目将被彻底删除，无法找回。')) return;
+      if (!await confirmAction('确定清空回收站吗？所有条目将被彻底删除，无法找回。')) return;
       try {
         const result = await api('/api/trash/purge', {
           method: 'POST',
@@ -1042,7 +1021,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
       }
     });
     bind('[data-project-delete]', 'click', async (e) => {
-      if (!window.confirm('确定删除该项目吗？此操作不可撤销。')) return;
+      if (!await confirmAction('确定删除该项目吗？此操作不可撤销。')) return;
       try {
         await api('/api/manage/projects/delete', { method: 'POST', body: { id: e.target.getAttribute('data-project-delete') } });
         toast('已删除');
@@ -1199,7 +1178,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
       }
     });
     bind('[data-friend-delete]', 'click', async (e) => {
-      if (!window.confirm('确定删除该友链吗？')) return;
+      if (!await confirmAction('确定删除该友链吗？')) return;
       try {
         await api('/api/manage/friends/delete', { method: 'POST', body: { id: e.target.getAttribute('data-friend-delete') } });
         toast('已删除');
@@ -1328,7 +1307,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
         return;
       }
       const deleteBtn = e.target.closest('[data-track-delete]');
-      if (deleteBtn && window.confirm('确定删除该曲目吗？')) {
+      if (deleteBtn && await confirmAction('确定删除该曲目吗？')) {
         try {
           await api('/api/manage/music/delete', { method: 'POST', body: { id: deleteBtn.getAttribute('data-track-delete') } });
           toast('已删除');
@@ -1367,8 +1346,10 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
       if (!selectedRow) return toast('请先点选一行曲目', true);
       const sibling = dir < 0 ? selectedRow.previousElementSibling : selectedRow.nextElementSibling;
       if (!sibling || !sibling.hasAttribute('data-track-row')) return;
-      if (dir < 0) sibling.before(selectedRow);
-      else sibling.after(selectedRow);
+      flipLayout(musicTable.querySelectorAll('[data-track-row]'), () => {
+        if (dir < 0) sibling.before(selectedRow);
+        else sibling.after(selectedRow);
+      });
     };
     document.getElementById('music-reorder-up')?.addEventListener('click', () => move(-1));
     document.getElementById('music-reorder-down')?.addEventListener('click', () => move(1));
@@ -1422,7 +1403,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
       }
     });
     bind('[data-ann-delete]', 'click', async (e) => {
-      if (!window.confirm('确定删除该公告吗？')) return;
+      if (!await confirmAction('确定删除该公告吗？')) return;
       try {
         await api('/api/manage/announcements/delete', { method: 'POST', body: { id: e.target.getAttribute('data-ann-delete') } });
         toast('已删除');
@@ -1471,7 +1452,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
       }
     });
     bind('[data-comment-delete]', 'click', async (e) => {
-      if (!window.confirm('确定删除该评论及其所有回复吗？')) return;
+      if (!await confirmAction('确定删除该评论及其所有回复吗？')) return;
       try {
         await api('/api/manage/comments/delete', { method: 'POST', body: { id: e.target.getAttribute('data-comment-delete') } });
         toast('已删除');
@@ -1546,7 +1527,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
 
   if (rollbackBtn) {
     rollbackBtn.addEventListener('click', async () => {
-      if (!window.confirm('确定回滚到上一个版本吗？')) return;
+      if (!await confirmAction('确定回滚到上一个版本吗？')) return;
       try {
         const result = await api('/api/build/rollback', { method: 'POST' });
         toast(result.message);
@@ -1594,54 +1575,20 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
   const progressStart = () => navProgress.classList.add('is-active');
   const progressDone = () => navProgress.classList.remove('is-active');
 
-  // 统计数字入场滚动（从 0 缓动到目标值）。
-  function animateCounters() {
-    if (reducedMotion()) return;
-    document.querySelectorAll('.stat__value').forEach((el) => {
-      const raw = el.textContent.trim();
-      const m = raw.match(/^([\d,]+)(.*)$/);
-      if (!m) return;
-      const target = Number(m[1].replace(/,/g, ''));
-      if (!Number.isFinite(target) || target === 0) return;
-      const suffix = m[2];
-      const started = performance.now();
-      const step = (now) => {
-        const p = Math.min(1, (now - started) / 600);
-        const eased = 1 - Math.pow(1 - p, 3);
-        el.textContent = `${Math.round(target * eased)}${suffix}`;
-        if (p < 1) requestAnimationFrame(step);
-        else el.textContent = raw;
-      };
-      requestAnimationFrame(step);
-    });
-  }
+  function enterMain() { enterPage(mainEl); }
 
-  // 页面内容入场编排：顶层区块错峰升起 + 统计数字滚动。
-  function enterMain() {
-    if (!mainEl) return;
-    [...mainEl.children].forEach((el, i) => {
-      el.classList.remove('rise-in');
-      if (reducedMotion()) return;
-      el.style.setProperty('--stagger', `${Math.min(i, 10) * 55}ms`);
-      void el.offsetWidth;
-      el.classList.add('rise-in');
-    });
-    animateCounters();
-  }
-
-  // 换内容：旧内容快速淡出 → 替换 → 新内容入场编排。
-  async function swapMain(html, title) {
-    if (!mainEl) return;
-    if (title && document.title !== title) document.title = title;
-    if (reducedMotion()) {
-      mainEl.innerHTML = html;
-      return;
-    }
-    mainEl.classList.add('is-leaving');
-    await wait(110);
+  // Sequence checks also cover the asynchronous leave animation.
+  async function swapMain(html, title, seq, nextBoot) {
+    if (!mainEl || seq !== navSeq) return false;
+    await leavePage(mainEl);
+    if (seq !== navSeq) { resetPage(mainEl); return false; }
+    pageController?.abort();
+    stopDashboard();
     mainEl.innerHTML = html;
-    mainEl.classList.remove('is-leaving');
-    enterMain();
+    if (nextBoot) window.__BOOT__ = nextBoot;
+    if (title) document.title = title;
+    resetPage(mainEl);
+    return true;
   }
 
   function setActiveNav(pathname) {
@@ -1667,7 +1614,7 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
     // 编辑器有未保存改动时先确认，避免无刷新跳转静默丢弃内容。
     // 仅在目标确实是站内另一条路由时询问（同地址的刷新不打断）。
     if (editorDirty() && rel !== currentRel()) {
-      if (!window.confirm('这篇内容有尚未保存的修改，确定离开并丢弃吗？')) return;
+      if (!await confirmAction('这篇内容有尚未保存的修改，确定离开并丢弃吗？')) return;
       resetEditorTracking();
     }
     // 白名单校验（独立早退）：路由形状不符直接整页跳转交回浏览器。
@@ -1719,18 +1666,21 @@ import { initDateTimePickers } from '/admin-assets/picker.js?v=1920';
       }
       // 提取新页面的启动数据（boot / csrf，服务器输出为纯 JSON），供 initPage 用。
       const bootMatch = html.match(/window\.__BOOT__\s*=\s*(\{[\s\S]*\})\s*;?\s*<\/script>/);
+      let nextBoot = null;
       if (bootMatch) {
         try {
-          window.__BOOT__ = JSON.parse(bootMatch[1]);
+          nextBoot = JSON.parse(bootMatch[1]);
         } catch {
           /* boot 解析失败保留旧值 */
         }
       }
-      await swapMain(newMain.innerHTML, doc.title);
+      if (!await swapMain(newMain.innerHTML, doc.title, seq, nextBoot)) return;
       if (push) history.pushState({}, '', target.pathname + target.search);
       setActiveNav(target.pathname);
       window.scrollTo({ top: 0 });
       initPage();
+      enterMain();
+      mainEl.focus({ preventScroll: true });
     } catch (err) {
       if (err?.name !== 'AbortError') {
         toast(err?.message || '页面加载失败，请重试', true);

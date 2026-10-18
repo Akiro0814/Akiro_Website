@@ -104,6 +104,14 @@ app.use(
   express.static(path.join(ROOT, 'admin', 'public'), { maxAge: '1h' }),
 );
 
+// Only the motion runtime is exposed; the rest of node_modules stays private.
+app.get('/admin-assets/vendor/gsap.js', (_req, res) => {
+  res.type('application/javascript').sendFile(path.join(ROOT, 'node_modules', 'gsap', 'dist', 'gsap.min.js'));
+});
+app.get('/admin-assets/vendor/flip.js', (_req, res) => {
+  res.type('application/javascript').sendFile(path.join(ROOT, 'node_modules', 'gsap', 'dist', 'Flip.min.js'));
+});
+
 // 共享的 HTML 白名单净化模块：前台评论与后台预览共用同一份源码，
 // 后台以 ES module 方式加载 src/lib/sanitize.js。
 app.get('/admin-assets/shared/sanitize.js', (_req, res) => {

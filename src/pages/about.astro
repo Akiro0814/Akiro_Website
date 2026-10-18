@@ -26,13 +26,28 @@ interface GhRepo {
 }
 
 import cachedRepos from '../data/github-projects.json';
-import siteConfig from '../data/site.config.json';
+import rawSiteConfig from '../data/site.config.json';
 import starFillIcon from '@phosphor-icons/core/assets/fill/star-fill.svg?raw';
 import fs from 'node:fs';
 import path from 'node:path';
 import { getAbout } from '../lib/site-content';
 
 const about = getAbout();
+
+interface StaticProject {
+  title: string;
+  owner?: string;
+  description: string;
+  icon: string;
+  href: string;
+  tags: string[];
+  article?: string;
+}
+const siteConfig: {
+  githubUser: string;
+  projectOverrides: Record<string, { article?: string; icon?: string }>;
+  projectGroups: { title: string; description: string; items: StaticProject[] }[];
+} = rawSiteConfig;
 
 const GITHUB_USER = siteConfig.githubUser;
 

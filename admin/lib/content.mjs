@@ -5,6 +5,7 @@
 // 每个条目由相对于集合文件夹的路径标识（去掉 .md 扩展名，例如
 // "技术/deploy-static"）。该路径即为文章的 URL。
 import fs from 'node:fs';
+import { writeFileAtomicSync } from './atomic-file.mjs';
 import path from 'node:path';
 import matter from 'gray-matter';
 import { ROOT } from './env.mjs';
@@ -253,7 +254,7 @@ export function saveEntry(collectionName, id, input, body, originalId) {
 
   fs.mkdirSync(path.dirname(target.filePath), { recursive: true });
   const output = matter.stringify(String(body ?? '').replace(/^\n+/, ''), data);
-  fs.writeFileSync(target.filePath, output, 'utf8');
+  writeFileAtomicSync(target.filePath, output);
 
   if (source && fs.existsSync(source.filePath)) {
     fs.unlinkSync(source.filePath);

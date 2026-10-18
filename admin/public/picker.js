@@ -4,6 +4,8 @@
 // 时显示时间行）；「此刻 / 今天」「清空」「确定」快捷操作。
 // 值格式：'YYYY-MM-DD'（未设时间）或 'YYYY-MM-DD HH:mm'（精确到分钟）。
 
+import { appear } from './motion.js?v=20261013-pearl-1';
+
 const pad = (n) => String(n).padStart(2, '0');
 
 const parseValue = (raw) => {
@@ -37,6 +39,7 @@ export function initDateTimePickers(signal) {
     pop = null;
     currentInput = null;
   };
+  signal?.addEventListener('abort', close, { once: true });
 
   // 写回输入框；closeAfter=false 时只刷新面板（继续选时间）。
   // 同时派发 input / change：站点数据页的年月日增减控件等联动逻辑监听 change。
@@ -84,7 +87,7 @@ export function initDateTimePickers(signal) {
     viewMonth = draft.mo;
 
     pop = document.createElement('div');
-    pop.className = 'picker-pop pop-in';
+    pop.className = 'picker-pop';
     // 面板是弹出式选择器：给读屏一个对话框语义与名称，并在触发器上反映
     // 展开状态（aria-expanded / aria-haspopup），"已展开"这个状态才可被感知。
     pop.setAttribute('role', 'dialog');
@@ -134,6 +137,7 @@ export function initDateTimePickers(signal) {
     pop.style.top = `${Math.min(rect.bottom + 8, window.innerHeight - ph - 12)}px`;
 
     renderDays();
+    appear(pop, 'pop');
 
     pop.addEventListener('click', (e) => {
       // 面板内部点击不外冒：renderDays 会重绘网格、被点元素随即脱离 DOM，
@@ -207,10 +211,12 @@ export function initDateTimePickers(signal) {
     if (pop && !e.target.closest('.picker-pop') && !e.target.closest('[data-picker]')) close();
   }, { signal });
   document.addEventListener('keydown', (e) => {
-    if (e.key !== 'Escape') return;
+    if (e.key !== 'Escape' || !pop) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
     // Esc 关闭后把焦点还给触发框：否则焦点会留在已移除的面板里，键盘用户丢失位置。
     const trigger = currentInput;
     close();
     trigger?.focus();
-  }, { signal });
+  }, { signal, capture: true });
 }

@@ -60,6 +60,22 @@ const astroJs = fs.readdirSync(path.join(DIST, '_astro')).filter((n) => n.endsWi
 if (astroJs.length > 0) ok(`页面脚本已打包（${astroJs.length} 个 chunk）`);
 else fail('未找到打包后的页面脚本');
 
+// 5. 搜索结果中的 URL 必须能映射到实际静态页面，含中文路径。
+try {
+  const entries = JSON.parse(fs.readFileSync(path.join(DIST, 'search.json'), 'utf8'));
+  if (!Array.isArray(entries)) throw new Error('搜索索引不是数组');
+  for (const entry of entries) {
+    const url = new URL(entry.url, 'https://check.invalid');
+    const file = path.resolve(DIST, '.' + decodeURIComponent(url.pathname), 'index.html');
+    if (url.origin !== 'https://check.invalid' || !file.startsWith(DIST + path.sep) || !fs.existsSync(file)) {
+      throw new Error(`搜索结果对应页面缺失或 URL 非法：${entry.url}`);
+    }
+  }
+  ok(`搜索索引的 ${entries.length} 个文章 URL 均有对应产物`);
+} catch (error) {
+  fail(error.message);
+}
+
 if (process.exitCode) {
   console.error('产物体检未通过');
 } else {

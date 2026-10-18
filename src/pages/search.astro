@@ -212,8 +212,8 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     };
 
     function statusText(message: string, isError = false) {
-      status.textContent = message;
-      status.classList.toggle('is-error', isError);
+      status?.classList.toggle('is-error', isError);
+      if (status) status.textContent = message;
     }
 
     loadIndex();

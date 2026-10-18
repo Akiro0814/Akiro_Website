@@ -226,16 +226,17 @@ export interface SiteStatsSnapshot {
 
 export function getSiteStatsSnapshot(): SiteStatsSnapshot {
   const { since } = getSiteMeta();
-  const stats = readDataJson<{ total?: number; days?: Record<string, number> }>(
+  const stats = readDataJson<{ total?: number; days?: Record<string, number | { pv?: number; count?: number }> }>(
     path.join(dataDir(), 'stats.json'),
     { total: 0, days: {} },
   );
   const comments = readDataJson<unknown[]>(path.join(dataDir(), 'comments.json'), []);
   const todayKey = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const today = stats.days?.[todayKey];
   return {
     since,
     comments: Array.isArray(comments) ? comments.length : 0,
     totalViews: Number(stats.total) || 0,
-    todayViews: Number(stats.days?.[todayKey]) || 0,
+    todayViews: Number(typeof today === 'number' ? today : today?.pv ?? today?.count) || 0,
   };
 }

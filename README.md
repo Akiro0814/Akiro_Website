@@ -2,7 +2,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/badge/Astro-7.2-BC52EE?logo=astro&logoColor=white&style=flat-square" alt="Astro 7.2">
-  <img src="https://img.shields.io/badge/Node.js-20%2B-339933?logo=nodedotjs&logoColor=white&style=flat-square" alt="Node.js 20+">
+  <img src="https://img.shields.io/badge/Node.js-22.12%2B-339933?logo=nodedotjs&logoColor=white&style=flat-square" alt="Node.js 22.12+">
   <img src="https://img.shields.io/badge/Express-4.22-444444?logo=express&logoColor=white&style=flat-square" alt="Express 4.22">
   <img src="https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white&style=flat-square" alt="TypeScript strict">
 </p>
@@ -13,7 +13,7 @@
 
 <p align="center"><b>后台仪表盘</b></p>
 
-<p align="center"><img src="docs/assets/2.png" alt="后台仪表盘" width="100%"></p>
+<p align="center"><img src="docs/assets/admin-pearl/dashboard.png" alt="暖色珍珠玻璃后台仪表盘（示例数据）" width="100%"></p>
 
 <p align="center"><b>文章归档</b></p>
 
@@ -27,6 +27,19 @@
 > **基于原作者项目开发**：本项目在 [laogou717/clay-blog](https://github.com/laogou717/clay-blog)（MIT 协议）的基础上改造而成——保留其 Astro 静态博客的全部前台能力（文章、随笔、归档、分类、标签、搜索、RSS、sitemap、Twikoo 评论、音乐播放器），新增后台管理端与「构建即发布」的全栈能力。感谢原作者的开源工作。
 
 ## 更新日志
+
+### V2.2.0
+
+- **体验**：后台全套视觉升级——参考 scaffold-master 的界面与动效设计，沿用本站暖白、淡红与陶土配色、霞鹜文楷字体；登录页、侧栏、顶栏、表单、表格、图表与浮层统一为暖色珍珠玻璃风格，保留原有博客管理、鉴权和发布流程
+- **新增**：外观设置支持浅色、深色、跟随系统与三档界面密度，侧栏可折叠；Ctrl / Cmd + K 打开页面搜索与快捷操作，输入「?」查看写作帮助，偏好在当前浏览器保存
+- **新增**：文章与随笔支持表格、看板、状态矩阵、时间轴泳道和分类关系图；列表增加筛选、分页与 CSV 导出，关系画布可平移、缩放、暂停和重播，时间轴按实际内容日期排列
+- **新增**：导航分类星图、页面文案样本卡与未保存字段浮条、发布流程与版本阶梯、每日访问热力；各视图使用已有业务数据，不补造小时统计或构建步骤进度
+- **体验**：统一页面错峰入场、按钮按压回弹与涟漪、指针高光、浮层展开、共享元素抽屉、卡片重排、图表描绘和数字滚动；登录页增加暖色网络画布与成功反馈，GSAP 与 Flip 从本站依赖提供
+- **体验**：文章设置改为右侧抽屉，保留保存、草稿、插图、实时预览与未保存保护；确认框、提示条、自定义下拉框统一交互，浮层支持键盘操作与焦点返回，手机端使用抽屉导航，减少动态偏好下直接显示静态终态
+- **稳定**：修复快速切页时过期请求覆盖当前页面的问题，换页清理监听与画布，持续画布在页面隐藏或离屏时暂停；日期选择器与浮层按层级响应 Esc，避免一次关闭多个面板
+- **稳定**：完善 Windows 搬迁后的失效发布链接处理，构建与回滚共用发布锁，切换失败尝试恢复旧链接，并拒绝覆盖真实目录；JSON 与 Markdown 使用唯一临时文件提交，补齐并发写入与失败清理保护
+- **修复**：首页今日访问量兼容数字、pv 与 count 三种统计格式，按北京时间换日；补齐严格类型检查暴露的问题与搜索产物检查，修正文档中的搜索范围、内置评论、数据生效和回滚边界
+- **整理**：统一 Node.js ≥ 22.12.0 与锁文件安装方式，增加 `npm run verify`、隔离后台预览与浏览器回归；CI 增加 Windows / Linux 验证及后台交互检查，补充视觉说明、测试说明、第三方许可与示例截图
 
 ### V2.1.0
 
@@ -131,7 +144,7 @@
 
 - 内容仍以 Markdown 存放在 `src/content/`，前台的短代码、搜索、RSS、sitemap 全部照旧工作。
 - 后台保存内容**只写文件**，不立即上线；到「构建发布」点一下才重新构建前台。
-- 构建采用**原子切换**，构建失败不影响线上（旧版本继续服务）。
+- Linux 发布使用原子替换软链接；Windows 使用 junction，两次重命名之间有短暂空窗，切换失败会恢复旧链接。构建与回滚共用发布锁。
 
 ---
 
@@ -139,7 +152,7 @@
 
 **前台**
 - 首页（精选 + 最新）、文章详情（目录侧栏、上一篇/下一篇、相关推荐、阅读时长）
-- 归档（按年分组）、分类页、标签页、随笔时间线、客户端全文搜索
+- 归档（按年分组）、分类页、标签页、随笔时间线、客户端搜索（标题、摘要、分类、标签与关键词）
 - SEO：RSS、sitemap、robots.txt、canonical、Open Graph、JSON-LD 结构化数据
 - 明暗主题切换、路由过渡动画、选中文字引用评论、网易云音乐播放器
 - 遗留短代码（`{% %}`）兼容、图片属性注入
@@ -169,22 +182,25 @@
 
 ## 快速开始
 
-**环境要求：Node.js ≥ 20。** Astro 与后台依赖都在 `package.json` 里，`npm install` 自动装好。
+**环境要求：Node.js ≥ 22.12.0。** Astro 与后台依赖都在 `package.json` 里，`npm ci` 按锁文件安装。
 
 ```bash
 # 1. 安装依赖
-npm install
+npm ci
 
-# 2. 前台：博客本地预览（改内容热更新）
+# 2. 首次启动前复制 .env.example 为 .env，填写凭据、密钥与站点域名
+# 密码哈希通过 npm run admin:hash -- "你的密码" 生成
+
+# 3. 前台：博客本地预览（改内容热更新）
 npm run dev          # http://localhost:4321
 
-# 3. 后台：管理服务（另开一个终端）
+# 4. 后台：管理服务（另开一个终端）
 npm run admin        # http://localhost:4000/admin
 ```
 
 本地开发时，后台保存内容后 `npm run dev` 自动热更新，可直接在前台看到效果。若要看最终静态产物：`npm run build && npm run preview`。
 
-> 内容目录（`src/content/`）已清空，直接在后台（`/admin`）新建自己的文章与随笔即可。
+> 内容目录（`src/content/`）属于个人数据，不在源码仓库中。干净克隆后可在后台（`/admin`）新建文章与随笔。
 
 ---
 
@@ -253,6 +269,10 @@ L1angK1NG_Website/
 
 后台全部 HTTP 接口的路径、方法、鉴权要求见 [docs/API.md](docs/API.md)。
 
+后台暖色珍珠玻璃视觉、视图切换、快捷操作和隔离验收方式见 [后台视觉与交互](docs/ADMIN_VISUALS.md)。
+
+提交前运行 `npm run verify`（lint、回归测试、严格类型检查、构建与产物检查）。测试覆盖与数据生效、回滚、备份边界见 [docs/TESTING.md](docs/TESTING.md)。
+
 ---
 
 ## 环境变量
@@ -276,7 +296,7 @@ PUBLIC_MUSIC_API=https://meting.mikus.ink/api
 
 # 数据备份（「构建发布」成功后自动执行；备份在系统临时目录完成、推送后即清理）
 BACKUP_ENABLED=true                   # false 时发布后不做任何备份
-BACKUP_REMOTE_URL=                    # 备份私库地址；留空则跳过备份
+BACKUP_REMOTE_URL=                    # 私库地址；后台配置优先，留空尝试 GitHub origin 推导
 BACKUP_INCLUDE_ENV=false              # 是否连 .env 一起备份（含密钥，建议保持 false）
 ```
 
@@ -286,12 +306,13 @@ BACKUP_INCLUDE_ENV=false              # 是否连 .env 一起备份（含密钥�
 
 ## 构建与发布机制
 
-- 「构建并发布」执行 `astro build`，成功后把 `dist/` 移入 `releases/<时间戳>/`，并把 `current` 软链接**原子**指向它。
+- 「构建并发布」执行 `astro build`，成功后把 `dist/` 移入 `releases/<时间戳>/`，再切换 `current`；Linux 为原子替换软链接，Windows junction 的两次重命名之间有短暂空窗。
 - nginx 始终服务 `current/`，构建过程线上不受影响；构建失败则 `current` 保持原样。
 - 默认保留最近 **5** 个发布版本，旧的自动清理，便于回滚。
+- 回滚只切换静态版本，不恢复源文件和动态数据。构建与回滚互斥。
 - 也可用命令行发布（适合 cron / webhook）：`npm run deploy`。
 
-**部署到服务器**（Node ≥ 20 + nginx）详见 [DEPLOY.md](DEPLOY.md)，含可直接复制的 nginx、systemd 配置与安全建议。
+**部署到服务器**（Node ≥ 22.12.0 + nginx）详见 [DEPLOY.md](DEPLOY.md)，含可直接复制的 nginx、systemd 配置与安全建议。
 
 ---
 
@@ -329,7 +350,7 @@ BACKUP_INCLUDE_ENV=false              # 是否连 .env 一起备份（含密钥�
 
 ## 评论
 
-评论前端未使用 Twikoo 默认 UI，而是通过 `src/lib/comments.js` 调用 Twikoo 后端接口并渲染自定义样式。配置 `.env` 的 `PUBLIC_TWIKOO_ENV_ID` 后即可启用；未配置时评论区与引用按钮自动隐藏。
+评论前端通过 `src/lib/comments.js` 调用 Twikoo 协议接口并渲染自定义样式。默认使用博客内置评论后端（需运行管理服务）；配置 `.env` 的 `PUBLIC_TWIKOO_ENV_ID` 后切换为外部 Twikoo。未配置时评论区与引用按钮仍启用，纯静态预览缺少后端时显示加载失败提示。
 
 文章正文支持**选中文字后引用到评论区**：拖选至少 2 个字符 → 点「引用评论」→ 自动滚动到底部评论框并以 Markdown 引用写入。
 

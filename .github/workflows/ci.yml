@@ -1,5 +1,4 @@
-# 最小 CI：安装 → 代码规范 → 构建 → 产物体检。
-# 与本地 npm run lint / npm run build / npm run check:dist 完全一致。
+# Windows junction 与 Linux symlink 都验证，检查入口与本地一致。
 name: CI
 
 on:
@@ -9,7 +8,10 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
 
@@ -21,11 +23,24 @@ jobs:
       - name: 安装依赖
         run: npm ci
 
-      - name: 代码规范
-        run: npm run lint
+      - name: 测试、类型检查、构建与产物体检
+        run: npm run verify
 
-      - name: 构建
-        run: npm run build
-
-      - name: 构建产物体检
-        run: npm run check:dist
+  admin-ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: 安装浏览器
+        run: npx playwright install --with-deps chromium
+      - name: 隔离后台视觉与交互回归
+        run: npm run test:admin-ui
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: admin-visual-screenshots
+          path: docs/assets/admin-pearl/

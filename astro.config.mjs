@@ -1,10 +1,13 @@
 import { defineConfig } from 'astro/config';
+import { unified } from '@astrojs/markdown-remark';
+import { loadEnv } from './admin/lib/env.mjs';
 import rehypeImgAttrs from './src/lib/rehype-img-attrs.mjs';
 import rehypeLegacyShortcodes from './src/lib/rehype-legacy-shortcodes.mjs';
 import remarkLegacyShortcodes from './src/lib/remark-legacy-shortcodes.mjs';
 
 // 构建期配置校验：SITE_URL 用于 RSS / sitemap / canonical / 页脚站点链接，
 // 未配置或仍是占位符时给出醒目警告（页脚会隐藏站点链接区块，不渲染占位 URL）。
+loadEnv();
 const SITE_URL = process.env.SITE_URL ?? 'https://example.com';
 if (!process.env.SITE_URL || /example\.(com|org|net)|localhost/i.test(SITE_URL)) {
   console.warn(
@@ -16,10 +19,12 @@ if (!process.env.SITE_URL || /example\.(com|org|net)|localhost/i.test(SITE_URL))
 export default defineConfig({
   site: SITE_URL,
   markdown: {
-    remarkPlugins: [remarkLegacyShortcodes],
-    // rehypeImgAttrs：图片加载加固（lazy/decoding/防盗链），并把独占一段的
-    // 图片升级为 <figure>——Markdown 图片的 "标题" 位渲染为居中图注。
-    rehypePlugins: [rehypeLegacyShortcodes, rehypeImgAttrs],
+    processor: unified({
+      remarkPlugins: [remarkLegacyShortcodes],
+      // rehypeImgAttrs：图片加载加固（lazy/decoding/防盗链），并把独占一段的
+      // 图片升级为 <figure>——Markdown 图片的 "标题" 位渲染为居中图注。
+      rehypePlugins: [rehypeLegacyShortcodes, rehypeImgAttrs],
+    }),
   },
   vite: {
     server: {

@@ -13,7 +13,7 @@ export async function GET() {
   const posts = sortPosts(await getPublishedPosts());
   const latestDate = posts
     .map(getPostUpdatedDate)
-    .filter(Boolean)
+    .filter((date): date is Date => date !== undefined)
     .sort((a, b) => b.getTime() - a.getTime())[0];
 
   const items = posts

@@ -3,13 +3,16 @@
 // 或 /api/manage/dashboard（刷新），两处口径完全一致，渲染函数共用。
 // 由 admin.js 在页面初始化时调用 initDashboard / stopDashboard。
 
+import { animateNumber, animateCharts } from './motion.js?v=20261013-pearl-1';
+import { notify } from './interface.js?v=20261013-pearl-1';
+
 const esc = (v) =>
   String(v ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
 const fmt = (n) => Number(n ?? 0).toLocaleString('zh-CN');
 const pct1 = (n) => String(Math.round((Number(n) || 0) * 10) / 10);
 
 // 图表配色（与陶土主题协调，暗色下同样可读）。
-const PALETTE = ['#b4643c', '#4e8bb0', '#5a9e6f', '#c9a227', '#8a6bb5', '#7f8187', '#c07a86', '#5f9ea0'];
+const PALETTE = ['var(--chart-pv)', 'var(--chart-uv)', 'var(--chart-3)', 'var(--chart-4)', 'var(--chart-5)', 'var(--text-faint)', 'var(--rose)', 'var(--primary)'];
 
 // —— 浮动提示条（全页共用一个） ——
 function tipEl() {
@@ -47,22 +50,7 @@ const hideTip = () => {
 // —— 数字滚动（仅首次渲染播放；刷新时直接落值） ——
 function countUp(el) {
   if (!firstPaint) return;
-  const raw = el.textContent.trim();
-  const m = raw.replace(/,/g, '').match(/^(\d+)(.*)$/);
-  if (!m) return;
-  const target = Number(m[1]);
-  if (!Number.isFinite(target) || target === 0) return;
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-  const suffix = m[2];
-  const started = performance.now();
-  const step = (now) => {
-    const p = Math.min(1, (now - started) / 600);
-    const eased = 1 - Math.pow(1 - p, 3);
-    el.textContent = `${Math.round(target * eased).toLocaleString('zh-CN')}${suffix}`;
-    if (p < 1) requestAnimationFrame(step);
-    else el.textContent = raw;
-  };
-  requestAnimationFrame(step);
+  animateNumber(el);
 }
 
 // —— 同比/环比小箭头 ——
@@ -789,6 +777,7 @@ function renderAll(data) {
   renderDistribution(data);
   renderVisitRanks(data);
   renderContentLists(data);
+  animateCharts(document.getElementById('dash-root'), firstPaint);
 }
 
 // ============ 刷新控制 ============
@@ -803,15 +792,7 @@ let timer = null;
 let firstPaint = true;
 
 function toast(message, isError) {
-  const el = document.getElementById('toast');
-  if (!el) return;
-  el.textContent = message;
-  el.classList.toggle('toast--error', !!isError);
-  el.hidden = false;
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => {
-    el.hidden = true;
-  }, 3200);
+  notify(message, !!isError);
 }
 
 function setUpdated(text) {

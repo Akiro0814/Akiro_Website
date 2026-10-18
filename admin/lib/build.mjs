@@ -7,7 +7,7 @@
 //   current  -> releases/<ts>   nginx 对外提供服务的目录
 //
 // 成功时，dist/ 会被重命名为 releases/<ts>，`current` 链接在一步原子操作中
-// 完成切换。失败时，正在运行的站点（current）保持原样不受影响。
+// 完成切换（Windows junction 用两次重命名，存在短暂空窗）。失败时尝试恢复旧链接。
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -169,40 +169,57 @@ export function runCommand(command, args) {
   });
 }
 
+// lstat 检查链接本身：existsSync 会跟随目标，搬迁后失效的 junction 会被误判为不存在。
+// 这里只允许移除链接，绝不递归删除占用保留名称的真实目录。
+function removeReleaseLink(file) {
+  const stat = fs.lstatSync(file, { throwIfNoEntry: false });
+  if (!stat) return;
+  if (!stat.isSymbolicLink()) throw new Error(`${path.basename(file)} 不是发布链接，请先检查该路径。`);
+  fs.unlinkSync(file);
+}
+
 function publish(releaseDir) {
+  const currentStat = fs.lstatSync(CURRENT, { throwIfNoEntry: false });
+  if (currentStat && !currentStat.isSymbolicLink()) {
+    throw new Error('current 不是发布链接，请先检查该路径。');
+  }
   const type = process.platform === 'win32' ? 'junction' : 'dir';
   const target = process.platform === 'win32' ? releaseDir : path.relative(ROOT, releaseDir);
   const tmpLink = path.join(ROOT, '.current-tmp');
-  rmrf(tmpLink);
+  removeReleaseLink(tmpLink);
   fs.symlinkSync(target, tmpLink, type);
-  if (process.platform === 'win32') {
-    // Windows 的 rename 无法替换已存在的目录链接：把旧链接先改名挪开
-    // （而非删除），再把新链接改名到位——两次 rename 之间的窗口只有
-    // 「链接缺失」而不是「已删除且未就位」，且旧链接改名失败可立即恢复。
-    const backupLink = path.join(ROOT, '.current-old');
-    rmrf(backupLink);
-    let moved = false;
-    try {
-      if (fs.existsSync(CURRENT)) {
-        fs.renameSync(CURRENT, backupLink);
-        moved = true;
-      }
-      fs.renameSync(tmpLink, CURRENT);
-      rmrf(backupLink);
-    } catch (err) {
-      // 切换失败时把旧链接挪回来，保证线上目录始终存在。
-      if (moved) {
-        try {
-          fs.renameSync(backupLink, CURRENT);
-        } catch {
-          /* 恢复也失败时只能报错，交由运维处理 */
+  try {
+    if (process.platform === 'win32') {
+      // Windows 的 rename 无法替换已存在的目录链接：把旧链接先改名挪开
+      // （而非删除），再把新链接改名到位——两次 rename 之间的窗口只有
+      // 「链接缺失」而不是「已删除且未就位」，且旧链接改名失败可立即恢复。
+      const backupLink = path.join(ROOT, '.current-old');
+      removeReleaseLink(backupLink);
+      let moved = false;
+      try {
+        if (currentStat) {
+          fs.renameSync(CURRENT, backupLink);
+          moved = true;
         }
+        fs.renameSync(tmpLink, CURRENT);
+        removeReleaseLink(backupLink);
+      } catch (err) {
+        // 切换失败时把旧链接挪回来，保证线上目录始终存在。
+        if (moved) {
+          try {
+            fs.renameSync(backupLink, CURRENT);
+          } catch (restoreError) {
+            logWarn('恢复原发布链接失败（旧链接保留在 .current-old）', restoreError);
+          }
+        }
+        throw err;
       }
-      throw err;
+      return;
     }
-    return;
+    fs.renameSync(tmpLink, CURRENT);
+  } finally {
+    removeReleaseLink(tmpLink);
   }
-  fs.renameSync(tmpLink, CURRENT);
 }
 
 function listReleases() {
@@ -330,6 +347,12 @@ export async function buildAndPublish() {
       backup,
       message: `构建成功并已发布。${cacheNote}数据备份：${backup.ok ? backup.summary : '失败（详见日志）。'}`,
     };
+  } catch (err) {
+    writeStatus({
+      status: 'failed', startedAt, finishedAt: new Date().toISOString(),
+      release: currentRelease(), log: String(err?.message || err),
+    });
+    throw err;
   } finally {
     releaseLock();
   }
@@ -337,13 +360,18 @@ export async function buildAndPublish() {
 
 // 把 `current` 重新指向上一个版本。返回回滚到的版本。
 export function rollback() {
-  const releases = listReleases();
-  const currentName = currentRelease();
-  const idx = releases.indexOf(currentName);
-  if (idx <= 0) throw new Error('没有更早的版本可回滚。');
-  const target = releases[idx - 1];
-  publish(path.join(RELEASES_DIR, target));
-  return target;
+  acquireLock();
+  try {
+    const releases = listReleases();
+    const currentName = currentRelease();
+    const idx = releases.indexOf(currentName);
+    if (idx <= 0) throw new Error('没有更早的版本可回滚。');
+    const target = releases[idx - 1];
+    publish(path.join(RELEASES_DIR, target));
+    return target;
+  } finally {
+    releaseLock();
+  }
 }
 
 export function releasesInfo() {

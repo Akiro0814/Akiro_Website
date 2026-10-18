@@ -12,6 +12,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { ROOT } from './env.mjs';
+import { writeFileAtomic, writeFileAtomicSync } from './atomic-file.mjs';
 
 // 数据目录默认在项目 data/ 下；测试可用 BLOG_DATA_DIR 指向临时目录隔离。
 export const DATA_DIR = process.env.BLOG_DATA_DIR
@@ -32,11 +33,8 @@ export function readJSON(name, fallback) {
 }
 
 export function writeJSON(name, value) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
   const file = path.join(DATA_DIR, name);
-  const tmp = `${file}.tmp`;
-  fs.writeFileSync(tmp, JSON.stringify(value, null, 2), 'utf8');
-  fs.renameSync(tmp, file);
+  writeFileAtomicSync(file, JSON.stringify(value, null, 2));
 }
 
 // —— 异步读写 + 文件级互斥 ——
@@ -50,11 +48,8 @@ export async function readJSONAsync(name, fallback) {
 }
 
 export async function writeJSONAsync(name, value) {
-  await fsp.mkdir(DATA_DIR, { recursive: true });
   const file = path.join(DATA_DIR, name);
-  const tmp = `${file}.tmp`;
-  await fsp.writeFile(tmp, JSON.stringify(value, null, 2), 'utf8');
-  await fsp.rename(tmp, file);
+  await writeFileAtomic(file, JSON.stringify(value, null, 2));
 }
 
 // 每个数据文件一条 Promise 链：后到的读-改-写排队执行（参考 backup.mjs 的
