@@ -1,7 +1,7 @@
 ---
 import Icon from './Icon.astro';
 import { site } from '../lib/posts';
-import { getFooter } from '../lib/site-content';
+import { getFooter, getPresentation } from '../lib/site-content';
 
 const footer = getFooter();
 const year = new Date().getFullYear();
@@ -17,10 +17,12 @@ const showSiteUrl = Boolean(site.url) && !/example\.(com|org|net)|localhost/i.te
 ---
 
 <footer class="site-footer">
+  <span class="atlas-footer-peeker" data-footer-peeker aria-hidden="true">✳</span>
+  <p class="atlas-footer-quote">{getPresentation().footerQuote}</p>
   <div class="site-footer__inner">
     <div class="site-footer__id">
       <img
-        src="/avatars/avatar.jpg"
+        src={site.avatar}
         alt={site.author}
         class="site-footer__avatar"
         width="40"

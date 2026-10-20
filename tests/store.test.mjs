@@ -27,6 +27,37 @@ test('并发直接写入使用独立临时文件，产物始终是完整 JSON', 
   assert.deepEqual(fs.readdirSync(path.join(fixture.root, 'data')), ['value.json']);
 });
 
+test('原子提交遇到短暂文件占用会重试，成功前不删除旧目标', async (t) => {
+  const fixture = createFixture(t);
+  const store = await fixture.importModule('store.mjs');
+  store.writeJSON('value.json', { count: 5 });
+  const rename = fsp.rename.bind(fsp);
+  let attempts = 0;
+  t.mock.method(fsp, 'rename', async (...args) => {
+    attempts++;
+    if (attempts < 3) {
+      assert.deepEqual(store.readJSON('value.json', {}), { count: 5 });
+      throw Object.assign(Error('temporarily locked'), { code: 'EPERM' });
+    }
+    return rename(...args);
+  });
+  await store.writeJSONAsync('value.json', { count: 6 });
+  assert.equal(attempts, 3);
+  assert.deepEqual(store.readJSON('value.json', {}), { count: 6 });
+});
+
+test('持续占用时有限重试后失败，保留旧数据且清理临时文件', async (t) => {
+  const fixture = createFixture(t);
+  const store = await fixture.importModule('store.mjs');
+  store.writeJSON('value.json', { count: 5 });
+  let attempts = 0;
+  t.mock.method(fsp, 'rename', async () => { attempts++; throw Object.assign(Error('still locked'), { code: 'EBUSY' }); });
+  await assert.rejects(store.writeJSONAsync('value.json', { count: 6 }), /still locked/);
+  assert.equal(attempts, 6);
+  assert.deepEqual(store.readJSON('value.json', {}), { count: 5 });
+  assert.deepEqual(fs.readdirSync(path.join(fixture.root, 'data')), ['value.json']);
+});
+
 test('同文件的并发读改写不丢计数', async (t) => {
   const fixture = createFixture(t);
   const store = await fixture.importModule('store.mjs');

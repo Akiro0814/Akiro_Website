@@ -2,8 +2,8 @@
 // 从按钮位置扫出新主题（View Transition API），不支持时退化为快速渐变。
 
 const STORAGE_KEY = 'blog-theme';
-const LIGHT_COLOR = '#f8f7f4';
-const DARK_COLOR = '#0e1116';
+const LIGHT_COLOR = '#f7f8f1';
+const DARK_COLOR = '#17211b';
 
 const getMode = () => {
   try {
@@ -11,7 +11,8 @@ const getMode = () => {
     if (stored === 'light' || stored === 'dark' || stored === 'auto') return stored;
   } catch {
   }
-  return 'auto';
+  const initial = document.documentElement.dataset.defaultTheme;
+  return ['auto', 'light', 'dark'].includes(initial) ? initial : 'auto';
 };
 const setStoredMode = (mode) => {
   try {
@@ -67,6 +68,7 @@ export function initThemeToggle(signal) {
     })();
 
   applyMode(getMode(), false);
+  window.addEventListener('akiro:theme-default', () => applyMode(getMode(), false), { signal });
 
   const motionOK = window.matchMedia('(prefers-reduced-motion: no-preference)').matches;
   let themeAnimTimer;

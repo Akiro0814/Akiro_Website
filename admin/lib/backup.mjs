@@ -160,16 +160,16 @@ async function setupTempRepo(git, remoteUrl) {
     await git(['init']);
     await git(['symbolic-ref', 'HEAD', 'refs/heads/main']);
   }
-  const name = (await git(['config', 'user.name'])).stdout.trim() || 'L1angK1NG';
+  const name = (await git(['config', 'user.name'])).stdout.trim() || 'Akiro';
   const email =
-    (await git(['config', 'user.email'])).stdout.trim() || 'L1angK1NG@users.noreply.github.com';
+    (await git(['config', 'user.email'])).stdout.trim() || 'Akiro0814@users.noreply.github.com';
   await git(['config', 'user.name', name]);
   await git(['config', 'user.email', email]);
   await git(['remote', 'add', 'origin', remoteUrl]);
   writeReadme();
 }
 
-const README_TEXT = `# L1angK1NG_Website 数据备份
+const README_TEXT = `# Akiro_Website 数据备份
 
 由博客后台在每次「构建发布」成功后自动推送，远端为 GitHub 私有仓库。
 

@@ -34,7 +34,7 @@ export async function verifyPassword(password, stored) {
 }
 
 export async function verifyCredentials(username, password) {
-  const expectedUser = process.env.ADMIN_USER || 'admin';
+  const expectedUser = process.env.ADMIN_USER || 'Akiro';
   const storedHash = process.env.ADMIN_PASSWORD_HASH || '';
   // 用户名同样使用恒定时间比较；仅在配置为空时才短路跳过。
   const userOk =

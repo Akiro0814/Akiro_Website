@@ -1,4 +1,6 @@
-# L1angK1NG_Website
+# Akiro_Website
+
+Akiro 的个人博客，源码仓库：[Akiro0814/Akiro_Website](https://github.com/Akiro0814/Akiro_Website)。
 
 <p align="center">
   <img src="https://img.shields.io/badge/Astro-7.2-BC52EE?logo=astro&logoColor=white&style=flat-square" alt="Astro 7.2">
@@ -24,9 +26,18 @@
 <p align="center"><img src="docs/assets/4.png" alt="关于页" width="100%"></p>
 
 个人全栈博客：**静态前台 + 后台管理**。前台是纯静态构建产物，后台是一个小型 Node 管理服务，负责登录鉴权、在线编辑 Markdown，并在发布时触发一次前台构建、原子切换上线。
-> **基于原作者项目开发**：本项目在 [laogou717/clay-blog](https://github.com/laogou717/clay-blog)（MIT 协议）的基础上改造而成——保留其 Astro 静态博客的全部前台能力（文章、随笔、归档、分类、标签、搜索、RSS、sitemap、Twikoo 评论、音乐播放器），新增后台管理端与「构建即发布」的全栈能力。感谢原作者的开源工作。
+
+> **基于原作者项目开发**：本项目在 [laogou717/clay-blog](https://github.com/laogou717/clay-blog)（MIT 协议）的基础上改造而成，保留原有内容、评论与音乐能力。前台视觉与动效参考 [RRTiamo/spring_blogs](https://github.com/RRTiamo/spring_blogs)，在 Astro 中重新实现；参考项目的私人内容与专属业务不包含在本项目中。
 
 ## 更新日志
+
+### V2.3.0
+
+- 新增：五种前台风格、官方 Twikoo 评论与后台管理、本地随机壁纸、可调节光标及 GitHub 项目星标自动同步。
+- 优化：统一 Akiro 身份与仓库名称，重建首页和内页 UI、动效，采用 Claude 配色、得意黑、液态玻璃与渐进模糊，完善后台交互和配置联动。
+- 修复：前后台项目与歌单不一致、关于页悬停刷新、目录跳转、光标手感与弹窗层级、后台选项错位、文字对比度及 Windows 发布与保存问题。
+
+前台迁移范围见 [迁移说明](docs/SPRING_BLOGS_UI_MIGRATION.md)，设置与生效方式见 [前后台配置说明](docs/FRONT_ADMIN_ALIGNMENT.md)、[本地壁纸](docs/WALLPAPERS.md) 和 [液态玻璃导航](docs/LIQUID_GLASS.md)，测试证据见 [验证记录](docs/SPRING_UI_BROWSER_VALIDATION.md)。
 
 ### V2.2.1
 
@@ -225,7 +236,7 @@ npm run admin:hash -- "你的新密码"
 ## 项目结构
 
 ```
-L1angK1NG_Website/
+Akiro_Website/
 ├── admin/                     # 后台管理服务
 │   ├── server.mjs             # Express 入口（路由、鉴权、接口）
 │   ├── views.mjs              # 页面模板
@@ -275,7 +286,8 @@ ADMIN_PORT=4000
 COOKIE_SECURE=true                    # 部署在 HTTPS 后面时设 true
 
 # 前台功能
-PUBLIC_TWIKOO_ENV_ID=                 # Twikoo 后端，留空则用内置评论
+TWIKOO_ENV_ID=                        # 留空使用官方自托管 Twikoo；可填已有 HTTP(S) 服务地址
+TWIKOO_ADMIN_TOKEN=                   # 仅外部/已有 Twikoo 管理集成时需要，不进入前台产物
 PUBLIC_NETEASE_PLAYLIST_ID=           # 网易云歌单 ID（纯数字）；留空则不显示音乐播放器
 PUBLIC_MUSIC_API=https://meting.mikus.ink/api
 
@@ -312,12 +324,12 @@ BACKUP_INCLUDE_ENV=false              # 是否连 .env 一起备份（含密钥�
 | GitHub 用户名与仓库链接 | `src/data/site.config.json` 的 `githubUser` / `githubRepo`（导航「GitHub」按钮与关于页「开源项目」；不想要按钮就留空 `githubRepo`） |
 | 正式域名 | `.env` 的 `SITE_URL` |
 | 管理员账号 | `.env` 的 `ADMIN_USER` / `ADMIN_PASSWORD_HASH`（改密见上文） |
-| 评论后端 | `.env` 的 `PUBLIC_TWIKOO_ENV_ID` |
+| 评论与审核配置 | 后台「评论 → Twikoo 完整管理」，默认无需额外配置服务地址 |
 | 音乐播放器歌单 | `.env` 的 `PUBLIC_NETEASE_PLAYLIST_ID` |
 | 文章与随笔 | 后台直接增删改，或编辑 `src/content/` 下的 Markdown |
 | 项目展示 | 后台「项目」模块维护（数据存 `data/projects.json`；属个人数据不入仓库，随数据备份进私库） |
 
-> 提示：`site.config.json` 的 `githubUser` / `githubRepo` 当前为空，导航「GitHub」按钮与关于页「开源项目」暂不显示。填入你自己的 GitHub 用户名 / 仓库地址即可启用。
+> `site.config.json` 已配置 GitHub 用户 `Akiro0814` 和仓库 `Akiro_Website`。昵称为 Akiro；GitHub 链接仍需使用实际账号名 Akiro0814。
 
 ### 关于页自定义配置
 
@@ -335,7 +347,9 @@ BACKUP_INCLUDE_ENV=false              # 是否连 .env 一起备份（含密钥�
 
 ## 评论
 
-评论前端通过 `src/lib/comments.js` 调用 Twikoo 协议接口并渲染自定义样式。默认使用博客内置评论后端（需运行管理服务）；配置 `.env` 的 `PUBLIC_TWIKOO_ENV_ID` 后切换为外部 Twikoo。未配置时评论区与引用按钮仍启用，纯静态预览缺少后端时显示加载失败提示。
+使用官方 Twikoo 2.0.15 SDK 与官方服务端核心，前台样式随博客主题变化。运行 `npm run admin` 即可启动评论服务，默认将数据持久化到 `data/twikoo/`；前台与博客后台读取同一个数据库。后台「评论」支持搜索、回复、隐藏和删除，「Twikoo 完整管理」提供官方评论、配置、导入与导出面板，无需再登录另一套账户。
+
+旧 `data/comments.json` 在首次使用时幂等迁移，原文件保留。可选接入 MongoDB 或已有 HTTP(S) Twikoo 服务；详情及数据恢复方式见 [Twikoo 集成说明](docs/TWIKOO.md)。只运行静态预览时没有评论服务，需同时启动后台。
 
 文章正文支持**选中文字后引用到评论区**：拖选至少 2 个字符 → 点「引用评论」→ 自动滚动到底部评论框并以 Markdown 引用写入。
 

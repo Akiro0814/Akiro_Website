@@ -1,0 +1,30 @@
+---
+import Icon from './Icon.astro';
+import { formatDate, getPostCategory, getPostCover, getPostDescription, getPostPath, getPostTags, getReadingMinutes, type BlogPost } from '../lib/posts';
+
+interface Props { post: BlogPost; hideYear?: boolean; compact?: boolean }
+const { post } = Astro.props;
+const category = getPostCategory(post);
+const cover = getPostCover(post);
+---
+
+<article class="spring-writing-card" data-animate data-spotlight data-tilt>
+  <a href={getPostPath(post)} class="spring-writing-card__link">
+    {cover && <div class="spring-writing-card__image" data-parallax>
+      <img src={cover} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/covers/default-cover.svg'" />
+    </div>}
+    <div class="spring-writing-card__body">
+      <div class="spring-writing-card__meta">
+        <span>{category || 'Essay'}</span>
+        {post.data.date && <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>}
+      </div>
+      <h3>{post.data.title}</h3>
+      <p>{getPostDescription(post)}</p>
+      <div class="spring-writing-card__bottom">
+        <span>{getReadingMinutes(post)} MIN READ</span>
+        <span class="spring-writing-card__read">继续阅读 <Icon name="arrow-up-right" size={17} /></span>
+      </div>
+      {getPostTags(post).length > 0 && <div class="spring-writing-card__tags">{getPostTags(post).slice(0, 3).map(tag => <small>#{tag}</small>)}</div>}
+    </div>
+  </a>
+</article>

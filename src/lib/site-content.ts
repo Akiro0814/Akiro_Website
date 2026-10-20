@@ -3,6 +3,8 @@
 // 文件缺失时回退到与初始页面一致的默认文案，保证干净克隆也能正常构建。
 import fs from 'node:fs';
 import path from 'node:path';
+import { normalizeMediaUrl } from './media-url.js';
+import { normalizePresentation } from './presentation.js';
 
 export interface SocialLink {
   icon: string;
@@ -11,6 +13,7 @@ export interface SocialLink {
 }
 
 export interface HeroContent {
+  backgroundUrl: string;
   eyebrow: string;
   title: string;
   bio: string;
@@ -43,16 +46,16 @@ export interface FooterContent {
 }
 
 const DEFAULT_HERO: HeroContent = {
+  backgroundUrl: '',
   eyebrow: 'AI · Code · Web',
-  title: '你好，我是L1angK1NG',
+  title: '你好，我是Akiro',
   bio: '这里记录 AI 工具、代码实践、网站搭建和一些技术观察。文章偏实用，也保留个人判断。',
   actionLabel: '浏览文章',
   actionHref: '/archive/',
   socials: [
-    { icon: 'bilibili', label: 'Bilibili', href: 'https://space.bilibili.com/46377861' },
-    { icon: 'douyin', label: '抖音', href: 'https://www.douyin.com/user/self' },
-    { icon: 'youtube', label: 'YouTube', href: 'https://www.youtube.com/channel/UCUuwwXFGK8Z3OBrq6PzkmUg' },
-    { icon: 'x-platform', label: 'X', href: 'https://x.com/shenfanlaogou' },
+    { icon: 'bilibili', label: 'Bilibili', href: 'https://space.bilibili.com/3493079350774423' },
+    { icon: 'douyin', label: '抖音', href: 'https://v.douyin.com/vYbOd6pqFJw/' },
+    { icon: 'github', label: 'GitHub', href: 'https://github.com/Akiro0814' },
     { icon: 'rss', label: 'RSS', href: '/rss.xml' },
   ],
 };
@@ -65,9 +68,8 @@ const DEFAULT_ABOUT: AboutContent = {
   ],
   facts: ['全站由 AI 开发'],
   socials: [
-    { icon: 'bilibili', label: 'Bilibili', href: 'https://space.bilibili.com/46377861' },
-    { icon: 'youtube', label: 'YouTube', href: 'https://www.youtube.com/channel/UCUuwwXFGK8Z3OBrq6PzkmUg' },
-    { icon: 'x-platform', label: 'X', href: 'https://x.com/shenfanlaogou' },
+    { icon: 'bilibili', label: 'Bilibili', href: 'https://space.bilibili.com/3493079350774423' },
+    { icon: 'github', label: 'GitHub', href: 'https://github.com/Akiro0814' },
     { icon: 'rss', label: 'RSS', href: '/rss.xml' },
   ],
 };
@@ -75,8 +77,8 @@ const DEFAULT_ABOUT: AboutContent = {
 const DEFAULT_FOOTER: FooterContent = {
   tagline: 'AI · Code · Web',
   links: [
-    { icon: 'bilibili', label: 'Bilibili', href: 'https://space.bilibili.com/46377861' },
-    { icon: 'youtube', label: 'YouTube', href: 'https://www.youtube.com/channel/UCUuwwXFGK8Z3OBrq6PzkmUg' },
+    { icon: 'bilibili', label: 'Bilibili', href: 'https://space.bilibili.com/3493079350774423' },
+    { icon: 'github', label: 'GitHub', href: 'https://github.com/Akiro0814' },
     { icon: 'rss', label: 'RSS', href: '/rss.xml' },
     { icon: 'qq', label: 'QQ 交流群', href: '' },
     { icon: 'wechat', label: '微信交流群', href: '' },
@@ -87,14 +89,16 @@ const DEFAULT_FOOTER: FooterContent = {
 };
 
 interface ProfileFile {
+  presentation?: Record<string, unknown>;
   hero?: Partial<HeroContent>;
   about?: Partial<AboutContent>;
   footer?: Partial<FooterContent>;
 }
 
-let cached: { mtimeMs: number; data: { hero: HeroContent; about: AboutContent; footer: FooterContent } } | null = null;
+type ProfileContent = { hero: HeroContent; about: AboutContent; footer: FooterContent; presentation: ReturnType<typeof normalizePresentation> };
+let cached: { mtimeMs: number; data: ProfileContent } | null = null;
 
-function readProfile(): { hero: HeroContent; about: AboutContent; footer: FooterContent } {
+function readProfile(): ProfileContent {
   // 按文件 mtime 缓存：dev 下后台改了 data/profile.json 无需重启 dev server，
   // 下一次读取即生效；构建期多次读取仍走缓存。
   const file = path.join(process.cwd(), 'data', 'profile.json');
@@ -114,13 +118,14 @@ function readProfile(): { hero: HeroContent; about: AboutContent; footer: Footer
     // 数据损坏时用默认文案，构建不中断。
   }
   const data = {
-    hero: { ...DEFAULT_HERO, ...saved.hero, socials: saved.hero?.socials?.length ? saved.hero.socials : DEFAULT_HERO.socials },
-    about: { ...DEFAULT_ABOUT, ...saved.about, subs: saved.about?.subs?.length ? saved.about.subs : DEFAULT_ABOUT.subs, facts: saved.about?.facts?.length ? saved.about.facts : DEFAULT_ABOUT.facts, socials: saved.about?.socials?.length ? saved.about.socials : DEFAULT_ABOUT.socials },
+    presentation: normalizePresentation(saved.presentation),
+    hero: { ...DEFAULT_HERO, ...saved.hero, backgroundUrl: normalizeMediaUrl(saved.hero?.backgroundUrl), socials: Array.isArray(saved.hero?.socials) ? saved.hero.socials : DEFAULT_HERO.socials },
+    about: { ...DEFAULT_ABOUT, ...saved.about, subs: Array.isArray(saved.about?.subs) ? saved.about.subs : DEFAULT_ABOUT.subs, facts: Array.isArray(saved.about?.facts) ? saved.about.facts : DEFAULT_ABOUT.facts, socials: Array.isArray(saved.about?.socials) ? saved.about.socials : DEFAULT_ABOUT.socials },
     footer: {
       ...DEFAULT_FOOTER,
       ...saved.footer,
       // 逐条补齐字段并过滤空名称，避免旧数据/手改数据缺字段导致渲染异常。
-      links: (saved.footer?.links?.length ? saved.footer.links : DEFAULT_FOOTER.links)
+      links: (Array.isArray(saved.footer?.links) ? saved.footer.links : DEFAULT_FOOTER.links)
         .map((l) => ({ icon: l?.icon ?? '', label: String(l?.label ?? ''), href: String(l?.href ?? '') }))
         .filter((l) => l.label),
     },
@@ -132,6 +137,7 @@ function readProfile(): { hero: HeroContent; about: AboutContent; footer: Footer
 export const getHero = (): HeroContent => readProfile().hero;
 export const getAbout = (): AboutContent => readProfile().about;
 export const getFooter = (): FooterContent => readProfile().footer;
+export const getPresentation = () => readProfile().presentation;
 
 // —— 项目展示（data/projects.json，后台「项目」模块维护） ——
 export interface ProjectLink {
@@ -231,11 +237,12 @@ export function getSiteStatsSnapshot(): SiteStatsSnapshot {
     { total: 0, days: {} },
   );
   const comments = readDataJson<unknown[]>(path.join(dataDir(), 'comments.json'), []);
+  const twikoo = readDataJson<{ visible?: number }>(path.join(dataDir(), 'twikoo-summary.json'), {});
   const todayKey = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const today = stats.days?.[todayKey];
   return {
     since,
-    comments: Array.isArray(comments) ? comments.length : 0,
+    comments: Number.isFinite(twikoo.visible) ? Number(twikoo.visible) : Array.isArray(comments) ? comments.length : 0,
     totalViews: Number(stats.total) || 0,
     todayViews: Number(typeof today === 'number' ? today : today?.pv ?? today?.count) || 0,
   };

@@ -46,7 +46,7 @@ npm run admin        # http://localhost:4000/admin
 
 本地开发时，后台保存内容后，`npm run dev` 会自动热更新，可直接在前台看到效果。若要看最终静态产物：`npm run build && npm run preview`。
 
-登录账号密码见 `.env` 的 `ADMIN_USER` / `ADMIN_PASSWORD_HASH`。
+本项目管理员用户名为 `Akiro`（`.env` 的 `ADMIN_USER`），密码继续使用原有 `ADMIN_PASSWORD_HASH`，改名不会重置密码。部署时同步更新服务器环境并重启后台；重新登录后界面显示新昵称。
 
 ---
 
@@ -272,3 +272,9 @@ npm run backup
 1. `git clone` 公开源码仓库，`npm install`
 2. `git clone` 私有备份仓库，把 `src/content`、`public/uploads`、`data`、`profile.jpg` 拷贝到项目对应位置；默认不含 `.env`，需从安全保存的配置恢复，或基于 `.env.example` 重新配置
 3. `npm run deploy` 重新构建发布
+
+### Twikoo 评论服务
+
+官方 Twikoo 随 `npm run admin` 一起运行，默认数据库在 `data/twikoo/`，不需要额外端口或云数据库。前台官方 SDK 由构建自动复制到 `dist/vendor/`，需随整个静态产物发布；前后台 SDK/核心固定为同版本。后台「评论 → Twikoo 完整管理」复用博客登录。
+
+默认 Loki 目录只应由一个后台进程使用；复制或恢复整个数据库前先停后台。可选使用 `MONGODB_URI` 或接入已有 HTTP(S) Twikoo，详见 [Twikoo 配置与恢复](docs/TWIKOO.md)。升级后需重启后台并重新构建前台；旧 JSON 评论会在首次使用时自动迁移，原文件保留。邮件、图床等外部服务按实际凭据配置后才可使用。

@@ -2,6 +2,7 @@
 import { render } from 'astro:content';
 import CommentsBox from '../../components/CommentsBox.astro';
 import Icon from '../../components/Icon.astro';
+import ProgressiveBlur from '../../components/ProgressiveBlur.astro';
 import QuoteComment from '../../components/QuoteComment.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import {
@@ -79,7 +80,7 @@ const articleSchema = {
 <BaseLayout
   title={post.data.title}
   description={description}
-  pageClass="article-page"
+  pageClass="article-page spring-inner"
   image={cover}
   type="article"
   jsonLd={articleSchema}
@@ -90,7 +91,7 @@ const articleSchema = {
       返回首页
     </a>
 
-    <header class="article__header">
+    <header class="article__header" data-animate>
       <div class="post-meta">
         {category && <span>{category}</span>}
         {post.data.date && (
@@ -110,7 +111,7 @@ const articleSchema = {
       )}
       {/* 没有目录侧边栏时，封面才保留在头部 */}
       {cover && tableOfContents.length < 2 && (
-        <img
+        <div class="article-cover-frame" data-parallax><img
           class="article__cover"
           src={cover}
           alt=""
@@ -118,7 +119,7 @@ const articleSchema = {
           fetchpriority="high"
           referrerpolicy="no-referrer"
           onerror="this.onerror=null;this.src='/covers/default-cover.svg'"
-        />
+        /></div>
       )}
     </header>
 
@@ -126,7 +127,7 @@ const articleSchema = {
       <div class="article__main">
         {/* 有目录侧边栏时，封面移到这里，与目录并排显示 */}
         {cover && tableOfContents.length >= 2 && (
-          <img
+          <div class="article-cover-frame" data-parallax><img
             class="article__cover"
             src={cover}
             alt=""
@@ -134,7 +135,7 @@ const articleSchema = {
             fetchpriority="high"
             referrerpolicy="no-referrer"
             onerror="this.onerror=null;this.src='/covers/default-cover.svg'"
-          />
+          /></div>
         )}
         <div class="post-content">
           <Content />
@@ -177,7 +178,7 @@ const articleSchema = {
 
       {tableOfContents.length >= 2 && (
         <aside class="article__aside">
-          <nav class="toc" aria-labelledby="toc-heading">
+          <ProgressiveBlur axis="vertical"><nav class="toc" aria-labelledby="toc-heading">
             <h2 id="toc-heading">目录</h2>
             <ol>
               {tocGroups.map((group) => (
@@ -197,7 +198,7 @@ const articleSchema = {
                 </li>
               ))}
             </ol>
-          </nav>
+          </nav></ProgressiveBlur>
         </aside>
       )}
     </div>

@@ -14,6 +14,7 @@ dist/
 .mimosa/
 # 本地 Agent 沟通、交接与执行清单
 /docs/superpowers/
+/docs/assets/spring-ui/
 
 # Deploy / build-on-publish artifacts (admin backend)
 releases/
@@ -22,6 +23,7 @@ current
 dist-*/
 .content-build-manifest.json
 .test-tmp-*/
+.test-tmp/
 .current-tmp
 .current-old
 *.log
@@ -29,6 +31,12 @@ dist-*/
 # 个人博客数据：内容与媒体不进仓库（详见 DEPLOY.md「内容与媒体备份」）
 src/content/
 public/uploads/
+# 官方 SDK 由 Astro 配置从锁定的 npm 依赖同步，避免重复提交第三方压缩产物。
+/public/vendor/twikoo-*.js
+/public/vendor/twikoo-*.LICENSE.txt
+# 本机私人壁纸仅保留目录，不随源码提交。
+public/wallpapers/*
+!public/wallpapers/.gitkeep
 # 根目录素材源文件（根目录锚定，不影响 public/ 下的运行副本入库）
 /profile.jpg
 /shubiao.png

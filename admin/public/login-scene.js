@@ -1,4 +1,4 @@
-import { frameLoop, motionOff, tween } from './motion.js?v=20261013-pearl-1';
+import { frameLoop, motionOff, tween } from './motion.js?v=20261020-align-2';
 
 export function initLoginScene() {
   const canvas = document.getElementById('login-network');

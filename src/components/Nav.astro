@@ -1,230 +1,54 @@
 ---
 import Icon from './Icon.astro';
-import siteConfig from '../data/site.config.json';
-
-// 末尾斜杠很重要：主机会把 `/archive` 301 重定向到 `/archive/`，而重定向
-// 会让浏览器跳过跨文档的 View Transition。
-const pathname = Astro.url.pathname.endsWith('/')
-  ? Astro.url.pathname
-  : `${Astro.url.pathname}/`;
-const isCurrent = (href: string) =>
-  href === '/' ? pathname === '/' : pathname.startsWith(href);
+import { site } from '../lib/posts';
+import { getPresentation } from '../lib/site-content';
+const presentation = getPresentation();
+const items = [
+  { href: '/', label: '首页', en: 'Home', icon: 'spark' },
+  { href: '/archive/', label: '文章归档', en: 'Writing', icon: 'archive' },
+  { href: '/projects/', label: '项目实验', en: 'Projects', icon: 'layers' },
+  { href: '/notes/', label: '日常碎片', en: 'Notes', icon: 'bookmark' },
+  { href: '/nav/', label: '网址收藏', en: 'Bookmarks', icon: 'compass' },
+  { href: '/friends/', label: '友情链接', en: 'Friends', icon: 'heart' },
+  { href: '/about/', label: '关于作者', en: 'About', icon: 'smile' },
+];
+const current = (href: string) => href === '/' ? Astro.url.pathname === '/' : Astro.url.pathname.startsWith(href);
 ---
-
-<header
-  class="site-nav"
-  transition:persist="site-nav"
-  transition:animate="none"
->
-  <nav class="site-nav__pill" aria-label="主导航">
-    <span class="site-nav__indicator" aria-hidden="true"></span>
-    <a href="/" class:list={[isCurrent('/') && 'is-current']} data-nav-route>首页</a>
-    <a href="/projects/" class:list={[isCurrent('/projects/') && 'is-current']} data-nav-route>项目</a>
-    <a href="/notes/" class:list={[isCurrent('/notes/') && 'is-current']} data-nav-route>随笔</a>
-    <a href="/archive/" class:list={[isCurrent('/archive/') && 'is-current']} data-nav-route>归档</a>
-    <a href="/nav/" class:list={[isCurrent('/nav/') && 'is-current']} data-nav-route>导航</a>
-    <a href="/friends/" class:list={[isCurrent('/friends/') && 'is-current']} data-nav-route>友链</a>
-    <a href="/about/" class:list={[isCurrent('/about/') && 'is-current']} data-nav-route>关于</a>
-    <span class="site-nav__sep" aria-hidden="true"></span>
-    {siteConfig.githubRepo && (
-      <a
-        href={siteConfig.githubRepo}
-        class="site-nav__icon"
-        aria-label="GitHub 仓库"
-        title="GitHub 仓库"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        <Icon name="github" size={18} />
-      </a>
-    )}
-    <a
-      href="/search/"
-      class:list={['site-nav__icon', isCurrent('/search/') && 'is-current']}
-      aria-label="搜索"
-      aria-keyshortcuts="/ Meta+K"
-      title="搜索（/ 或 ⌘K）"
-    >
-      <Icon name="search" size={18} />
-    </a>
-    <!-- 主题按钮：图标显示当前模式（太阳=浅色 / 月亮=深色 / 显示器=跟随系统），
-         由 <html data-theme-mode> 驱动；点击循环与文字提示见 BaseLayout 脚本 -->
-    <button type="button" class="theme-toggle site-nav__icon" data-theme-toggle aria-label="切换主题模式">
-      <Icon name="sun" size={18} class="theme-toggle__sun" />
-      <Icon name="moon" size={18} class="theme-toggle__moon" />
-      <Icon name="monitor" size={18} class="theme-toggle__auto" />
-    </button>
+<header class="atlas-nav" data-site-header>
+  <span class="atlas-nav__glass" aria-hidden="true"></span>
+  <span class="atlas-nav__light" aria-hidden="true"></span>
+  <a class="atlas-brand" href="/" aria-label={`${site.author} 首页`} data-magnetic>
+    <img class="atlas-brand__avatar" src={site.avatar} alt="" width="38" height="38" /><span>{site.author}<small>{presentation.brandCaption}</small></span>
+  </a>
+  <nav class="atlas-nav__links" aria-label="主导航">
+    {items.filter((item) => presentation.navItems.includes(item.href)).map((item) => (
+      <a href={item.href} aria-current={current(item.href) ? 'page' : undefined}><span>{item.en}</span><small>{item.label}</small></a>
+    ))}
   </nav>
+  <div class="atlas-nav__tools">
+    <a href="/search/" class="atlas-icon" aria-label="搜索" aria-keyshortcuts="/ Meta+K" title="搜索（/）"><Icon name="search" size={19} /></a>
+    <button type="button" class="theme-toggle atlas-icon" data-theme-toggle aria-label="切换主题模式"><Icon name="sun" class="theme-toggle__sun" size={19} /><Icon name="moon" class="theme-toggle__moon" size={19} /><Icon name="monitor" class="theme-toggle__auto" size={19} /></button>
+    <button type="button" class="atlas-menu-toggle" data-menu-toggle aria-haspopup="dialog" aria-controls="site-menu" aria-expanded="false"><span>探索</span><span class="atlas-menu-lines" aria-hidden="true"><i></i><i></i></span></button>
+  </div>
 </header>
-
-<script>
-  type IndicatorState = { x: number; y: number; width: number; height: number };
-  type NavMotionState = {
-    pendingPath: string;
-    indicator: IndicatorState | null;
-    animation: Animation | null;
-    initialized: boolean;
-  };
-
-  const navMotion = (window as Window & { __blogNavMotion?: NavMotionState }).__blogNavMotion ??= {
-    pendingPath: '',
-    indicator: null,
-    animation: null,
-    initialized: false,
-  };
-
-  const normalizePath = (value: string) => {
-    const path = value.endsWith('/') ? value : `${value}/`;
-    return path === '//' ? '/' : path;
-  };
-
-  const readIndicatorState = (indicator: HTMLElement, pill: HTMLElement): IndicatorState => {
-    const rect = indicator.getBoundingClientRect();
-    const pillRect = pill.getBoundingClientRect();
-    return {
-      x: rect.left - pillRect.left,
-      y: rect.top - pillRect.top,
-      width: rect.width,
-      height: rect.height,
-    };
-  };
-
-  // 垂直居中保留在单独的 2D transform 中。部分 Chromium 版本不接受
-  // translate3d() 里的百分比值，只应用 top: 50% 时小块会落到胶囊下方。
-  const transformFor = ({ x }: IndicatorState) => `translateX(${x}px) translateY(-50%)`;
-
-  const stopIndicatorAnimation = () => {
-    const animation = navMotion.animation;
-    if (!animation) return;
-    animation.cancel();
-    navMotion.animation = null;
-  };
-
-  const positionNavIndicator = (animate = true) => {
-    const pill = document.querySelector<HTMLElement>('.site-nav__pill');
-    const indicator = pill?.querySelector<HTMLElement>('.site-nav__indicator');
-    const active = pill?.querySelector<HTMLElement>('a[data-nav-route].is-current');
-    if (!pill || !indicator || !active) {
-      pill?.classList.remove('has-indicator');
-      return;
-    }
-
-    const pillRect = pill.getBoundingClientRect();
-    const activeRect = active.getBoundingClientRect();
-    const target: IndicatorState = {
-      x: activeRect.left - pillRect.left,
-      // 垂直位置由 CSS 负责（top: 50% + translateY(-50%)）。
-      // JS 只跟踪水平目标位置和测量出的尺寸。
-      y: 0,
-      width: activeRect.width,
-      height: activeRect.height,
-    };
-
-    let current = navMotion.indicator ?? target;
-    if (navMotion.animation) {
-      current = readIndicatorState(indicator, pill);
-      stopIndicatorAnimation();
-    }
-
-    if (!animate || typeof indicator.animate !== 'function') {
-      pill.classList.remove('is-indicator-ready');
-      indicator.style.width = `${target.width}px`;
-      indicator.style.height = `${target.height}px`;
-      indicator.style.transform = transformFor(target);
-      navMotion.indicator = target;
-      pill.classList.add('has-indicator');
-      window.requestAnimationFrame(() => pill.classList.add('is-indicator-ready'));
-      return;
-    }
-
-    indicator.style.width = `${target.width}px`;
-    indicator.style.height = `${target.height}px`;
-    indicator.style.transform = transformFor(target);
-    pill.classList.add('has-indicator');
-
-    const animation = indicator.animate(
-      [
-        {
-          width: `${current.width}px`,
-          height: `${current.height}px`,
-          transform: transformFor(current),
-        },
-        {
-          width: `${target.width}px`,
-          height: `${target.height}px`,
-          transform: transformFor(target),
-        },
-      ],
-      {
-        duration: 420,
-        easing: 'cubic-bezier(0.16, 1, 0.3, 1)',
-        fill: 'both',
-      },
-    );
-    navMotion.animation = animation;
-    navMotion.indicator = target;
-    animation.onfinish = () => {
-      if (navMotion.animation !== animation) return;
-      try {
-        animation.commitStyles?.();
-      } catch {
-      }
-      animation.cancel();
-      navMotion.animation = null;
-    };
-  };
-
-  const syncCurrentNavItem = (animate = false) => {
-    const pathname = normalizePath(window.location.pathname);
-    document.querySelectorAll<HTMLAnchorElement>('.site-nav a[href]').forEach((link) => {
-      const href = normalizePath(new URL(link.href, window.location.href).pathname);
-      const current = href === '/' ? pathname === '/' : pathname.startsWith(href);
-      link.classList.remove('is-pending');
-      link.classList.toggle('is-current', current);
-      if (current) link.setAttribute('aria-current', 'page');
-      else link.removeAttribute('aria-current');
-    });
-    // 在 Astro 拉取并替换下一个页面时，指示器已经在向被点击项移动。
-    // 此时重新测量会把目标位置写入两次，让动画看起来像一次闪跳。
-    if (navMotion.pendingPath === pathname) {
-      navMotion.pendingPath = '';
-      return;
-    }
-    positionNavIndicator(animate);
-  };
-
-  const showPendingNavItem = (event: MouseEvent) => {
-    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
-      return;
-    }
-
-    const target = event.target;
-    if (!(target instanceof Element)) return;
-    const link = target.closest<HTMLAnchorElement>('.site-nav a[data-nav-route]');
-    if (!link) return;
-
-    const targetPath = normalizePath(new URL(link.href, window.location.href).pathname);
-    if (targetPath === normalizePath(window.location.pathname)) return;
-
-    navMotion.pendingPath = targetPath;
-
-    document.querySelectorAll<HTMLAnchorElement>('.site-nav a[data-nav-route]').forEach((item) => {
-      item.classList.toggle('is-pending', item === link);
-      item.classList.toggle('is-current', item === link);
-    });
-    positionNavIndicator(true);
-  };
-
-  if (!navMotion.initialized) {
-    syncCurrentNavItem();
-    // 在 Astro 开始请求目标页之前，物理按下时就移动指示器。
-    // 键盘激活仍然会走到 click 兜底逻辑。
-    document.addEventListener('pointerdown', showPendingNavItem);
-    document.addEventListener('click', (event) => {
-      if (event.detail === 0) showPendingNavItem(event);
-    });
-    document.addEventListener('astro:after-swap', () => syncCurrentNavItem(true));
-    window.addEventListener('resize', () => positionNavIndicator(false), { passive: true });
-    navMotion.initialized = true;
-  }
-</script>
+<!-- 内缩 SDF 按实际尺寸生成位移图。三通道略微不同的折射率提供边缘色散，文字不经滤镜。 -->
+<svg class="atlas-glass-defs" aria-hidden="true" width="0" height="0" xmlns="http://www.w3.org/2000/svg"><defs>
+  <filter id="akiro-nav-refraction" filterUnits="userSpaceOnUse" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
+    <feImage preserveAspectRatio="none" result="nav-map" />
+    <feDisplacementMap in="SourceGraphic" in2="nav-map" scale="0" data-dispersion="1.025" xChannelSelector="R" yChannelSelector="G" result="nav-r" />
+    <feColorMatrix in="nav-r" type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="nav-red" />
+    <feDisplacementMap in="SourceGraphic" in2="nav-map" scale="0" data-dispersion="1" xChannelSelector="R" yChannelSelector="G" result="nav-g" />
+    <feColorMatrix in="nav-g" type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="nav-green" />
+    <feDisplacementMap in="SourceGraphic" in2="nav-map" scale="0" data-dispersion=".975" xChannelSelector="R" yChannelSelector="G" result="nav-b" />
+    <feColorMatrix in="nav-b" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="nav-blue" />
+    <feBlend in="nav-red" in2="nav-green" mode="screen" result="nav-rg" />
+    <feBlend in="nav-rg" in2="nav-blue" mode="screen" />
+  </filter>
+</defs></svg>
+<dialog id="site-menu" class="atlas-menu" aria-labelledby="menu-title" data-lenis-prevent>
+  <div class="atlas-menu__head"><div><small>EXPLORE THE JOURNAL</small><h2 id="menu-title">随处走走</h2></div><button type="button" class="atlas-icon" data-dialog-close aria-label="关闭导航">✕</button></div>
+  <nav aria-label="完整导航" class="atlas-menu__grid">
+    {items.map((item, i) => <a href={item.href} aria-current={current(item.href) ? 'page' : undefined}><span class="atlas-menu__number">0{i + 1}</span><Icon name={item.icon} size={24} /><span><strong>{item.en}</strong><small>{item.label}</small></span><Icon name="arrow-up-right" size={18} /></a>)}
+  </nav>
+  <div class="atlas-menu__foot"><span>一点代码，一些日常。</span><a href="/rss.xml">RSS <Icon name="arrow-up-right" size={14} /></a></div>
+</dialog>

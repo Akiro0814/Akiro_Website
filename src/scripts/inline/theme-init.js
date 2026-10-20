@@ -1,16 +1,16 @@
 // 主题初始化（head 内联，必须在首帧渲染前同步执行，避免深浅色闪烁）。
 (() => {
   const storageKey = 'blog-theme';
-  const lightColor = '#f8f7f4';
-  const darkColor = '#0e1116';
+  const lightColor = '#f7f8f1';
+  const darkColor = '#17211b';
   // 主题模式三态：'auto'（跟随系统，默认）/ 'light' / 'dark'。
-  const getMode = () => {
+  const getMode = (root = document.documentElement) => {
     try {
       const stored = localStorage.getItem(storageKey);
       if (stored === 'light' || stored === 'dark' || stored === 'auto') return stored;
     } catch {
     }
-    return 'auto';
+    return ['auto','light','dark'].includes(root.dataset.defaultTheme) ? root.dataset.defaultTheme : 'auto';
   };
   const getSystemTheme = () =>
     window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -33,7 +33,7 @@
   // 把主题写到新文档的 <html> 上（早于任何一帧绘制），彻底消除换页瞬间
   // 深→浅的跳变；after-swap 再兜底恢复一次。
   document.addEventListener('astro:before-swap', (event) => {
-    const mode = getMode();
+    const mode = getMode(event.newDocument?.documentElement);
     const theme = mode === 'auto' ? getSystemTheme() : mode;
     const root = event.newDocument?.documentElement;
     if (root) {

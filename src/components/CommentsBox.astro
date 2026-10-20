@@ -1,5 +1,5 @@
 ---
-// 底部评论框 —— 基于 Twikoo 后端的自定义 UI（共享模块）。
+// 底部评论框 —— 官方 Twikoo SDK，样式由博客主题适配。
 interface Props {
   title?: string;
 }
@@ -17,8 +17,7 @@ const { title = '评论' } = Astro.props;
 <script>
   import { mountComments, commentsBackendId } from '../lib/comments.js';
 
-  // 配置 PUBLIC_TWIKOO_ENV_ID 时直连外部 Twikoo；未配置则使用博客内置的
-  // Twikoo 协议后端（/api/public/twikoo），评论由后台「评论」模块自由管理。
+  // 始终从本站入口访问；是否转发外部环境由后台决定，确保前后台管理同一份评论。
   const ENV_ID = commentsBackendId();
   let activeRoot: HTMLElement | null = null;
   let cleanup = () => {};
@@ -32,7 +31,7 @@ const { title = '评论' } = Astro.props;
     if (!root) return;
 
     const controller = new AbortController();
-    const mountEl = root.querySelector('[data-c-mount]');
+    const mountEl = root.querySelector<HTMLElement>('[data-c-mount]');
     const countEl = root.querySelector('[data-c-count]');
     if (!mountEl || !countEl) return;
     let started = false;
@@ -76,6 +75,7 @@ const { title = '评论' } = Astro.props;
     cleanup = () => {
       controller.abort();
       io.disconnect();
+      api?.dispose();
     };
   };
 

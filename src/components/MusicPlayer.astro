@@ -17,8 +17,8 @@ import xIcon from '@phosphor-icons/core/assets/regular/x.svg?raw';
 import '../styles/music-player.css';
 
 // 歌单 ID 只从环境变量读取，代码里不写死真实值（隐私不入仓库）。
-// 未配置、仍是示例占位符（如「你的网易云歌单ID」）或非数字 ID 时，
-// 播放器整体不渲染、不发起任何请求（既不打 Meting 也不打本地 API）。
+// 网易云 ID 只用于无后台时的外部兜底；后台本地歌单不依赖该环境变量。
+// 未配置时先隐藏播放器，只有读到后台已上架的曲目才显示。
 const playlistId = String(import.meta.env.PUBLIC_NETEASE_PLAYLIST_ID ?? '').trim();
 const PLACEHOLDER_RE = /你的|占位|your[-_]?|replace[-_]?me|change[-_]?me|example|todo|xxx/i;
 const configured = /^\d{1,20}$/.test(playlistId) && !PLACEHOLDER_RE.test(playlistId);
@@ -27,7 +27,6 @@ const playlistHref = configured
   : '';
 ---
 
-{configured && (
 <div
   class="music-player"
   transition:name="music-player"
@@ -35,7 +34,8 @@ const playlistHref = configured
   transition:animate="none"
   data-music-player
   data-testid="music-player"
-  data-playlist-id={playlistId}
+  data-playlist-id={configured ? playlistId : ''}
+  hidden={!configured}
 >
   <section
     id="music-player-panel"
@@ -179,7 +179,6 @@ const playlistHref = configured
 
   <audio data-music-audio preload="none"></audio>
 </div>
-)}
 
 {/* 播放器运行逻辑：打包为可缓存模块（src/scripts/music-player.js），
     外部 Meting 解析请求统一走 src/scripts/music-api.js。 */}

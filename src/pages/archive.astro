@@ -1,6 +1,6 @@
 ---
 import Icon from '../components/Icon.astro';
-import PostSummary from '../components/PostSummary.astro';
+import PostSummary from '../components/SpringPostCard.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import {
   getCategories,
@@ -10,7 +10,7 @@ import {
   groupPostsByYear,
   sortPosts,
 } from '../lib/posts';
-import { getPublishedPosts } from '../lib/posts';
+import { getPublishedPosts, site } from '../lib/posts';
 
 const posts = sortPosts(await getPublishedPosts());
 const categories = getCategories(posts);
@@ -24,18 +24,18 @@ const restTags = tags.slice(16);
 
 <BaseLayout
   title="归档"
-  description="按时间、分类和标签浏览L1angK1NG博客的全部文章。"
-  pageClass="content-page"
+  description={`按时间、分类和标签浏览${site.author}博客的全部文章。`}
+  pageClass="content-page spring-inner"
 >
   <section class="archive-page">
-    <header class="page-header">
+    <header class="page-header" data-animate>
       <p class="eyebrow">Archive</p>
       <h1>文章归档</h1>
       <p>目前收录 {posts.length} 篇文章，可以按时间、分类或标签浏览。</p>
     </header>
 
     <section class="archive-summary" aria-label="内容索引">
-      <div class="taxonomy-panel">
+      <div class="taxonomy-panel" data-animate data-spotlight>
         <h2><Icon name="layers" size={16} />分类</h2>
         <div class="term-list">
           {categories.length > 0 ? (
@@ -50,7 +50,7 @@ const restTags = tags.slice(16);
           )}
         </div>
       </div>
-      <div class="taxonomy-panel">
+      <div class="taxonomy-panel" data-animate data-spotlight>
         <h2><Icon name="hash" size={16} />标签</h2>
         <div class="term-list">
           {primaryTags.length > 0 ? (
@@ -101,7 +101,7 @@ const restTags = tags.slice(16);
     <div class="archive-years">
       {years.map((group) => (
         <section class="archive-year">
-          <header class="archive-year__head">
+          <header class="archive-year__head" data-animate>
             <h2 class="archive-year__num">{group.year}</h2>
             <span class="archive-year__count">{group.posts.length} 篇</span>
           </header>

@@ -4,7 +4,7 @@
 // 时显示时间行）；「此刻 / 今天」「清空」「确定」快捷操作。
 // 值格式：'YYYY-MM-DD'（未设时间）或 'YYYY-MM-DD HH:mm'（精确到分钟）。
 
-import { appear } from './motion.js?v=20261013-pearl-1';
+import { appear } from './motion.js?v=20261020-align-2';
 
 const pad = (n) => String(n).padStart(2, '0');
 

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="40" viewBox="0 0 32 40" fill="none" role="img" aria-label="Akiro 极简指针 墨黑">
+  <title>Akiro Minimal Pointer / 墨黑</title>
+  <desc>参考 macOS 的经典指针语言重新绘制；单色主体、细描边、轻阴影。纯矢量，透明背景。</desc>
+  <defs><filter id="shadow" x="-40%" y="-30%" width="180%" height="180%" color-interpolation-filters="sRGB"><feDropShadow dx="0" dy="1" stdDeviation=".8" flood-color="#000000" flood-opacity=".2"/></filter></defs>
+  <path d="M6.75 4.75V29.00L12.80 23.12L17.94 34.34L22.18 32.38L17.05 21.25H25.55L6.75 4.75Z" fill="#17181A" stroke="#FFFFFF" stroke-width="1.5" stroke-linejoin="round" filter="url(#shadow)"/>
+</svg>

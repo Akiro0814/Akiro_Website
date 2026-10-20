@@ -5,7 +5,13 @@
 // 每次 ClientRouter 换页在 astro:after-swap（新帧捕获前）用新的
 // AbortController 重新绑定页面元素级监听，与原内联 data-astro-rerun 脚本
 // 的时机等价。主题初始化等必须阻塞首帧的极小片段仍在 <head> 内联。
-import { forceRevealIncoming, initReveal } from './reveal.js';
+import { initMotion } from './motion.js';
+import { initLiquidGlass } from './liquid-glass.js';
+import { initProgressiveBlur } from './progressive-blur.js';
+import { initProjects } from './projects.js';
+import { initAppearance } from './appearance.js';
+import { initCursorSettings } from './cursor-settings.js';
+import { initWallpapers } from './wallpapers.js';
 import { initImgFade } from './img-fade.js';
 import { initThemeToggle } from './theme-toggle.js';
 import { initCopyCode } from './copy-code.js';
@@ -30,18 +36,21 @@ const initPage = () => {
   initLightbox(signal);
   initProgress(signal);
   initToc(signal);
-  initReveal(signal);
+  initAppearance(signal);
+  initCursorSettings(signal);
+  initWallpapers(signal);
+  initLiquidGlass(signal);
+  initMotion(signal);
+  initProgressiveBlur(signal);
+  initProjects(signal);
   initImgFade();
   trackView();
 };
 
 // 首次加载立即初始化；文档级行为只绑定一次。
-initPage();
+// Astro emits page-load after deferred modules on both first entry and every swap.
 initShortcuts();
 initSwCleanup();
 
-document.addEventListener('astro:after-swap', () => {
-  // 先强制显现新页面内容（早于进场帧捕获），再重新绑定页面元素级监听。
-  forceRevealIncoming();
-  initPage();
-});
+document.addEventListener('astro:before-swap', () => controller?.abort());
+document.addEventListener('astro:page-load', initPage);

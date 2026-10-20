@@ -28,7 +28,7 @@ const clean = (v) => String(v ?? '').trim();
 async function queryPconline(ip) {
   const res = await safeFetch(`https://whois.pconline.com.cn/ipJson.jsp?ip=${encodeURIComponent(ip)}&json=true`, {
     timeoutMs: 5000,
-    headers: { 'User-Agent': 'L1angK1NG-Blog/1.0' },
+    headers: { 'User-Agent': 'Akiro-Blog/1.0' },
   });
   if (!res.ok) return null;
   const data = await res.json();
@@ -41,7 +41,7 @@ async function queryPconline(ip) {
 async function queryIpApi(ip) {
   const res = await safeFetch(
     `http://ip-api.com/json/${encodeURIComponent(ip)}?lang=zh-CN&fields=status,country,regionName,city`,
-    { timeoutMs: 5000, headers: { 'User-Agent': 'L1angK1NG-Blog/1.0' } },
+    { timeoutMs: 5000, headers: { 'User-Agent': 'Akiro-Blog/1.0' } },
   );
   if (!res.ok) return null;
   const data = await res.json();
@@ -55,7 +55,7 @@ async function queryIpApi(ip) {
 async function queryIpapiCo(ip) {
   const res = await safeFetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, {
     timeoutMs: 5000,
-    headers: { 'User-Agent': 'L1angK1NG-Blog/1.0' },
+    headers: { 'User-Agent': 'Akiro-Blog/1.0' },
   });
   if (!res.ok) return null;
   const data = await res.json();

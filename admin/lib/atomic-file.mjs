@@ -4,15 +4,28 @@ import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { setTimeout as delay } from 'node:timers/promises';
 
 const temporaryPath = (file) => `${file}.${process.pid}.${randomUUID()}.tmp`;
 const commits = new Map();
+
+async function renameWithRetry(tmp, file) {
+  // Windows 索引器、杀毒软件和短暂读取会让合法的原子替换偶发 EPERM/EBUSY。
+  // 始终重试同一次 rename，不删除旧目标；真正的权限/磁盘错误在有限次数后原样抛出。
+  for (let attempt = 0; ; attempt++) {
+    try { await fsp.rename(tmp, file); return; }
+    catch (error) {
+      if (attempt >= 5 || !['EPERM', 'EACCES', 'EBUSY'].includes(error.code)) throw error;
+      await delay(10 * 2 ** attempt);
+    }
+  }
+}
 
 // Windows 不允许同时替换同一目标，提交阶段按绝对路径排队；临时文件仍可并行写。
 async function commit(tmp, file) {
   const key = path.resolve(file);
   const previous = commits.get(key) || Promise.resolve();
-  const next = previous.then(() => fsp.rename(tmp, file), () => fsp.rename(tmp, file));
+  const next = previous.then(() => renameWithRetry(tmp, file), () => renameWithRetry(tmp, file));
   commits.set(key, next);
   try {
     await next;

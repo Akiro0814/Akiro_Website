@@ -11,6 +11,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
+import { setTimeout as delay } from 'node:timers/promises';
 import { ROOT } from './env.mjs';
 import { logWarn } from './log.mjs';
 
@@ -29,6 +30,22 @@ const rmrf = (p) => {
     /* 忽略 */
   }
 };
+
+// Windows 上索引器、杀毒软件可能在构建刚结束时短暂占用产物目录。
+// 仅重试同一次原子移动；不复制文件，不在移动成功前切换线上链接。
+async function moveBuildOutput(releaseDir) {
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      fs.renameSync(DIST, releaseDir);
+      return;
+    } catch (err) {
+      if (process.platform !== 'win32' || !['EPERM', 'EACCES', 'EBUSY'].includes(err.code) || attempt >= 5) {
+        throw err;
+      }
+      await delay(50 * 2 ** attempt);
+    }
+  }
+}
 
 // 删除源文件时，Astro 的 content-layer 缓存不会被清理，因此重新构建可能仍会
 // 输出已删除的文章。解决办法是清空缓存，让构建重新扫描 src/content/ —— 但
@@ -307,7 +324,7 @@ export async function buildAndPublish() {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const releaseDir = path.join(RELEASES_DIR, stamp);
     fs.mkdirSync(RELEASES_DIR, { recursive: true });
-    fs.renameSync(DIST, releaseDir);
+    await moveBuildOutput(releaseDir);
     publish(releaseDir);
     pruneReleases();
 

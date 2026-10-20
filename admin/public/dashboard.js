@@ -3,8 +3,8 @@
 // 或 /api/manage/dashboard（刷新），两处口径完全一致，渲染函数共用。
 // 由 admin.js 在页面初始化时调用 initDashboard / stopDashboard。
 
-import { animateNumber, animateCharts } from './motion.js?v=20261013-pearl-1';
-import { notify } from './interface.js?v=20261013-pearl-1';
+import { animateNumber, animateCharts } from './motion.js?v=20261020-align-2';
+import { notify } from './interface.js?v=20261020-align-2';
 
 const esc = (v) =>
   String(v ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));

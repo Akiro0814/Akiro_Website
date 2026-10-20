@@ -62,8 +62,8 @@ export async function dashboardData({ fast = false } = {}) {
   const published = posts.filter((p) => !p.data.draft);
 
   const s = stats.summary({ pathsLimit: 50, regionsLimit: 20 });
-  const commentCounts = comments.adminCount();
-  const commentTrend = comments.adminTrend();
+  const commentCounts = await comments.adminCount();
+  const commentTrend = await comments.adminTrend();
 
   const status = build.lastBuildStatus();
   // fast：后台首屏渲染专用——服务器指标走缓存/瞬时值，不阻塞 HTML 输出。

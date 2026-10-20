@@ -1,7 +1,8 @@
 ---
 import Icon from '../components/Icon.astro';
+import ProgressiveBlur from '../components/ProgressiveBlur.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { sortPosts } from '../lib/posts';
+import { sortPosts, site } from '../lib/posts';
 import { getPublishedPosts } from '../lib/posts';
 
 const posts = sortPosts(await getPublishedPosts());
@@ -11,142 +12,31 @@ const firstYear = posts.reduce((min, post) => {
   return year && year < min ? year : min;
 }, new Date().getFullYear());
 
-// ---- 开源项目：构建时从 GitHub API 自动同步 ----
-// 优先请求实时数据（5 秒超时）；API 不可达时回退到本地缓存
-// src/data/github-projects.json（用以下命令刷新缓存：
-// curl -s "https://api.github.com/users/<你的用户名>/repos?per_page=100" -o src/data/github-projects.json）
-interface GhRepo {
-  name: string;
-  description: string | null;
-  html_url: string;
-  stargazers_count: number;
-  language: string | null;
-  topics: string[];
-  fork: boolean;
-}
-
-import cachedRepos from '../data/github-projects.json';
-import rawSiteConfig from '../data/site.config.json';
-import starFillIcon from '@phosphor-icons/core/assets/fill/star-fill.svg?raw';
-import fs from 'node:fs';
-import path from 'node:path';
+// 关于页与项目页共用清单和卡片，GitHub 与后台项目按仓库地址合并。
+import ProjectCatalog from '../components/ProjectCatalog.astro';
 import { getAbout } from '../lib/site-content';
-
 const about = getAbout();
-
-interface StaticProject {
-  title: string;
-  owner?: string;
-  description: string;
-  icon: string;
-  href: string;
-  tags: string[];
-  article?: string;
-}
-const siteConfig: {
-  githubUser: string;
-  projectOverrides: Record<string, { article?: string; icon?: string }>;
-  projectGroups: { title: string; description: string; items: StaticProject[] }[];
-} = rawSiteConfig;
-
-const GITHUB_USER = siteConfig.githubUser;
-
-// 项目名 → 博客文章链接（site.config.json 的 projectOverrides.article）；
-// 没有对应文章的项目不显示「笔记」按钮。
-const articleByRepo: Record<string, string> = Object.fromEntries(
-  Object.entries(siteConfig.projectOverrides)
-    .filter(([, v]) => v.article)
-    .map(([name, v]) => [name, v.article as string]),
-);
-
-// 项目名 → 卡片图标（site.config.json 的 projectOverrides.icon，默认 github 标记）
-const iconByRepo: Record<string, string> = Object.fromEntries(
-  Object.entries(siteConfig.projectOverrides)
-    .filter(([, v]) => v.icon)
-    .map(([name, v]) => [name, v.icon as string]),
-);
-
-const fetchGithubRepos = async (): Promise<GhRepo[]> => {
-  // 未配置 githubUser 时不请求 GitHub，直接返回缓存（可能为空）。
-  if (!GITHUB_USER) return cachedRepos as GhRepo[];
-  try {
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 5000);
-    const res = await fetch(
-      `https://api.github.com/users/${GITHUB_USER}/repos?per_page=100&sort=pushed&type=source`,
-      {
-        headers: {
-          'User-Agent': 'L1angK1NG-Website/astro',
-          Accept: 'application/vnd.github+json',
-        },
-        signal: controller.signal,
-      },
-    );
-    clearTimeout(timer);
-    if (!res.ok) return cachedRepos as GhRepo[];
-    const repos = (await res.json()) as GhRepo[];
-    if (repos.length) {
-      // 拉取成功后回写缓存：下次 API 不可达时回退到真实数据而非空壳。
-      try {
-        fs.writeFileSync(
-          path.join(process.cwd(), 'src', 'data', 'github-projects.json'),
-          `${JSON.stringify(repos, null, 2)}\n`,
-          'utf8',
-        );
-      } catch {
-        /* 缓存回写失败不影响构建 */
-      }
-    }
-    return repos.length ? repos : (cachedRepos as GhRepo[]);
-  } catch {
-    return cachedRepos as GhRepo[];
-  }
-};
-
-const githubRepos = (await fetchGithubRepos())
-  .filter((repo) => !repo.fork)
-  .sort((a, b) => b.stargazers_count - a.stargazers_count);
-
-const openSourceItems = githubRepos.map((repo) => ({
-  title: repo.name,
-  owner: GITHUB_USER,
-  description: repo.description ?? '开源项目。',
-  icon: iconByRepo[repo.name] ?? 'github',
-  href: repo.html_url,
-  articleHref: articleByRepo[repo.name],
-  stars: repo.stargazers_count,
-  tags: repo.topics?.length ? repo.topics.slice(0, 4) : [repo.language ?? 'GitHub'],
-}));
-
-// 静态项目组（资源下载等）来自 site.config.json 的 projectGroups；
-// 静态项同样支持 article 字段（对应「笔记」链接）与 icon 字段。
-const projectGroups = [
-  {
-    title: '开源项目',
-    description: '自己写的一些开源项目，构建时从 GitHub 自动同步，欢迎 Star 和提建议。',
-    items: openSourceItems,
-  },
-  ...siteConfig.projectGroups.map((group) => ({
-    ...group,
-    items: group.items.map((item) => ({
-      ...item,
-      articleHref: (item as { article?: string }).article,
-      stars: 0,
-    })),
-  })),
-];
 ---
 
 <BaseLayout
   title="关于"
-  description="关于L1angK1NG，以及这个完全由 AI 开发的博客会持续记录的内容。"
-  pageClass="content-page"
+  description={`关于${site.author}，以及这个博客持续记录的内容。`}
+  pageClass="content-page spring-inner"
 >
   <article class="about">
-    <header class="about__intro">
+    <section class="about-collage" aria-label={`关于 ${site.author}`}>
+      <p class="eyebrow" data-animate>A LITTLE ABOUT ME</p>
+      <h2 data-animate>与代码对话，<br />把日子写成故事。</h2>
+      <ProgressiveBlur><div class="about-collage__cards">
+        <div class="about-collage__note" data-tilt data-animate><span>HELLO, WORLD</span><strong>{site.author}</strong><p>保持好奇，认真生活。</p><Icon name="arrow-up-right" size={28} /></div>
+        <figure class="about-collage__portrait" data-tilt data-animate><img src={site.avatar} width="240" height="240" alt={`${site.author} 的头像`} /><figcaption>{site.author} · nice to meet you</figcaption></figure>
+        <div class="about-collage__note about-collage__note--index" data-tilt data-animate><span>PERSONAL ARCHIVE</span><strong>{postCount}<small>篇记录</small></strong><p>从 {firstYear} 开始，<br />收集灵感，也留下足迹。</p><a href="/archive/">翻翻我的笔记 <Icon name="arrow-right" size={16} /></a></div>
+      </div></ProgressiveBlur>
+    </section>
+    <header class="about__intro" data-animate>
       <img
-        src="/avatars/avatar.jpg"
-        alt="L1angK1NG头像"
+        src={site.avatar}
+        alt={`${site.author}头像`}
         class="about__avatar"
         width="72"
         height="72"
@@ -179,56 +69,6 @@ const projectGroups = [
       </div>
     </header>
 
-    {projectGroups.map((section) =>
-      section.items.length > 0 ? (
-        <section class="proj-section" aria-labelledby={`${section.title}-heading`}>
-          <div class="proj-section__head">
-            <h2 class="proj-section__label" id={`${section.title}-heading`}>{section.title}</h2>
-            <p class="proj-section__desc">{section.description}</p>
-          </div>
-
-          <div class="proj-grid">
-            {section.items.map((item) => (
-              <article class="proj">
-                <span class="proj__icon"><Icon name={item.icon} size={18} /></span>
-                <div class="proj__body">
-                  <span class="proj__owner">
-                    {item.owner}
-                    {item.stars > 0 && (
-                      <span class="proj__stars">
-                        <span class="proj__stars-icon" aria-hidden="true" set:html={starFillIcon}></span>
-                        {item.stars}
-                      </span>
-                    )}
-                  </span>
-                  <h3 class="proj__title">
-                    <a
-                      href={item.href}
-                      target={item.href.startsWith('http') ? '_blank' : undefined}
-                      rel={item.href.startsWith('http') ? 'noopener noreferrer' : undefined}
-                    >
-                      {item.title}
-                      <Icon name="arrow-up-right" size={16} class="proj__go" />
-                    </a>
-                  </h3>
-                  <p class="proj__desc">{item.description}</p>
-                  <div class="proj__foot">
-                    <span class="proj__tags">
-                      {item.tags.map((tag) => <small>{tag}</small>)}
-                    </span>
-                    {item.articleHref && (
-                      <a class="proj__note" href={item.articleHref}>
-                        笔记
-                        <Icon name="arrow-right" size={13} />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null
-    )}
+    <ProjectCatalog />
   </article>
 </BaseLayout>

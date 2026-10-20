@@ -2,22 +2,24 @@
 // 友链（含访客申请与审核）、公告栏。数据落在 data/ 下的 JSON 文件，
 // 与前台构建共用同一份数据源（前台构建时通过 src/lib/site-data.ts 读取）。
 import { readJSON, writeJSONAsync, withFileLock, newId } from './store.mjs';
+import { normalizeMediaUrl } from '../../src/lib/media-url.js';
+import { normalizePresentation } from '../../src/lib/presentation.js';
 
 // —— 页面内容（主页 hero + 关于页，统一编辑） ——
 const PROFILE_FILE = 'profile.json';
 
 export const DEFAULT_PROFILE = {
   hero: {
+    backgroundUrl: '',
     eyebrow: 'AI · Code · Web',
-    title: '你好，我是L1angK1NG',
+    title: '你好，我是Akiro',
     bio: '这里记录 AI 工具、代码实践、网站搭建和一些技术观察。文章偏实用，也保留个人判断。',
     actionLabel: '浏览文章',
     actionHref: '/archive/',
     socials: [
-      { icon: 'bilibili', label: 'Bilibili', href: 'https://space.bilibili.com/46377861' },
-      { icon: 'douyin', label: '抖音', href: 'https://www.douyin.com/user/self' },
-      { icon: 'youtube', label: 'YouTube', href: 'https://www.youtube.com/channel/UCUuwwXFGK8Z3OBrq6PzkmUg' },
-      { icon: 'x-platform', label: 'X', href: 'https://x.com/shenfanlaogou' },
+      { icon: 'bilibili', label: 'Bilibili', href: 'https://space.bilibili.com/3493079350774423' },
+      { icon: 'douyin', label: '抖音', href: 'https://v.douyin.com/vYbOd6pqFJw/' },
+      { icon: 'github', label: 'GitHub', href: 'https://github.com/Akiro0814' },
       { icon: 'rss', label: 'RSS', href: '/rss.xml' },
     ],
   },
@@ -29,9 +31,8 @@ export const DEFAULT_PROFILE = {
     ],
     facts: ['全站由 AI 开发'],
     socials: [
-      { icon: 'bilibili', label: 'Bilibili', href: 'https://space.bilibili.com/46377861' },
-      { icon: 'youtube', label: 'YouTube', href: 'https://www.youtube.com/channel/UCUuwwXFGK8Z3OBrq6PzkmUg' },
-      { icon: 'x-platform', label: 'X', href: 'https://x.com/shenfanlaogou' },
+      { icon: 'bilibili', label: 'Bilibili', href: 'https://space.bilibili.com/3493079350774423' },
+      { icon: 'github', label: 'GitHub', href: 'https://github.com/Akiro0814' },
       { icon: 'rss', label: 'RSS', href: '/rss.xml' },
     ],
   },
@@ -39,8 +40,8 @@ export const DEFAULT_PROFILE = {
     tagline: 'AI · Code · Web',
     // href 留空的链接在前台渲染为纯文字胶囊（如 QQ / 微信交流群）
     links: [
-      { icon: 'bilibili', label: 'Bilibili', href: 'https://space.bilibili.com/46377861' },
-      { icon: 'youtube', label: 'YouTube', href: 'https://www.youtube.com/channel/UCUuwwXFGK8Z3OBrq6PzkmUg' },
+      { icon: 'bilibili', label: 'Bilibili', href: 'https://space.bilibili.com/3493079350774423' },
+      { icon: 'github', label: 'GitHub', href: 'https://github.com/Akiro0814' },
       { icon: 'rss', label: 'RSS', href: '/rss.xml' },
       { icon: 'qq', label: 'QQ 交流群', href: '' },
       { icon: 'wechat', label: '微信交流群', href: '' },
@@ -101,9 +102,11 @@ const sanitizeAttribution = (html) =>
 export function getProfile() {
   const saved = readJSON(PROFILE_FILE, {});
   return {
+    presentation: normalizePresentation(saved.presentation),
     hero: {
       ...DEFAULT_PROFILE.hero,
       ...(saved.hero || {}),
+      backgroundUrl: normalizeMediaUrl(saved.hero?.backgroundUrl),
       socials: cleanSocials(saved.hero?.socials ?? DEFAULT_PROFILE.hero.socials),
     },
     about: {
@@ -125,8 +128,15 @@ export function getProfile() {
 export function saveProfile(input) {
   return withFileLock(PROFILE_FILE, async () => {
   const current = getProfile();
+  const backgroundInput = input?.hero?.backgroundUrl ?? current.hero.backgroundUrl;
+  const backgroundUrl = normalizeMediaUrl(backgroundInput);
+  if (String(backgroundInput).trim() && !backgroundUrl) {
+    throw new Error('首屏背景需为本站绝对路径（/uploads/…）或有效的 http(s) 图片、视频地址');
+  }
   const out = {
+    presentation: normalizePresentation(input?.presentation, current.presentation),
     hero: {
+      backgroundUrl,
       eyebrow: String(input?.hero?.eyebrow ?? current.hero.eyebrow).trim().slice(0, 60),
       title: String(input?.hero?.title ?? current.hero.title).trim().slice(0, 80),
       bio: String(input?.hero?.bio ?? current.hero.bio).trim().slice(0, 600),

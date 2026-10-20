@@ -1,14 +1,16 @@
 import type { CollectionEntry } from 'astro:content';
 import { getCollection } from 'astro:content';
 import siteConfig from '../data/site.config.json';
+import { getPresentation } from './site-content';
 
 export type BlogPost = CollectionEntry<'posts'>;
 
 export const site = {
-  name: siteConfig.siteName,
-  description: siteConfig.siteDescription,
+  get name() { return getPresentation().siteName || siteConfig.siteName; },
+  get description() { return getPresentation().description || siteConfig.siteDescription; },
   url: import.meta.env.SITE_URL ?? 'https://example.com',
-  author: siteConfig.siteAuthor,
+  get author() { return getPresentation().author || siteConfig.siteAuthor; },
+  get avatar() { return getPresentation().avatar; },
 };
 
 // 仅返回已发布内容的访问器。草稿由管理端撰写，但绝不会构建进公开站点，

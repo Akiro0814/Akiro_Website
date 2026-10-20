@@ -1,7 +1,7 @@
 // 音乐播放器运行逻辑（自 MusicPlayer.astro 外置，行为不变）。
 // 打包为可缓存模块；播放器 DOM 带 transition:persist 换页复用同一节点，
 // 整个脚本只在首次加载初始化一次。歌单 ID 由组件 data 属性注入，
-// 未配置（或为占位符）时组件整体不渲染，脚本自然不初始化。
+// 未配置网易云 ID 时仍可读取后台管理的本地歌单，空歌单则隐藏入口。
 // 外部 Meting 解析请求统一走 ./music-api.js（含出站地址校验）；
 // 歌词 LRC 解析走 ./../lib/lrc.js（纯函数，单测覆盖）。
 import { fetchMetingPlaylist } from './music-api.js';
@@ -50,12 +50,11 @@ import { parseLrc } from '../lib/lrc.js';
     const dockCover = root.querySelector('[data-music-dock-cover]');
     const lyricsBox = root.querySelector('[data-music-lyrics]');
     const lyricToggle = root.querySelector('[data-music-lyric-toggle]');
-    // 未配置歌单 ID 时直接不初始化播放器，而不是回落到写死的真实歌单
+    // 本地歌单使用独立偏好键，不要求同时配置外部网易云歌单。
     const playlistId = root.dataset.playlistId || '';
-    const storageKey = `blog-music-player:${playlistId}`;
+    const storageKey = `blog-music-player:${playlistId || 'managed'}`;
 
     if (
-      !playlistId ||
       !panel || !toggle || !audio || !playButton || !prevButton || !nextButton ||
       !muteButton || !progress || !list || !title || !artist || !status
     ) return;
@@ -193,7 +192,7 @@ import { parseLrc } from '../lib/lrc.js';
         navigator.mediaSession.metadata = new MediaMetadata({
           title: track.title,
           artist: track.artist,
-          album: 'L1angK1NG的博客 · 网易云歌单',
+          album: document.querySelector('meta[property="og:site_name"]')?.content || '个人博客歌单',
           artwork: track.cover
             ? [{ src: track.cover, sizes: '300x300', type: 'image/jpeg' }]
             : [],
@@ -547,7 +546,7 @@ import { parseLrc } from '../lib/lrc.js';
           const res = await request;
           if (res && res.ok) {
             const data = await res.json();
-            if (Array.isArray(data?.tracks) && data.tracks.length) {
+            if (Array.isArray(data?.tracks)) {
               items = data.tracks;
               managed = true;
             }
@@ -556,8 +555,17 @@ import { parseLrc } from '../lib/lrc.js';
           // 自建歌单不可用时回退到网易云歌单。
         }
 
-        if (!managed) {
+        if (!managed && playlistId) {
           items = await fetchMetingPlaylist(playlistId, { signal: fetchController.signal });
+        }
+        // 服务端已处理环境歌单兜底，成功返回空列表表示没有可公开播放的歌曲。
+        // 不在浏览器重新拉起旧歌单，避免后台全部下架后前台仍继续展示。
+        if ((managed || !playlistId) && !items.length) {
+          tracks = [];
+          wantsPlayback = false;
+          audio.pause();
+          root.hidden = true;
+          return;
         }
 
         tracks = items
@@ -567,6 +575,7 @@ import { parseLrc } from '../lib/lrc.js';
           .filter((track) => track.url || (track.neteaseId && track.source === 'netease'));
 
         if (!tracks.length) throw new Error('Playlist is empty');
+        root.hidden = false;
         const requestedIndex = Number(saved.index);
         currentIndex = Number.isInteger(requestedIndex)
           ? Math.min(tracks.length - 1, Math.max(0, requestedIndex))

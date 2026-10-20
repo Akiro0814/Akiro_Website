@@ -68,6 +68,8 @@ function resolveSessionSecret() {
 
 app.set('trust proxy', process.env.TRUST_PROXY || (COOKIE_SECURE ? 1 : false));
 app.disable('x-powered-by');
+// Twikoo 图片上传与导入包含 base64，独立提高解析上限，其余管理接口仍维持 2MB。
+app.use(['/api/public/twikoo', '/api/manage/twikoo'], express.json({ limit: '16mb' }));
 app.use(express.json({ limit: '2mb' }));
 
 // —— 统一请求入口（常量基址 + 查询传目标） ——
@@ -110,6 +112,9 @@ app.get('/admin-assets/vendor/gsap.js', (_req, res) => {
 });
 app.get('/admin-assets/vendor/flip.js', (_req, res) => {
   res.type('application/javascript').sendFile(path.join(ROOT, 'node_modules', 'gsap', 'dist', 'Flip.min.js'));
+});
+app.get('/admin-assets/vendor/twikoo.js', (_req, res) => {
+  res.type('application/javascript').sendFile(path.join(ROOT, 'node_modules', 'twikoo', 'dist', 'twikoo.min.js'));
 });
 
 // 共享的 HTML 白名单净化模块：前台评论与后台预览共用同一份源码，
@@ -357,12 +362,20 @@ app.get('/admin/comments', requirePageAuth, wrap(async (req, res) => {
     views.commentsPage({
       user: req.session.user,
       boot: currentBoot(req),
-      items: commentsLib.adminList({ status, keyword }),
-      counts: commentsLib.adminCount(),
+      items: await commentsLib.adminList({ status, keyword }),
+      counts: await commentsLib.adminCount(),
       filter: { status, keyword },
     }),
   );
 }));
+
+app.get('/admin/twikoo', requirePageAuth, (req, res) => {
+  res.send(views.twikooPage({ user: req.session.user, boot: currentBoot(req) }));
+});
+app.get('/admin/twikoo-panel', requirePageAuth, (req, res) => {
+  res.set('Cache-Control', 'no-store');
+  res.send(views.twikooPanel({ csrfToken: req.session.csrfToken }));
+});
 
 // —— 站点数据（开站日期 + 访客数据 + 访问统计，原「访问统计」页并入） ——
 app.get('/admin/site-stats', requirePageAuth, wrap(async (req, res) => {
@@ -372,7 +385,7 @@ app.get('/admin/site-stats', requirePageAuth, wrap(async (req, res) => {
       user: req.session.user,
       boot: currentBoot(req),
       meta: siteData.getSiteMeta(),
-      preview: routesLib.siteStats(),
+      preview: await routesLib.siteStats(),
       stats: summary({ pathsLimit: 50, regionsLimit: 50 }),
     }),
   );
@@ -397,7 +410,7 @@ app.post('/api/login', requireCsrf, wrap(async (req, res) => {
 
   // 勾选「记住登录状态」时签发 30 分钟免密令牌（默认勾选）。
   const remember = req.body?.remember === true || req.body?.remember === 'on';
-  const user = process.env.ADMIN_USER || 'admin';
+  const user = process.env.ADMIN_USER || 'Akiro';
   const rememberToken = remember ? issueRememberToken(user) : null;
 
   // 登录时轮换 session id 以防止会话固定攻击，然后存储身份信息。
@@ -687,6 +700,7 @@ app.use((req, res, next) => {
 app.use((err, req, res, _next) => {
   // 上传超限：给出可操作的提示而不是笼统的服务器错误。
   if (err?.type === 'entity.too.large') {
+    if (req.path.endsWith('/twikoo')) return res.status(413).json({ error: 'Twikoo 请求不能超过 16MB，请分批导入或压缩图片。' });
     return res.status(413).json({ error: '图片不能超过 10MB，请压缩后再上传。' });
   }
   console.error('[admin]', err);
@@ -694,7 +708,7 @@ app.use((err, req, res, _next) => {
   return res.status(500).send('服务器内部错误');
 });
 
-app.listen(PORT, () => {
+const httpServer = app.listen(PORT, () => {
   console.log(`[admin] 博客后台已启动: http://localhost:${PORT}/admin`);
   console.log(`[admin] 内容目录: ${path.join(ROOT, 'src', 'content')}`);
   // 预热服务器监控采样（CPU/磁盘/网卡）：登录后首次打开仪表盘时缓存已就绪，
@@ -702,4 +716,16 @@ app.listen(PORT, () => {
   import('./lib/server-monitor.mjs')
     .then((m) => m.snapshot())
     .catch(() => {});
+});
+
+// 正常退出先排空 HTTP 请求，再保存并关闭官方数据库，避免自动保存窗口丢数据。
+let stopping = false;
+for (const name of ['SIGINT', 'SIGTERM']) process.once(name, () => {
+  if (stopping) return;
+  stopping = true;
+  httpServer.close(async () => {
+    const { twikoo } = await import('./lib/twikoo.mjs');
+    await twikoo.close();
+    process.exit(0);
+  });
 });

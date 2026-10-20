@@ -1,8 +1,4 @@
-/* 全站字体：霞鹜文楷等宽（LXGW WenKai Mono，基于 Klee One 的开源中文字体）。
-   自托管于 /fonts/，已子集化为 woff2 分片（声明见 fonts.css）：按 unicode-range
-   分片按需加载，首屏只下载拉丁 + 常用汉字约 0.9MB；font-display: swap 让字体
-   就绪前先用回退字体渲染。只有一个 Medium 字重：font-weight 声明为 normal，
-   600 以上的粗体请求由浏览器仿粗渲染，保留标题与正文的层级对比。 */
+/* 全站使用官方得意黑网页字体，font-display: swap 让加载期间文字可见。 */
 @import "./fonts.css";
 
 /* 空状态占位提示：列表为空、筛选无结果、加载失败时的访客视角文案。
@@ -175,7 +171,7 @@ textarea {
 }
 
 html {
-  font-family: "LXGW WenKai Mono", system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC",
+  font-family: "Smiley Sans", system-ui, -apple-system, BlinkMacSystemFont, "PingFang SC",
     "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
   font-size: 14px;
   line-height: 1.7;
@@ -2269,8 +2265,8 @@ html[data-theme-mode="auto"] .theme-toggle .theme-toggle__auto {
 }
 
 .post-content code {
-  /* 文楷等宽本身就是等宽字体，代码块直接用它，缺字时才落到系统等宽 */
-  font-family: "LXGW WenKai Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+  /* 代码拉丁字符保持等宽，中文使用得意黑回退，便于对齐与阅读。 */
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Smiley Sans",
     "Liberation Mono", monospace;
   font-size: 0.9em;
 }
@@ -3614,50 +3610,8 @@ html[data-theme-mode="auto"] .theme-toggle .theme-toggle__auto {
   color: var(--brand);
 }
 
-/* ---------- 动效：滚动显现 + 主题交叉淡入 ---------- */
-@media (prefers-reduced-motion: no-preference) {
-  .js :is(
-    .hero__intro > *, .hero__picks, .site-stats,
-    .section__header, .section__more, .post-row,
-    .related-posts, .post-nav, .article__header > *, .article__main > .article__cover,
-    .proj-section__head, .proj,
-    .page-header, .archive-summary, .archive-year__head,
-    .about__intro > *,
-    .note
-  ) {
-    transition: opacity var(--t-slow) var(--ease-out-soft),
-      transform var(--t-slow) var(--ease-out-soft);
-    transition-delay: var(--reveal-delay, 0s);
-  }
-
-  .js :is(
-    .hero__intro > *, .hero__picks, .site-stats,
-    .section__header, .section__more, .post-row,
-    .related-posts, .post-nav, .article__header > *, .article__main > .article__cover,
-    .proj-section__head, .proj,
-    .page-header, .archive-summary, .archive-year__head,
-    .about__intro > *,
-    .note
-  ):not(.is-revealed) {
-    opacity: 0;
-    transform: translateY(1.25rem);
-  }
-
-  /* 页头内容逐渐聚焦 —— 上升时模糊随之消散。
-     （.js.js 与主显现选择器具有相同的 (0,3,0) 特异性 ——
-     它包含 `.article__main > .article__cover` —— 因此后写的这条
-     规则胜出，并在 transition 中加入 `filter`。） */
-  .js.js :is(.hero__intro > *, .article__header > *) {
-    transition: opacity var(--t-slow) var(--ease-out-soft),
-      transform var(--t-slow) var(--ease-out-soft),
-      filter var(--t-slow) var(--ease-out-soft);
-    transition-delay: var(--reveal-delay, 0s);
-  }
-
-  .js.js :is(.hero__intro > *, .article__header > *):not(.is-revealed) {
-    filter: blur(7px);
-  }
-}
+/* Page reveals are owned by src/scripts/site/motion.js. Content defaults to
+   visible so script failure and reduced motion cannot hide statistics/text. */
 
 /* 新渲染的评论依次级联浮现（支持 @starting-style 的浏览器） */
 @media (prefers-reduced-motion: no-preference) {

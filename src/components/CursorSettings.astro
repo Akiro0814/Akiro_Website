@@ -1,0 +1,40 @@
+---
+import { CURSOR_DEFAULTS, CURSOR_RANGES } from '../lib/cursor-settings.js';
+const fields = (Object.keys(CURSOR_RANGES) as Array<keyof typeof CURSOR_RANGES>).map((key) => ({ key, ...CURSOR_RANGES[key], value: CURSOR_DEFAULTS[key] }));
+---
+<div class="cursor-preferences">
+  <div class="cursor-preferences__intro"><strong>让光标跟上你的节奏</strong><p>移动鼠标即可体验，修改实时生效。</p></div>
+  <label class="cursor-switch"><span>自定义光标<small>关闭后使用系统指针</small></span><input type="checkbox" data-cursor-setting="enabled" checked={CURSOR_DEFAULTS.enabled} role="switch" /></label>
+  <label class="cursor-switch"><span>平滑跟随<small>关闭后直接跟随鼠标</small></span><input type="checkbox" data-cursor-setting="smooth" checked={CURSOR_DEFAULTS.smooth} role="switch" /></label>
+  <div class="cursor-ranges">
+    {fields.map((field) => <label class="cursor-range"><span>{field.label}<output data-cursor-output={field.key} for={`cursor-${field.key}`}>{field.unit === '%' ? Math.round(field.value * 100) : field.value}{field.unit}</output></span><input id={`cursor-${field.key}`} type="range" data-cursor-setting={field.key} min={field.min} max={field.max} step={field.step} value={field.value} /><small>{field.hint}</small></label>)}
+  </div>
+  <div class="cursor-preview-zone"><img src="/cursor/akiro-minimal-ink.svg" width="32" height="40" alt="" /><span>在这里移动鼠标，试试手感</span></div>
+  <p class="cursor-status" data-cursor-status role="status">偏好仅保存在当前浏览器。</p>
+  <button type="button" class="atlas-style-reset" data-cursor-reset>恢复光标默认</button>
+</div>
+
+<style>
+  .cursor-preferences { padding-top: 20px; }
+  .cursor-preferences__intro strong { font-size: 16px; font-weight: 500; }
+  .cursor-preferences__intro p { font-size: 11px; color: var(--text-muted); margin: 8px 0 18px; }
+  .cursor-switch { display:flex; justify-content:space-between; align-items:center; gap:16px; padding:13px 0; border-bottom:1px solid var(--border); font-size:13px; }
+  .cursor-switch small { display:block; color:var(--text-muted); font-size:10px; margin-top:5px; }
+  .cursor-switch input { appearance:none; flex-shrink:0; width:38px; height:23px; border-radius:99px; background:var(--border-strong); border:1px solid var(--border); position:relative; cursor:pointer; transition:background .2s; }
+  .cursor-switch input::after { content:''; position:absolute; width:17px; height:17px; border-radius:50%; background:var(--surface); top:2px; left:2px; box-shadow:0 1px 4px #0002; transition:transform .2s; }
+  .cursor-switch input:checked { background:var(--brand); border-color:var(--brand); }
+  .cursor-switch input:checked::after { transform:translateX(15px); background:#fffef9; }
+  .cursor-ranges { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:18px 20px; margin:21px 0; }
+  .cursor-range { display:grid; gap:6px; }
+  .cursor-range>span { display:flex; justify-content:space-between; font-size:12px; gap:16px; }
+  .cursor-range output { color:var(--brand); font-variant-numeric:tabular-nums; }
+  .cursor-range small { font-size:10px; color:var(--text-muted); }
+  .cursor-range input { width:100%; min-height:26px; margin:0; accent-color:var(--brand); cursor:ew-resize; }
+  .cursor-range input:disabled { opacity:.4; cursor:default; }
+  .cursor-range:has(input:disabled) { color:var(--text-muted); }
+  .cursor-preview-zone { min-height:100px; border:1px dashed var(--border-strong); border-radius:var(--radius-sm); background:var(--bg-tint); display:flex; justify-content:center; align-items:center; gap:12px; padding:16px; color:var(--text-muted); font-size:11px; }
+  .cursor-preview-zone img { width:var(--sc-size,24px); height:auto; }
+  .cursor-status { color:var(--text-muted); font-size:10px; line-height:1.7; margin:13px 0 0; }
+  @media(max-width:420px) { .cursor-ranges { grid-template-columns:minmax(0,1fr); } }
+  @media(prefers-reduced-motion:reduce) { .cursor-switch input,.cursor-switch input::after { transition:none; } }
+</style>

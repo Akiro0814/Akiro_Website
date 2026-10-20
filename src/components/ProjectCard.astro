@@ -1,0 +1,21 @@
+---
+import Icon from './Icon.astro';
+import starFillIcon from '@phosphor-icons/core/assets/fill/star-fill.svg?raw';
+interface Props { item: { id:string; title:string; owner:string; href:string; description:string; icon:string; cover:string; stars:number|null; tags:string[]; detailHref:string; noteHref:string; }; }
+const { item } = Astro.props;
+const external=item.href.startsWith('http');
+---
+<article class="proj" data-project-id={item.id} data-animate data-tilt data-spotlight>
+  <span class="proj__icon"><span data-project-icon hidden={!!item.cover}><Icon name={item.icon} size={18}/></span><img data-project-cover src={item.cover||undefined} hidden={!item.cover} alt="" loading="lazy" referrerpolicy="no-referrer" /></span>
+  <div class="proj__body">
+    <span class="proj__owner"><span data-project-owner>{item.owner}</span><span class="proj__stars" data-project-stars-wrap hidden={item.stars===null}><span class="proj__stars-icon" aria-hidden="true" set:html={starFillIcon}></span><span data-project-stars>{item.stars??''}</span></span></span>
+    <h3 class="proj__title"><a data-project-href href={item.href} target={external?'_blank':undefined} rel={external?'noopener noreferrer':undefined}><span data-project-title>{item.title}</span><Icon name="arrow-up-right" size={16} class="proj__go"/></a></h3>
+    <p class="proj__desc" data-project-description>{item.description}</p>
+    <div class="proj__foot"><span class="proj__tags" data-project-tags>{item.tags.map((tag)=><small>{tag}</small>)}</span><span class="project-card-actions"><a class="proj__note" data-project-detail href={item.detailHref||undefined} hidden={!item.detailHref}>详情<Icon name="arrow-right" size={13}/></a><a class="proj__note" data-project-note href={item.noteHref||undefined} hidden={!item.noteHref}>笔记<Icon name="arrow-right" size={13}/></a></span></div>
+  </div>
+</article>
+<style>
+  .proj [hidden] { display:none!important; }
+  .proj__icon img { width:100%;height:100%;object-fit:cover;border-radius:9px; }
+  .project-card-actions {display:flex;align-items:center;gap:12px;margin-left:auto;}
+</style>

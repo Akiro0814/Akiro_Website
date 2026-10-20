@@ -1,4 +1,4 @@
-import { normalizeAppearance, filterCommands } from './ui-model.js?v=20261013-pearl-1';
+import { normalizeAppearance, filterCommands } from './ui-model.js?v=20261020-align-2';
 import {
   appear,
   dismiss,
@@ -9,9 +9,10 @@ import {
   motionOff,
   tween,
   typeOut,
-} from './motion.js?v=20261013-pearl-1';
-import { initVisualizations } from './visualizations.js?v=20261013-pearl-1';
-import { initLoginScene } from './login-scene.js?v=20261013-pearl-1';
+} from './motion.js?v=20261020-align-2';
+import { initVisualizations } from './visualizations.js?v=20261020-align-2';
+import { initLoginScene } from './login-scene.js?v=20261020-align-2';
+import { enhanceStudio } from './studio-motion.js?v=20261020-align-2';
 
 const make = (tag, cls, text) => {
   const el = document.createElement(tag);
@@ -230,17 +231,18 @@ export function notify(message, isError = false) {
   resume();
 }
 
-export function segmented(options, value, onChange) {
+export function segmented(options, value, onChange, signal) {
   const box = make('div', 'pearl-segment');
   box.setAttribute('role', 'group');
   const thumb = make('span', 'pearl-slider');
   thumb.setAttribute('aria-hidden', 'true');
   box.append(thumb);
-  const sync = () => {
+  const sync = (immediate = false) => {
+    if (!box.isConnected || signal?.aborted) return;
     const active = box.querySelector('[aria-pressed="true"]');
     if (active) {
       box.classList.add('has-slider');
-      slideThumb(thumb, active);
+      slideThumb(thumb, active, immediate);
     }
   };
   for (const option of options) {
@@ -252,9 +254,18 @@ export function segmented(options, value, onChange) {
       for (const b of box.querySelectorAll('button')) b.setAttribute('aria-pressed', String(b === btn));
       sync();
       onChange(option.value);
-    });
+    }, { signal });
   }
-  requestAnimationFrame(sync);
+  // 密度、字体加载与窄屏换行都会改变尺寸。观察容器和按钮的布局尺寸，
+  // 重新测量时直接归位，不从旧尺寸反复补间；transform 按压不会触发此观察器。
+  const observer = new ResizeObserver(() => sync(true));
+  observer.observe(box);
+  box.querySelectorAll('button').forEach((button) => observer.observe(button));
+  signal?.addEventListener('abort', () => {
+    observer.disconnect();
+    window.gsap?.killTweensOf(thumb);
+  }, { once:true });
+  requestAnimationFrame(() => sync(true));
   return box;
 }
 
@@ -290,7 +301,7 @@ function showAppearance() {
       segmented(options, appearance[key], (v) => {
         appearance[key] = v;
         applyAppearance();
-      })
+      }, dialog.signal)
     );
     dialog.body.append(row);
   }
@@ -828,6 +839,7 @@ export function initInterface() {
 
 export function enhancePage(root, signal) {
   if (!root) return;
+  enhanceStudio(root, signal);
   popClose?.();
   syncNavigation();
   document.querySelector('.app')?.classList.remove('is-mobile-open');
@@ -835,7 +847,7 @@ export function enhancePage(root, signal) {
   root.querySelectorAll('select').forEach((select) => enhanceSelect(select, signal));
   enhanceTables(root, signal);
   enhanceHover(root, signal);
-  initVisualizations(root, signal, segmented);
+  initVisualizations(root, signal, (options, value, onChange) => segmented(options, value, onChange, signal));
   root.querySelectorAll('.stat__value').forEach(animateNumber);
   animateCharts(root);
   // Inline business editors gain the same reveal treatment without changing their IDs or bindings.

@@ -1,0 +1,56 @@
+---
+// 模糊层固定在裁切视口之外，不随横轨内容平移，也不会拦截卡片/目录点击。
+interface Props { axis?: 'horizontal' | 'vertical'; }
+const { axis = 'horizontal' } = Astro.props;
+const layers = [0.5, 1, 2, 4, 8, 14];
+---
+<div class="progressive-viewport" data-progressive-viewport data-axis={axis}>
+  <slot />
+  {['start', 'end'].map((edge) => (
+    <span class={`progressive-blur progressive-blur--${edge}`} aria-hidden="true">
+      {layers.map((blur, i) => <span class="progressive-blur__layer" style={`--progressive-blur:${blur}px;--solid:${Math.max(0, 70-i*14)}%;--fade:${100-i*13}%`}></span>)}
+    </span>
+  ))}
+</div>
+
+<style>
+  .progressive-viewport {
+    position:relative; min-width:0; max-width:100%; isolation:isolate;
+    --edge-span:clamp(28px,5vw,80px);
+    --edge-start-fade:0px; --edge-end-fade:0px;
+    --edge-start-alpha:1; --edge-end-alpha:1;
+    --viewport-direction:to right; --cross-direction:to bottom; --cross-feather:28px;
+  }
+  .progressive-viewport[data-axis='vertical'] { --edge-span:28px; --viewport-direction:to bottom; --cross-direction:to right; --cross-feather:12px; }
+  .progressive-viewport[data-edge-start='true'] { --edge-start-fade:var(--edge-span); --edge-start-alpha:0; }
+  .progressive-viewport[data-edge-end='true'] { --edge-end-fade:var(--edge-span); --edge-end-alpha:0; }
+  /* 连同被裁切的内容一起淡出。仅把模糊层羽化会重新露出下面仍被硬切的卡片，
+     因此视口本身也必须逐渐融入页面底色；完整可见的一侧不加淡出。 */
+  .progressive-viewport:is([data-edge-start='true'],[data-edge-end='true']) {
+    -webkit-mask-image:linear-gradient(var(--viewport-direction),rgba(0,0,0,var(--edge-start-alpha)) 0,#000 var(--edge-start-fade),#000 calc(100% - var(--edge-end-fade)),rgba(0,0,0,var(--edge-end-alpha)) 100%);
+    mask-image:linear-gradient(var(--viewport-direction),rgba(0,0,0,var(--edge-start-alpha)) 0,#000 var(--edge-start-fade),#000 calc(100% - var(--edge-end-fade)),rgba(0,0,0,var(--edge-end-alpha)) 100%);
+  }
+  .progressive-blur {
+    position:absolute; z-index:4; pointer-events:none; opacity:0; transition:opacity .2s; overflow:hidden;
+    /* 沿垂直于滚动的方向再羽化，消除覆盖层顶部/底部（或两侧）的矩形边框感。 */
+    -webkit-mask-image:linear-gradient(var(--cross-direction),transparent,#000 var(--cross-feather),#000 calc(100% - var(--cross-feather)),transparent);
+    mask-image:linear-gradient(var(--cross-direction),transparent,#000 var(--cross-feather),#000 calc(100% - var(--cross-feather)),transparent);
+  }
+  .progressive-viewport[data-edge-start='true']>.progressive-blur--start,
+  .progressive-viewport[data-edge-end='true']>.progressive-blur--end { opacity:1; }
+  [data-axis='horizontal']>.progressive-blur { top:0; bottom:0; width:var(--edge-span); }
+  [data-axis='horizontal']>.progressive-blur--start { left:0; --edge-direction:to right; }
+  [data-axis='horizontal']>.progressive-blur--end { right:0; --edge-direction:to left; }
+  [data-axis='vertical']>.progressive-blur { left:0; right:0; height:var(--edge-span); }
+  [data-axis='vertical']>.progressive-blur--start { top:0; --edge-direction:to bottom; }
+  [data-axis='vertical']>.progressive-blur--end { bottom:0; --edge-direction:to top; }
+  .progressive-blur__layer {
+    position:absolute; inset:0;
+    -webkit-backdrop-filter:blur(var(--progressive-blur)); backdrop-filter:blur(var(--progressive-blur));
+    -webkit-mask-image:linear-gradient(var(--edge-direction),#000 0 var(--solid),transparent var(--fade));
+    mask-image:linear-gradient(var(--edge-direction),#000 0 var(--solid),transparent var(--fade));
+  }
+  .progressive-blur::after { content:''; position:absolute; inset:0; background:linear-gradient(var(--edge-direction),color-mix(in srgb,var(--bg) 35%,transparent),transparent); }
+  @media(prefers-reduced-motion:reduce) { .progressive-blur { transition:none; } }
+  @media(prefers-reduced-transparency:reduce) { .progressive-blur__layer { -webkit-backdrop-filter:none; backdrop-filter:none; } }
+</style>

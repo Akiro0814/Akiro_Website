@@ -116,38 +116,63 @@ export function dismiss(el, kind = 'panel', origin) {
   });
 }
 
-export function slideThumb(thumb, target) {
+const placedThumbs = new WeakSet();
+export function slideThumb(thumb, target, immediate = false) {
   if (!thumb || !target) return;
   const parent = thumb.offsetParent;
   if (!parent) return;
-  const a = parent.getBoundingClientRect(),
-    b = target.getBoundingClientRect();
-  const sx = parent.offsetWidth ? a.width / parent.offsetWidth : 1,
-    sy = parent.offsetHeight ? a.height / parent.offsetHeight : 1;
-  const values = {
-    x: (b.left - a.left) / (sx || 1) + parent.scrollLeft - parent.clientLeft,
-    y: (b.top - a.top) / (sy || 1) + parent.scrollTop - parent.clientTop,
-    width: b.width / (sx || 1),
-    height: b.height / (sy || 1),
-  };
-  if (motionOff() || !engine()) {
+  let values;
+  if (target.offsetParent === parent) {
+    // 使用未经过 transform 的布局值：点击时按钮仍在按压回弹，不能将临时缩小的
+    // getBoundingClientRect 固化为选中背景的最终尺寸；弹窗父级缩放亦不应改变坐标。
+    values = { x:target.offsetLeft, y:target.offsetTop, width:target.offsetWidth, height:target.offsetHeight };
+  } else {
+    const a = parent.getBoundingClientRect(), b = target.getBoundingClientRect();
+    const sx = parent.offsetWidth ? a.width / parent.offsetWidth : 1;
+    const sy = parent.offsetHeight ? a.height / parent.offsetHeight : 1;
+    values = {
+      x:(b.left-a.left)/(sx||1)+parent.scrollLeft-parent.clientLeft,
+      y:(b.top-a.top)/(sy||1)+parent.scrollTop-parent.clientTop,
+      width:b.width/(sx||1), height:b.height/(sy||1),
+    };
+  }
+  if (engine() && (immediate || !placedThumbs.has(thumb))) {
+    engine().killTweensOf(thumb);
+    engine().set(thumb, values);
+  } else if (motionOff() || !engine()) {
+    engine()?.killTweensOf(thumb);
     Object.assign(thumb.style, {
       transform: `translate(${values.x}px,${values.y}px)`,
       width: `${values.width}px`,
       height: `${values.height}px`,
     });
   } else engine().to(thumb, { ...values, duration: 0.52, ease: ease.glide, overwrite: true });
+  placedThumbs.add(thumb);
 }
 
+const pageScenes = new Map();
+const finishScene = (root) => {
+  const scene = pageScenes.get(root);
+  if (scene) { scene.progress(1); scene.kill(); pageScenes.delete(root); }
+  if (root) root.dataset.motionScene = 'ready';
+};
+
 export function enterPage(root) {
-  if (!root || motionOff() || !engine()) return;
+  if (!root) return;
+  finishScene(root);
+  if (motionOff() || !engine()) return;
+  // 一次有节奏的页面进场，不对父卡片和其中的统计数字重复叠加位移动画。
+  // 页面内容先保持可用，再由 GSAP 接管；脚本缺失不会把服务端内容永久隐藏。
+  root.dataset.motionScene = 'entering';
   const items = visible(root.querySelectorAll(':scope > *, #dash-root > *'));
-  engine().fromTo(
+  const timeline = engine().timeline({ onComplete: () => { pageScenes.delete(root); root.dataset.motionScene = 'ready'; } });
+  pageScenes.set(root, timeline);
+  timeline.fromTo(
     items,
     { opacity: 0, y: 12 },
-    { opacity: 1, y: 0, duration: 0.62, stagger: 0.045, ease: ease.reveal, clearProps: 'opacity,transform' }
+    { opacity: 1, y: 0, duration: 0.68, stagger: 0.065, ease: ease.reveal, clearProps: 'opacity,transform' }
   );
-  const cards = visible(root.querySelectorAll('.stat,.dash-stat,.media-item'));
+  const cards = visible(root.querySelectorAll('.stat,.dash-stat,.media-item')).filter((card) => !items.includes(card));
   if (cards.length)
     engine().fromTo(
       cards,
@@ -165,6 +190,7 @@ export function enterPage(root) {
 }
 
 export async function leavePage(root) {
+  finishScene(root);
   if (!root || motionOff() || !engine()) return;
   await new Promise((resolve) =>
     engine().to(root, { opacity: 0, scale: 0.988, duration: 0.16, ease: ease.exit, onComplete: resolve })
@@ -172,6 +198,7 @@ export async function leavePage(root) {
 }
 
 export function resetPage(root) {
+  finishScene(root);
   if (engine() && root) engine().set(root, { clearProps: 'opacity,transform' });
 }
 
@@ -277,6 +304,10 @@ export function flipLayout(elements, mutate) {
 }
 
 export function installMotion() {
+  // 系统偏好切换时立刻显示最终画面，不让中途的透明度或位移滞留在界面上。
+  matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', (event) => {
+    if (event.matches) [...pageScenes.keys()].forEach(finishScene);
+  });
   const pressed = new Set();
   document.addEventListener(
     'pointerdown',
@@ -322,7 +353,7 @@ export function installMotion() {
       'pointermove',
       (event) => {
         if (motionOff() || glowFrame) return;
-        const el = event.target.closest('.stat,.pearl-board-card,.login-card');
+        const el = event.target.closest('.stat,.pearl-board-card,.login-card,.main .card');
         if (!el) return;
         glowFrame = requestAnimationFrame(() => {
           glowFrame = 0;

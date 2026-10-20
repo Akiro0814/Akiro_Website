@@ -4,13 +4,23 @@ import Footer from '../components/Footer.astro';
 import SmoothCursor from '../components/SmoothCursor.astro';
 import MusicPlayer from '../components/MusicPlayer.astro';
 import Nav from '../components/Nav.astro';
+import StyleConsole from '../components/StyleConsole.astro';
 import { ClientRouter } from 'astro:transitions';
 import { absoluteUrl, site } from '../lib/posts';
+import { getPresentation } from '../lib/site-content';
 import '../styles/global.css';
+import '../styles/atlas.css';
+import '../styles/inner-pages.css';
+import '../styles/theme-components.css';
+import '../styles/navigation-glass.css';
+import '@twikoo-sdk/twikoo.css';
+import '../styles/twikoo.css';
+import '../styles/readability.css';
 // 仅主题初始化与 API 哨兵两段极小脚本内联在 <head>（必须在首帧前同步执行 /
 // 早于一切请求）；其余站点脚本统一打包在 src/scripts/site/，可被浏览器缓存。
 import apiGuardSrc from '../scripts/inline/api-guard.js?raw';
 import themeInitSrc from '../scripts/inline/theme-init.js?raw';
+import appearanceInitSrc from '../scripts/inline/appearance-init.js?raw';
 
 interface Props {
   title?: string;
@@ -25,7 +35,7 @@ const {
   title = site.name,
   description = site.description,
   pageClass = '',
-  image = '/avatars/avatar.jpg',
+  image = site.avatar,
   type = 'website',
   jsonLd,
 } = Astro.props;
@@ -45,6 +55,7 @@ const websiteSchema = {
 };
 
 const ldScripts = [websiteSchema, ...(jsonLd ? [jsonLd] : [])];
+const presentation = getPresentation();
 
 // 路由过渡动画刻意只作用于页面内容。站点外壳保持静止，离场内容几乎
 // 完全消失后新内容才开始进场，文字永远不会叠在文字上交叉淡变。
@@ -83,16 +94,16 @@ const routeMotion = {
 ---
 
 <!doctype html>
-<html lang="zh-CN" transition:name="root" transition:animate="none">
+<html lang="zh-CN" transition:name="root" transition:animate="none" data-default-style={presentation.defaultStyle} data-default-mode={presentation.defaultMode} data-default-theme={presentation.defaultTheme}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="description" content={description} />
     <meta name="author" content={site.author} />
-    <meta id="theme-color" name="theme-color" content="#f8f7f4" />
+    <meta id="theme-color" name="theme-color" content="#f7f8f1" />
     <meta name="generator" content={Astro.generator} />
-    <link rel="icon" type="image/jpeg" href="/avatars/avatar.jpg" />
-    <link rel="apple-touch-icon" href="/avatars/avatar.jpg" />
+    <link rel="icon" href={site.avatar} />
+    <link rel="apple-touch-icon" href={site.avatar} />
     {import.meta.env.PUBLIC_TWIKOO_ENV_ID && (
       <link rel="preconnect" href={import.meta.env.PUBLIC_TWIKOO_ENV_ID} crossorigin />
     )}
@@ -125,6 +136,7 @@ const routeMotion = {
     <ClientRouter />
     <script is:inline set:html={apiGuardSrc}></script>
     <script is:inline set:html={themeInitSrc}></script>
+    <script is:inline set:html={appearanceInitSrc}></script>
   </head>
   <body class={pageClass}>
     <a class="skip-link" href="#main">跳到正文</a>
@@ -139,6 +151,7 @@ const routeMotion = {
       <slot />
     </main>
     <Footer />
+    <StyleConsole />
     <MusicPlayer />
     <SmoothCursor />
     <button type="button" class="to-top" data-to-top aria-label="回到顶部">

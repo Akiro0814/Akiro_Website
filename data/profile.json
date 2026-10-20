@@ -1,7 +1,7 @@
 {
   "hero": {
     "eyebrow": "AI · Code · Web",
-    "title": "你好，我是L1angK1NG",
+    "title": "你好，我是Akiro",
     "bio": "Ciallo～(∠・ω< )⌒☆，欢迎来到我的个人博客",
     "actionLabel": "浏览文章",
     "actionHref": "/archive/",
@@ -19,9 +19,10 @@
       {
         "icon": "github",
         "label": "GitHub",
-        "href": "https://github.com/L1angK1NG"
+        "href": "https://github.com/Akiro0814"
       }
-    ]
+    ],
+    "backgroundUrl": "/uploads/1791206564250-微信图片_20260626224835_183_6.jpg"
   },
   "about": {
     "lead": "去经历，去记录，去<em>成为想成为的人</em>。",
@@ -46,7 +47,7 @@
       {
         "icon": "github",
         "label": "GitHub",
-        "href": "https://github.com/L1angK1NG"
+        "href": "https://github.com/Akiro0814"
       }
     ]
   },
@@ -66,7 +67,7 @@
       {
         "icon": "github",
         "label": "GitHub",
-        "href": "https://github.com/L1angK1NG"
+        "href": "https://github.com/Akiro0814"
       }
     ],
     "copyright": "© {year} {author}",

@@ -4,6 +4,7 @@
 import { COLLECTIONS } from './lib/content.mjs';
 import { stripAnsi } from './lib/build.mjs';
 import { navIcon } from './lib/ui-icons.mjs';
+import { renderPresentationFields } from './lib/presentation-fields.mjs';
 
 export const esc = (v) =>
   String(v ?? '')
@@ -49,9 +50,10 @@ const asArray = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
 // 静态资源版本号：改 admin.css / admin.js 后递增即可让浏览器绕开 1 小时缓存，
 // 避免「改了样式但看到的还是旧文件」的排查成本（后台资源带 maxAge 缓存）。
-export const ASSET_V = '20261013-pearl-1';
+export const ASSET_V = '20261020-align-2';
 
 const UI_ASSETS = `<link rel="stylesheet" href="/admin-assets/pearl.css?v=${ASSET_V}" />
+  <link rel="stylesheet" href="/admin-assets/studio.css?v=${ASSET_V}" />
   <script src="/admin-assets/vendor/gsap.js?v=${ASSET_V}" defer></script>
   <script src="/admin-assets/vendor/flip.js?v=${ASSET_V}" defer></script>`;
 
@@ -163,6 +165,7 @@ export function layout({ title, active, user, boot, content }) {
     <header class="pearl-topbar">
       <button type="button" class="icon-button" id="rail-toggle" aria-label="切换导航" aria-expanded="true">☰</button>
       <div class="crumbs" aria-label="当前位置"><span>博客后台</span><span aria-hidden="true">›</span><strong id="pearl-page-title">${esc(title)}</strong></div>
+      <span class="studio-save-state" id="studio-save-state" role="status" aria-live="polite">准备就绪</span>
       <div class="spacer"></div>
       <button type="button" class="command-trigger" id="command-open" aria-label="搜索页面与快捷操作">⌕ <span>搜索与快捷操作</span><kbd>Ctrl K</kbd></button>
       <button type="button" class="icon-button" id="appearance-open" aria-label="外观设置">◐</button>
@@ -681,12 +684,14 @@ export function siteContentPage({ user, boot, profile }) {
 
   const content = `
     <header class="page__head page__head--row">
-      <div><h1>页面内容</h1><p>主页「你好……」首屏、关于页文案与页脚在这里统一编辑，保存后到「构建发布」上线。</p></div>
+      <div><h1>页面内容</h1><p>品牌、首页分区、默认外观、关于页与页脚统一配置，保存后构建发布。</p></div>
       <button type="button" class="btn btn--primary" id="profile-save">保存</button>
     </header>
 
+    ${renderPresentationFields(profile.presentation, esc)}
     <section class="card">
       <h2 class="card__title">主页首屏</h2>
+      <label class="field"><span class="field__label">固定背景 / 随机壁纸失效时的回退</span><input class="input" id="p-hero-background-url" value="${esc(hero.backgroundUrl || '')}" placeholder="/uploads/照片.jpg 或 https://…/视频.mp4" /><span class="field__hint">上方选择“固定图片或视频”时使用此地址；随机模式优先读取本地壁纸目录，目录为空才回退到此地址。<a href="/admin/media">打开媒体库</a></span></label>
       <label class="field"><span class="field__label">眉标（小字）</span><input class="input" id="p-hero-eyebrow" value="${esc(hero.eyebrow)}" /></label>
       <label class="field"><span class="field__label">主标题</span><input class="input" id="p-hero-title" value="${esc(hero.title)}" /></label>
       <label class="field"><span class="field__label">简介</span><textarea class="input" id="p-hero-bio" rows="3">${esc(hero.bio)}</textarea></label>
@@ -1062,7 +1067,7 @@ export function commentsPage({ user, boot, items, counts, filter = {} }) {
 
   const content = `
     <header class="page__head page__head--row">
-      <div><h1>评论</h1><p>先显后审：访客评论即时展示，可在此隐藏或删除。共 ${counts.total} 条（可见 ${counts.visible} / 隐藏 ${counts.hidden}）。</p></div>
+      <div><h1>评论</h1><p>已接入官方 Twikoo。共 ${counts.total} 条（可见 ${counts.visible} / 隐藏 ${counts.hidden}）；审核规则可在完整管理面板中调整。</p><a class="btn btn--sm" href="/admin/twikoo">Twikoo 完整管理 ↗</a></div>
       <div class="actions">
         <input class="input" id="comment-search" placeholder="搜索昵称 / 内容 / 页面" aria-label="搜索评论" style="width:220px" value="${esc(filter.keyword || '')}" />
         <button type="button" class="btn${filter.status !== 'visible' && filter.status !== 'hidden' ? ' btn--primary' : ''}" data-comment-filter="all">全部</button>
@@ -1088,6 +1093,13 @@ export function commentsPage({ user, boot, items, counts, filter = {} }) {
       </div>
     </section>`;
   return layout({ title: '评论', active: 'comments', user, boot: { ...boot, comments: items }, content });
+}
+
+export function twikooPage({ user, boot }) {
+  return layout({ title: 'Twikoo 管理', active: 'comments', user, boot, content: `<header class="page__head"><h1>Twikoo 完整管理</h1><p>已通过博客账户登录。评论、审核、配置与导入导出使用同一个 Twikoo 数据库。</p><a class="btn btn--sm" href="/admin/comments">返回评论列表</a></header><section class="card" style="padding:0;overflow:hidden"><iframe src="/admin/twikoo-panel" title="Twikoo 官方管理面板" style="display:block;width:100%;min-height:850px;border:0" loading="eager"></iframe></section>` });
+}
+export function twikooPanel({ csrfToken }) {
+  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="${esc(csrfToken)}"><title>Twikoo 管理</title></head><body class="akiro-twikoo-admin"><button type="button" id="open-twikoo-admin">打开官方管理面板</button><p id="twikoo-status" role="status">正在加载 Twikoo…</p><div id="twikoo-admin-mount"></div><script src="/admin-assets/vendor/twikoo.js"></script><link rel="stylesheet" href="/admin-assets/twikoo-panel.css"><script src="/admin-assets/twikoo-panel.js" defer></script></body></html>`;
 }
 
 // —— 站点数据（开站日期 + 访客数据 + 访问统计，原「访问统计」页并入） ——

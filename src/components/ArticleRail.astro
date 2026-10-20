@@ -1,0 +1,17 @@
+---
+import Icon from './Icon.astro';
+import ProgressiveBlur from './ProgressiveBlur.astro';
+import { formatDate, getPostCategory, getPostCover, getPostDescription, type BlogPost } from '../lib/posts';
+interface Props { posts: BlogPost[]; }
+const { posts } = Astro.props;
+---
+<ProgressiveBlur><div class="atlas-rail__viewport" data-rail-viewport tabindex="0" aria-label="精选文章，可横向滚动">
+  <div class="atlas-rail__track" data-rail-track>
+    {posts.map((post, i) => <article class="atlas-writing-card" data-animate data-spotlight>
+      <a href={`/posts/${post.id}/`}>
+        <div class="atlas-writing-card__image"><img src={getPostCover(post) || '/covers/default-cover.svg'} alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" /><span class="atlas-writing-card__number">0{i + 1}</span><span class="atlas-writing-card__arrow"><Icon name="arrow-up-right" /></span></div>
+        <div class="atlas-writing-card__body"><div class="atlas-card-meta">{post.data.date && <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>}<span>{getPostCategory(post) || '随笔'}</span></div><h3>{post.data.title}</h3><p>{getPostDescription(post)}</p><span class="atlas-writing-card__read">阅读全文 <Icon name="arrow-right" size={15} /></span></div>
+      </a>
+    </article>)}
+  </div>
+</div></ProgressiveBlur>

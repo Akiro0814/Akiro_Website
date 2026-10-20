@@ -1,0 +1,48 @@
+/* 官方 SDK 的布局与行为保持不变，用站点令牌统一五种风格及明暗主题。 */
+.cbox .twikoo { color:var(--text); font-family:var(--font-body); }
+.cbox .twikoo :is(button,input,textarea,select) { font-family:inherit; }
+.cbox .twikoo :is(.tk-input__inner,.tk-textarea__inner) { color:var(--text); background:var(--surface-muted); border:1px solid var(--border); border-radius:var(--component-control-radius,var(--radius-sm)); box-shadow:none; font:inherit; }
+.cbox .twikoo .tk-textarea__inner { min-height:110px; padding:14px; line-height:1.8; resize:vertical; }
+.cbox .twikoo :is(.tk-input__inner,.tk-textarea__inner):focus { border-color:var(--brand); outline:2px solid color-mix(in srgb,var(--brand) 25%,transparent); outline-offset:2px; }
+.cbox .twikoo .tk-input__inner::placeholder,.cbox .twikoo .tk-textarea__inner::placeholder { color:var(--text-faint); }
+.cbox .twikoo .tk-input-group__prepend { color:var(--text-muted); background:var(--bg-tint); border-color:var(--border); }
+.cbox .twikoo .tk-button { color:var(--text); background:var(--bg-tint); border:1px solid var(--border); border-radius:var(--component-control-radius,var(--radius-sm)); font:inherit; padding-inline:15px; }
+.cbox .twikoo .tk-button--primary { color:var(--surface); background:var(--text); border-color:var(--text); }
+.cbox .twikoo .tk-button--primary:hover { color:var(--surface); background:var(--brand); border-color:var(--brand); }
+.cbox .twikoo :is(.tk-comment,.tk-preview-container) { border-color:var(--border); }
+/* 身份栏使用自适应网格，避免官方窄屏 column 与 flex-basis/换列规则相互影响，撑宽整个页面。 */
+.cbox .twikoo .tk-meta-input { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr)); gap:8px; }
+.cbox .twikoo .tk-meta-input .tk-input { margin:0; min-width:0; width:100%; }
+/* 标签与输入共用一个轮廓，消除两个独立圆角/边框拼接产生的凹口。 */
+.cbox .twikoo .tk-meta-input .tk-input {
+  background:var(--surface-muted);
+  border:1px solid var(--border);
+  border-radius:var(--component-control-radius,var(--radius-sm));
+  overflow:hidden;
+}
+.cbox .twikoo .tk-meta-input .tk-input-group__prepend {
+  border:0; border-radius:0; background:transparent; color:var(--text-muted); padding:0 12px;
+}
+.cbox .twikoo .tk-meta-input .tk-input__inner {
+  border:0; border-radius:0; background:transparent; height:42px; padding:0 12px 0 0; outline:none; box-shadow:none;
+}
+.cbox .twikoo .tk-meta-input .tk-input:focus-within {
+  border-color:var(--brand); outline:2px solid color-mix(in srgb,var(--brand) 20%,transparent); outline-offset:2px;
+}
+.cbox .twikoo .tk-meta-input .tk-input__inner:focus { outline:none; }
+/* 撰写区不重复展示匿名头像；评论列表仍保留读者头像与身份。 */
+.cbox .twikoo .tk-submit .tk-row>.tk-avatar { display:none; }
+.cbox .twikoo :is(.tk-main,.tk-col) { min-width:0; }
+.cbox .twikoo .tk-input__inner { min-width:0; }
+.cbox .twikoo .tk-input-group__prepend { flex-shrink:0; }
+.cbox .twikoo .tk-comment .tk-content { color:var(--text); line-height:1.9; overflow-wrap:anywhere; }
+.cbox .twikoo .tk-content a { color:var(--brand); }
+.cbox .twikoo :is(.tk-time,.tk-action,.tk-footer,.tk-comments-count,.tk-tag) { color:var(--text-muted); }
+.cbox .twikoo .tk-tag { border-color:var(--border-strong); background:var(--bg-tint); }
+.cbox .twikoo .tk-icon,.cbox .twikoo .tk-sort-item { color:var(--text-muted); }
+.cbox .twikoo .tk-sort-item.__active,.cbox .twikoo .tk-icon:hover { color:var(--brand); }
+.cbox .twikoo .tk-avatar { border-radius:50%; }
+.cbox .twikoo .tk-admin-container,.cbox .twikoo .tk-icon.__admin { display:none; }
+.comment-service-status { color:var(--text-muted); font:inherit; font-size:12px; padding:12px 0; }
+.comment-service-status.is-error { color:var(--danger,#bd4548); }
+@media(max-width:600px) { .cbox .twikoo .tk-meta-input { grid-template-columns:minmax(0,1fr); }.cbox .twikoo .tk-submit>.tk-avatar { display:none; }.cbox .twikoo .tk-main { min-width:0; } }

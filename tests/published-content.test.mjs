@@ -43,6 +43,12 @@ DRAFT_ONLY_SECRET_BODY
 `);
   fs.writeFileSync(path.join(root, 'src', 'content', 'notes', '草稿.md'), '---\ndate: 2026-10-11\ndraft: true\n---\nDRAFT_ONLY_SECRET_NOTE');
   fs.writeFileSync(path.join(root, '.env'), 'SITE_URL=https://blog.test\nADMIN_PORT=4567\n');
+  // 验证真正的后台存储契约进入 Astro 构建，而非仅检查表单字段存在。
+  const { saveProfile } = await fixture.importModule('site-data.mjs');
+  await saveProfile({
+    presentation: { siteName: '配置回归站点', author: '配置作者', heroWords: ['后台轮换第一句', '后台轮换第二句'], writingTitle: '后台配置文章区', quoteText: '后台保存的首页结语', showStatus: false, showProjects: false, defaultStyle: 'glass', defaultTheme: 'dark', wallpaperMode: 'gradient', navItems: ['/notes/'] },
+    hero: { socials: [] }, footer: { links: [] },
+  });
   const env = { ...process.env, PUBLIC_NETEASE_PLAYLIST_ID: '', PUBLIC_TWIKOO_ENV_ID: '' };
   delete env.SITE_URL;
   delete env.ADMIN_PORT;
@@ -52,6 +58,17 @@ DRAFT_ONLY_SECRET_BODY
     env,
   });
   assert.equal(built.status, 0, built.error?.message || built.stdout + built.stderr);
+  const homepage = fs.readFileSync(path.join(root, 'dist', 'index.html'), 'utf8');
+  assert.match(homepage, /配置回归站点/);
+  assert.match(homepage, /配置作者/);
+  assert.match(homepage, /aria-label="后台轮换第一句"/);
+  assert.match(homepage, /后台配置文章区/);
+  assert.match(homepage, /后台保存的首页结语/);
+  assert.match(homepage, /data-default-style="glass"/);
+  assert.match(homepage, /data-default-theme="dark"/);
+  assert.match(homepage, /data-wallpaper-mode="gradient"/);
+  assert.doesNotMatch(homepage, /class="atlas-section atlas-status-section"/);
+  assert.doesNotMatch(homepage, /class="atlas-social-dock"[^>]*>[\s]*<a/);
   assert.doesNotMatch(built.stdout + built.stderr, /SITE_URL 未配置|markdown\.remarkPlugins/);
   const article = fs.readFileSync(path.join(root, 'dist', 'posts', '技术', '中文文章', 'index.html'), 'utf8');
   assert.match(article, /公开正文/);

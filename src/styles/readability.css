@@ -1,0 +1,15 @@
+/* 壁纸内容的颜色不能依赖全局 a:hover，避免浅色主题下被继承为深色文字。 */
+.atlas-hero .atlas-button--light { color:#141413; background:#faf9f5; }
+.atlas-hero .atlas-button--light:is(:hover,:focus-visible) { color:#141413; background:#fffefa; }
+.atlas-hero .atlas-button--ghost,
+.atlas-hero .atlas-button--ghost:is(:hover,:focus-visible) {
+  color:#faf9f5;
+  background:rgba(20,20,19,.68);
+  border-color:rgba(250,249,245,.55);
+  text-shadow:0 1px 3px rgba(0,0,0,.35);
+  -webkit-backdrop-filter:blur(10px);
+  backdrop-filter:blur(10px);
+}
+.atlas-hero .atlas-social-dock a { color:#faf9f5; background:rgba(20,20,19,.55); border-color:rgba(250,249,245,.35); }
+.atlas-hero .atlas-social-dock a:hover { color:#faf9f5; background:rgba(20,20,19,.7); }
+.article__aside .toc { max-height:calc(100dvh - 150px); overflow-y:auto; scrollbar-width:thin; }

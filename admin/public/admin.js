@@ -4,10 +4,10 @@
 // 无刷新导航的页面请求走 /admin-assets/page-loader.js（路由白名单在彼处校验）。
 import { sanitizeHtml } from '/admin-assets/shared/sanitize.js';
 import { isAllowedAdminRoute, loadAdminPage } from '/admin-assets/page-loader.js';
-import { initDashboard, stopDashboard } from '/admin-assets/dashboard.js?v=20261013-pearl-1';
-import { initDateTimePickers } from '/admin-assets/picker.js?v=20261013-pearl-1';
-import { initInterface, enhancePage, notify, confirmAction, loginSuccess } from '/admin-assets/interface.js?v=20261013-pearl-1';
-import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-assets/motion.js?v=20261013-pearl-1';
+import { initDashboard, stopDashboard } from '/admin-assets/dashboard.js?v=20261020-align-2';
+import { initDateTimePickers } from '/admin-assets/picker.js?v=20261020-align-2';
+import { initInterface, enhancePage, notify, confirmAction, loginSuccess } from '/admin-assets/interface.js?v=20261020-align-2';
+import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-assets/motion.js?v=20261020-align-2';
 
 (() => {
   initInterface();
@@ -164,6 +164,12 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
   // 离开页面前（整页卸载或在站内无刷新跳转）提醒。快照在保存成功时更新。
   let editorSnapshot = null;
   const editorDirty = () => editorSnapshot !== null && captureEditorState() !== editorSnapshot;
+  const pageDirty = () => editorDirty() || document.querySelector('.main')?.dataset.profileDirty === 'true';
+  window.addEventListener('beforeunload', (event) => {
+    if (!pageDirty()) return;
+    event.preventDefault();
+    event.returnValue = '';
+  });
 
   const captureEditorState = () => {
     const fields = {};
@@ -825,6 +831,41 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
   // ===== 页面内容（主页 hero + 关于页 + 页脚） =====
   const profileSave = document.getElementById('profile-save');
   if (profileSave) {
+    const collectPresentation = () => {
+      const values = {};
+      document.querySelectorAll('[data-presentation-key]').forEach((input) => {
+        const key = input.dataset.presentationKey;
+        const type = input.dataset.presentationType;
+        values[key] = type === 'boolean' ? input.checked : type === 'number' ? Number(input.value) : type === 'lines' ? input.value.split('\n').map((line) => line.trim()).filter(Boolean) : input.value;
+      });
+      values.navItems = [...document.querySelectorAll('[data-presentation-nav]:checked')].map((input) => input.dataset.presentationNav);
+      return values;
+    };
+    // 即时预览只写 textContent，不把后台输入插进 HTML；不会保存或发布任何内容。
+    document.querySelectorAll('[data-presentation-key]').forEach((input) => input.addEventListener('input', () => {
+      const target = document.querySelector(`[data-profile-preview="${input.dataset.presentationKey}"]`);
+      if (target) target.textContent = input.value || (input.dataset.presentationKey === 'author' ? 'Akiro' : '');
+    }));
+    const wallpaperStatus = document.querySelector('[data-wallpapers-status]');
+    const wallpaperList = document.querySelector('[data-wallpapers-list]');
+    const refreshWallpapers = async () => {
+      if (!wallpaperStatus || !wallpaperList) return;
+      wallpaperStatus.textContent = '正在读取目录…';
+      try {
+        const result = await api('/api/public/wallpapers');
+        if (!wallpaperStatus.isConnected) return;
+        const items = Array.isArray(result.items) ? result.items : [];
+        wallpaperStatus.textContent = items.length ? `已发现 ${items.length} 张图片 · 随机模式每次进入首页重新选取` : '目录暂无图片。添加图片后点击刷新，或使用固定背景。';
+        wallpaperList.replaceChildren();
+        items.slice(0, 16).forEach((url) => {
+          const link = document.createElement('a'); link.href = `/api/public${url}`; link.target = '_blank'; link.rel = 'noopener noreferrer';
+          const image = document.createElement('img'); image.src = link.href; image.alt = decodeURIComponent(url.split('/').at(-1)); image.loading = 'lazy';
+          link.append(image); wallpaperList.append(link);
+        });
+      } catch { if (wallpaperStatus.isConnected) wallpaperStatus.textContent = '暂时无法读取壁纸目录，请稍后刷新。'; }
+    };
+    document.querySelector('[data-wallpapers-refresh]')?.addEventListener('click', refreshWallpapers);
+    refreshWallpapers();
     // requireHref=false 用于页脚链接（链接可空，渲染为纯文字胶囊）
     const collectSocials = (ns, requireHref = true) =>
       [...document.querySelectorAll(`[data-social="${ns}"]`)].map((row) => ({
@@ -841,7 +882,9 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
           method: 'POST',
           body: {
             profile: {
+              presentation: collectPresentation(),
               hero: {
+                backgroundUrl: val('p-hero-background-url'),
                 eyebrow: val('p-hero-eyebrow'),
                 title: val('p-hero-title'),
                 bio: val('p-hero-bio'),
@@ -1613,9 +1656,10 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
     const rel = target.pathname + target.search;
     // 编辑器有未保存改动时先确认，避免无刷新跳转静默丢弃内容。
     // 仅在目标确实是站内另一条路由时询问（同地址的刷新不打断）。
-    if (editorDirty() && rel !== currentRel()) {
-      if (!await confirmAction('这篇内容有尚未保存的修改，确定离开并丢弃吗？')) return;
+    if (pageDirty() && rel !== currentRel()) {
+      if (!await confirmAction('当前页面有尚未保存的修改，确定离开并丢弃吗？')) return;
       resetEditorTracking();
+      if (mainEl) mainEl.dataset.profileDirty = 'false';
     }
     // 白名单校验（独立早退）：路由形状不符直接整页跳转交回浏览器。
     if (!isAllowedAdminRoute(rel)) {

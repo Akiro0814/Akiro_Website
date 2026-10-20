@@ -22,7 +22,7 @@ const contentHtml = String(
 <BaseLayout
   title={project.title}
   description={project.subtitle || project.description || `${project.title} - 项目详情`}
-  pageClass="article-page"
+  pageClass="article-page spring-inner"
   image={project.cover || undefined}
 >
   <article class="article">
@@ -31,7 +31,7 @@ const contentHtml = String(
       返回项目列表
     </a>
 
-    <header class="article__header">
+    <header class="article__header" data-animate>
       <div class="post-meta">
         {project.status && <span>{project.status}</span>}
         {project.tech.length > 0 && <span>{project.tech.join(' · ')}</span>}
@@ -56,14 +56,14 @@ const contentHtml = String(
         </div>
       )}
       {project.cover && (
-        <img
+        <div class="article-cover-frame" data-parallax><img
           class="article__cover"
           src={project.cover}
           alt=""
           loading="eager"
           fetchpriority="high"
           referrerpolicy="no-referrer"
-        />
+        /></div>
       )}
     </header>
 

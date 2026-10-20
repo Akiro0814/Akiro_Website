@@ -399,7 +399,7 @@ body::before {
   font-size: 12px;
 }
 kbd {
-  font-family: system-ui, sans-serif;
+  font-family: var(--font);
   font-size: 10px;
   padding: 2px 5px;
   border: 1px solid var(--border);
@@ -847,15 +847,21 @@ input[type='checkbox'] {
 }
 .pearl-slider {
   position: absolute;
-  top: 4px;
-  left: 4px;
-  height: calc(100% - 8px);
+  /* slideThumb 使用容器内的完整布局坐标，原点必须为零，不能再次叠加 4px 内边距。 */
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  visibility: hidden;
   background: var(--glass);
   border: 1px solid var(--glass-edge);
   border-radius: 8px;
   box-shadow: var(--shadow);
   pointer-events: none;
 }
+.pearl-segment { align-items:stretch; }
+.pearl-segment button { display:inline-flex; align-items:center; justify-content:center; line-height:1.5; }
+.pearl-segment.has-slider .pearl-slider { visibility:visible; }
 .pearl-segment.has-slider button[aria-pressed='true'] {
   background: none;
   box-shadow: none;

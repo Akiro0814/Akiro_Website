@@ -1,14 +1,15 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { site } from '../lib/posts';
 ---
 
 <BaseLayout
   title="搜索"
-  description="搜索L1angK1NG博客中的文章、分类和标签。"
-  pageClass="content-page"
+  description={`搜索${site.author}博客中的文章、分类和标签。`}
+  pageClass="content-page spring-inner"
 >
   <section class="search-page">
-    <header class="page-header">
+    <header class="page-header" data-animate>
       <p class="eyebrow">Search</p>
       <h1>搜索文章</h1>
       <p>输入关键词，快速找到标题、摘要、分类或标签匹配的内容。</p>

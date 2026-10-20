@@ -141,6 +141,12 @@ export function startPreview({ port = 4413, quiet = false } = {}) {
       BACKUP_ENABLED: 'false',
       BLOG_DATA_DIR: path.join(sandbox, 'data'),
       PUBLIC_TWIKOO_ENV_ID: '',
+      TWIKOO_ENV_ID: '',
+      TWIKOO_ADMIN_TOKEN: '',
+      TWIKOO_DATA: path.join(sandbox, 'data', 'twikoo'),
+      MONGODB_URI: '',
+      MONGO_URL: '',
+      TWIKOO_LOG_LEVEL: 'error',
       SITE_URL: `http://localhost:${port}`,
     },
   });

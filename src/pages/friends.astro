@@ -6,9 +6,9 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 <BaseLayout
   title="友链"
   description="朋友们的站点链接，欢迎交换友链。"
-  pageClass="content-page"
+  pageClass="content-page spring-inner"
 >
-  <header class="page-header">
+  <header class="page-header" data-animate>
     <p class="eyebrow">Friends</p>
     <h1>友链</h1>
     <p>志同道合的朋友们 —— 点击卡片即可前往对方站点。</p>
@@ -23,7 +23,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <p class="empty-hint">正在加载友链…</p>
   </div>
 
-  <section class="friend-apply">
+  <section class="friend-apply" data-animate>
     <h2 class="friend-apply__title">申请友链</h2>
     <p class="friend-apply__sub">填写信息提交后，站长审核通过即会展示。</p>
     <form id="friend-form" class="friend-form">
@@ -86,7 +86,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
           const avatar = f.avatar
             ? `<img class="friend-card__avatar" src="${esc(f.avatar)}" alt="" loading="lazy" referrerpolicy="no-referrer" />`
             : `<span class="friend-card__avatar friend-card__avatar--fallback">${esc((f.name || '?').slice(0, 1))}</span>`;
-          return `<a class="friend-card" href="${esc(f.url)}" target="_blank" rel="noopener noreferrer">
+          return `<a class="friend-card" data-tilt data-spotlight href="${esc(f.url)}" target="_blank" rel="noopener noreferrer">
             ${avatar}
             <strong class="friend-card__name">${esc(f.name)}</strong>
             <small class="friend-card__desc">${esc(f.desc || '这个人很懒，什么都没写。')}</small>

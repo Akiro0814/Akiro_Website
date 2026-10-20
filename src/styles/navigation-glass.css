@@ -1,0 +1,119 @@
+/* 液态材质适配 liquid-glass-web：SDF 位移图弯曲实时背景，RGB 分层产生细微色散。
+   玻璃与高光为独立背景层；导航文字、按钮和命中区域始终保持稳定。
+   不支持 SVG 背景滤镜、禁用脚本或贴图生成失败时使用原生毛玻璃。 */
+:root {
+  --nav-glass-tint: color-mix(in srgb, var(--bg) 25%, transparent);
+  --nav-glass-line: rgba(255,255,255,.58);
+  --nav-glass-light: rgba(255,255,255,.8);
+  --nav-glass-shadow: 0 12px 36px -18px rgba(18,36,25,.22);
+}
+html[data-theme='dark'] {
+  --nav-glass-tint: color-mix(in srgb, var(--bg) 40%, transparent);
+  --nav-glass-line: rgba(255,255,255,.22);
+  --nav-glass-light: rgba(255,255,255,.14);
+  --nav-glass-shadow: 0 12px 36px -18px rgba(0,0,0,.58);
+}
+.atlas-glass-defs { position: absolute; pointer-events: none; overflow: hidden; }
+.atlas-nav {
+  background: var(--nav-glass-tint);
+  border: 1px solid var(--nav-glass-line);
+  -webkit-backdrop-filter: blur(24px) saturate(165%) brightness(1.04);
+  backdrop-filter: blur(24px) saturate(165%) brightness(1.04);
+  box-shadow: inset 0 1px 0 var(--nav-glass-light),inset 0 -1px 1px rgba(255,255,255,.1),var(--nav-glass-shadow);
+  isolation: isolate;
+}
+.atlas-nav__glass,.atlas-nav__light { display:none; }
+/* 必须关闭父级 backdrop-filter：嵌套背景滤镜会截断采样，子层无法折射真实页面。 */
+.atlas-nav[data-liquid-ready='true'] {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+.atlas-nav[data-liquid-ready='true'] .atlas-nav__glass,
+.atlas-nav[data-liquid-ready='true'] .atlas-nav__light {
+  display:block;
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+}
+.atlas-nav__glass {
+  z-index:-2;
+  /* 统一透明底色，去除中段额外增白/压黑的横向色带；保留真实折射和边缘高光。 */
+  background:var(--nav-glass-tint);
+  -webkit-backdrop-filter:url('#akiro-nav-refraction') blur(.65px) saturate(135%) brightness(1.04);
+  backdrop-filter:url('#akiro-nav-refraction') blur(.65px) saturate(135%) brightness(1.04);
+  box-shadow:inset 0 1px 1px var(--nav-glass-light),inset 0 -7px 13px -10px rgba(12,25,20,.5);
+  transform-origin:var(--nav-light-x,50%) 50%;
+}
+.atlas-nav__light {
+  z-index:-1;
+  opacity:var(--nav-light-opacity,0);
+  background:radial-gradient(ellipse 260px 100px at var(--nav-light-x,50%) var(--nav-light-y,0%),rgba(255,255,255,.42),rgba(255,255,255,.1) 45%,transparent 75%);
+  transition:opacity .25s;
+}
+.atlas-nav.is-glass-pressed .atlas-nav__glass {
+  transform:scale(1.006,.965);
+  box-shadow:inset 0 1px 2px var(--nav-glass-light),inset 0 -8px 16px -10px rgba(12,25,20,.65);
+}
+.atlas-nav::before,.atlas-nav::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: -1;
+}
+.atlas-nav::before {
+  padding: 1px;
+  background: linear-gradient(115deg,rgba(255,255,255,.8),rgba(255,255,255,.08) 28% 55%,rgba(255,255,255,.5));
+  mask: linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  box-shadow: inset 1px 1px 1px rgba(255,255,255,.45),inset -1px -1px 2px rgba(190,216,235,.25);
+}
+.atlas-nav::after {
+  background: linear-gradient(105deg,rgba(255,255,255,.09),transparent 32% 65%,rgba(255,255,255,.04));
+  box-shadow: inset 1px 0 rgba(242,198,213,.16),inset -1px 0 rgba(174,219,237,.2);
+}
+.atlas-brand__avatar {
+  display: block;
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb,var(--text) 13%,transparent);
+  box-shadow: 0 0 0 3px rgba(255,255,255,.13);
+}
+/* 内容使用各自独立的轻薄底色，保证壁纸前的可读性，不恢复整条导航中间的色带。 */
+.atlas-nav .atlas-brand {
+  padding:5px 11px 5px 5px;
+  border:1px solid color-mix(in srgb,var(--border) 75%,transparent);
+  border-radius:999px;
+  background:color-mix(in srgb,var(--bg) 94%,transparent);
+  color:var(--text);
+}
+.atlas-nav .atlas-brand:hover { color:var(--text); }
+.atlas-nav .atlas-brand small { color:var(--text-muted); opacity:1; }
+.atlas-nav .atlas-nav__links a { background:color-mix(in srgb,var(--bg) 94%,transparent); color:var(--text); }
+.atlas-nav .atlas-nav__links a:is(:hover,[aria-current='page']) { color:var(--brand); background:var(--bg); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--brand) 30%,transparent); }
+.atlas-nav .atlas-nav__links small { color:var(--text-muted); }
+.atlas-nav .atlas-nav__tools>.atlas-icon { background:color-mix(in srgb,var(--bg) 94%,transparent); color:var(--text); }
+.atlas-nav .atlas-menu-toggle { background:color-mix(in srgb,var(--bg) 94%,transparent); color:var(--text); }
+.atlas-nav__links a:hover,.atlas-nav__links [aria-current='page'] {
+  background: color-mix(in srgb,var(--surface) 55%,transparent);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3);
+}
+.atlas-menu-toggle { background: color-mix(in srgb,var(--surface) 55%,transparent); }
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
+  .atlas-nav { background: color-mix(in srgb,var(--bg) 94%,transparent); }
+}
+@media(max-width:767px) { .atlas-brand__avatar { width: 33px; height: 33px; } }
+@media(prefers-reduced-motion:reduce) {
+  .atlas-nav__light { opacity:0!important; transition:none; }
+  .atlas-nav.is-glass-pressed .atlas-nav__glass { transform:none; }
+}
+@media(prefers-reduced-transparency:reduce) {
+  .atlas-nav,.atlas-nav[data-liquid-ready='true'] { background:var(--bg); -webkit-backdrop-filter:none; backdrop-filter:none; }
+  .atlas-nav[data-liquid-ready='true'] :is(.atlas-nav__glass,.atlas-nav__light) { display:none; }
+}

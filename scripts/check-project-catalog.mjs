@@ -1,0 +1,71 @@
+// 真实页面 + 隔离同步响应：不写生产数据、不访问运行中的后台。
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import net from 'node:net';
+import { spawn } from 'node:child_process';
+import { setTimeout as delay } from 'node:timers/promises';
+import { chromium, expect } from '@playwright/test';
+
+const port=Number(process.env.PROJECT_UI_PORT||4347), base=`http://127.0.0.1:${port}`;
+await new Promise((resolve,reject)=>{const probe=net.createServer();probe.once('error',reject);probe.listen(port,'127.0.0.1',()=>probe.close(resolve));});
+const server=spawn(process.execPath,['node_modules/astro/bin/astro.mjs','dev','--host','127.0.0.1','--port',String(port),'--ignore-lock'],{stdio:'ignore',windowsHide:true,env:{...process.env,ASTRO_DEV_BACKGROUND:'1'}});
+let browser,checks=0,stars=22,offline=false;
+const pass=(label)=>{checks++;console.log(`✓ ${label}`);};
+const item=(id,count)=>({id:`github:owner/${id}`,title:id,owner:'owner',description:'同步的项目介绍',href:`https://github.com/owner/${id}`,icon:'github',cover:'',stars:count,tags:['JavaScript'],detailHref:id==='StudyTrack'?'/projects/test/':'',noteHref:''});
+try {
+  let ready=false;
+  for(let i=0;i<150;i++){try{if((await fetch(base)).ok){ready=true;break;}}catch{}await delay(200);}
+  assert.ok(ready,'Astro 未启动');
+  browser=await chromium.launch({headless:true});
+  const page=await browser.newPage({viewport:{width:1440,height:1000}});
+  const errors=[];
+  page.on('pageerror',(error)=>errors.push(error.message));
+  await page.route('**/api/**',async(route)=>{
+    const url=new URL(route.request().url());
+    const target=url.searchParams.has('r')?decodeURIComponent(Buffer.from(url.searchParams.get('r'),'base64').toString()):url.pathname;
+    if(target==='/api/public/project-catalog'&&!offline) return route.fulfill({json:{total:2,groups:[{id:'open-source',title:'开源项目',description:'自动同步',items:[item('StudyTrack',stars),item('New',0)]}]}});
+    return route.fulfill({status:503,json:{error:'isolated'}});
+  });
+  const ids=()=>page.locator('[data-project-groups] .proj').evaluateAll((nodes)=>nodes.map((node)=>node.dataset.projectId));
+  await page.goto(`${base}/projects/`);
+  await expect(page.locator('[data-project-stars]').first()).toHaveText('22');
+  assert.deepEqual(await ids(),['github:owner/StudyTrack','github:owner/New']);
+  await expect(page.locator('[data-project-stars-wrap]').nth(1)).toBeVisible();
+  await expect(page.locator('[data-project-detail]').first()).toBeVisible();
+  await expect(page.locator('[data-project-detail]').nth(1)).toBeHidden();
+  pass('项目页显示完整同步清单、零星标及详情入口');
+  await page.evaluate(()=>{window.__catalogNavigation=true;});
+  await page.locator('a[href="/about/"]').first().click();
+  await expect(page.locator('[data-project-stars]').first()).toHaveText('22');
+  assert.deepEqual(await ids(),['github:owner/StudyTrack','github:owner/New']);
+  assert.equal(await page.evaluate(()=>window.__catalogNavigation),true,'导航不应整页刷新');
+  pass('关于页与项目页清单完全一致，Astro 跨页复用缓存');
+  stars=23;
+  await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+300001;document.dispatchEvent(new Event('visibilitychange'));});
+  await expect(page.locator('[data-project-stars]').first()).toHaveText('23');
+  pass('缓存过期后自动更新星标，无需重新构建或刷新页面');
+  offline=true;
+  await page.evaluate(()=>{const now=Date.now;Date.now=()=>now()+300001;document.dispatchEvent(new Event('visibilitychange'));});
+  await expect(page.locator('[data-project-stars]').first()).toHaveText('23');
+  assert.equal((await ids()).length,2);
+  pass('接口断网保留完整清单及最后一次星标');
+  const out=path.resolve('docs/assets/spring-ui');fs.mkdirSync(out,{recursive:true});
+  await page.goto(`${base}/projects/`);
+  const projectIds=await ids();
+  assert.ok(projectIds.length>0);
+  await page.goto(`${base}/about/`);
+  assert.deepEqual(await ids(),projectIds);
+  pass(`接口离线时两页构建内容一致（${projectIds.length} 个项目）`);
+  await page.goto(`${base}/projects/`);
+  await page.locator('[data-project-groups]').scrollIntoViewIfNeeded();
+  await page.waitForTimeout(900);
+  await page.screenshot({path:path.join(out,'projects-unified-desktop.png'),fullPage:true});
+  await page.setViewportSize({width:390,height:844});
+  const size=await page.evaluate(()=>({width:document.documentElement.clientWidth,scroll:document.documentElement.scrollWidth}));
+  assert.ok(size.scroll<=size.width+2);
+  await page.screenshot({path:path.join(out,'projects-unified-mobile.png'),fullPage:true});
+  assert.deepEqual(errors,[]);
+  pass('移动端无横向溢出，桌面与移动端截图已生成，无脚本异常');
+  console.log(`${checks} project catalog browser checks passed.`);
+} finally {await browser?.close();server.kill();}

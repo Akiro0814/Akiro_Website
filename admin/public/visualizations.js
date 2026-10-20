@@ -1,5 +1,5 @@
-import { contentGraph, dailyHeat } from './ui-model.js?v=20261013-pearl-1';
-import { appear, frameLoop, motionOff, flipLayout } from './motion.js?v=20261013-pearl-1';
+import { contentGraph, dailyHeat } from './ui-model.js?v=20261020-align-2';
+import { appear, frameLoop, motionOff, flipLayout } from './motion.js?v=20261020-align-2';
 
 const make = (tag, cls, text) => {
   const el = document.createElement(tag);

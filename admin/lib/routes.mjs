@@ -5,11 +5,15 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { rateLimit, MUSIC_FILES_DIR } from './store.mjs';
 import * as comments from './comments.mjs';
+import { twikoo } from './twikoo.mjs';
 import * as siteData from './site-data.mjs';
 import * as music from './music.mjs';
 import * as projects from './projects.mjs';
+import { projectCatalog } from './project-catalog.mjs';
 import * as stats from './stats.mjs';
 import * as content from './content.mjs';
+import { ROOT } from './env.mjs';
+import { readWallpapers } from '../../src/lib/wallpapers.mjs';
 
 const jsonError = (res, err, fallback = '操作失败') =>
   res.status(400).json({ error: err?.message || fallback });
@@ -17,12 +21,12 @@ const jsonError = (res, err, fallback = '操作失败') =>
 // 前台「网站数据」模块展示的聚合数据（公开接口与后台「站点数据」页共用一份口径）。
 // 总文章量只计已发布的文章（草稿不计），与前台归档页的「N 篇文章」一致；
 // 总评论量为系统内全部评论（含回复）。
-export function siteStats() {
+export async function siteStats() {
   const s = stats.summary();
   return {
     since: siteData.getSiteMeta().since,
     posts: content.listEntries('posts').filter((e) => !e.data.draft).length,
-    comments: comments.adminCount().total,
+    comments: (await comments.adminCount()).visible,
     totalViews: s.total,
     todayViews: s.today,
   };
@@ -31,6 +35,25 @@ export function siteStats() {
 // ============================ 公开接口 ============================
 export function publicRouter() {
   const router = express.Router();
+  router.get('/project-catalog', async (req,res) => {
+    if(!rateLimit(req,{key:'projects',max:120,windowMs:300_000}).ok) return res.status(429).json({error:'请求过于频繁'});
+    try {res.set('Cache-Control','no-store');res.json(await projectCatalog.read());}
+    catch {res.status(503).json({error:'项目同步暂不可用，请稍后再试。'});}
+  });
+
+  // 每次读取本机目录，新增壁纸无需重新构建；接口只返回固定目录的安全图片 URL。
+  router.get('/wallpapers', (_req, res) => {
+    res.set('Cache-Control', 'no-store');
+    res.json({ items: readWallpapers(ROOT) });
+  });
+  // 图片也走已有 /api 反代，生产 current/ 静态快照之外的新图片可立即使用。
+  router.get('/wallpapers/:filename', (req, res) => {
+    const name = req.params.filename;
+    const url = `/wallpapers/${encodeURIComponent(name)}`;
+    if (!readWallpapers(ROOT).includes(url)) return res.status(404).end();
+    res.set('Cache-Control', 'no-cache');
+    res.sendFile(path.join(ROOT, 'public', 'wallpapers', name));
+  });
 
   // —— 评论（Twikoo 协议：事件 POST /api/public/twikoo） ——
   router.post('/twikoo', async (req, res) => {
@@ -38,8 +61,8 @@ export function publicRouter() {
     // 若与发送共用一个桶，刷新十来次后连看都看不了；发送与点赞各自限额防刷。
     const event = String(req.body?.event || '');
     const limitFor =
-      event === 'COMMENT_GET'
-        ? { key: 'comment-read', max: 60, windowMs: 5 * 60 * 1000 }
+      event === 'COMMENT_GET' || event.startsWith('GET_') || event === 'COUNTER_GET'
+        ? { key: 'comment-read', max: 300, windowMs: 5 * 60 * 1000 }
         : event === 'COMMENT_LIKE'
           ? { key: 'comment-like', max: 30, windowMs: 5 * 60 * 1000 }
           : { key: 'comment-write', max: 10, windowMs: 5 * 60 * 1000 };
@@ -48,30 +71,9 @@ export function publicRouter() {
       return res.status(429).json({ error: `操作过于频繁，请 ${limit.retryAfter} 秒后再试。` });
     }
     const body = req.body || {};
-    const ipHash = comments.mailMd5Of(req.ip || '');
     try {
-      switch (body.event) {
-        case 'COMMENT_GET':
-          return res.json(comments.getComments({ url: body.url, page: body.page, pageSize: body.pageSize }));
-        case 'COMMENT_SUBMIT':
-          return res.json(
-            await comments.submitComment({
-              url: body.url,
-              nick: body.nick,
-              mail: body.mail,
-              link: body.link,
-              comment: body.comment,
-              ua: body.ua,
-              pid: body.pid,
-              rid: body.rid,
-              ipHash,
-            }),
-          );
-        case 'COMMENT_LIKE':
-          return res.json(await comments.likeComment({ id: body.id, ipHash }));
-        default:
-          return res.status(400).json({ error: '未知事件' });
-      }
+      const result = await twikoo.publicCall(body, { ip: req.ip, ua: req.get('user-agent'), origin: req.get('origin') });
+      return res.status(result.status).json(result.body);
     } catch (err) {
       return jsonError(res, err);
     }
@@ -174,10 +176,10 @@ export function publicRouter() {
   });
 
   // —— 站点数据（前台「网站数据」模块：运行时间 / 文章 / 评论 / 访问量） ——
-  router.get('/site-stats', (req, res) => {
+  router.get('/site-stats', async (req, res) => {
     const limit = rateLimit(req, { key: 'site-stats', max: 60, windowMs: 60 * 1000 });
     if (!limit.ok) return res.status(429).json({ error: '请求过于频繁，请稍后再试。' });
-    res.json(siteStats());
+    try { res.json(await siteStats()); } catch (error) { jsonError(res, error); }
   });
 
   return router;
@@ -333,11 +335,16 @@ export function manageRouter({ requireApiAuth, requireCsrf }) {
   });
 
   // —— 评论管理 ——
-  router.get('/comments', (req, res) => {
-    res.json({
-      items: comments.adminList({ status: req.query.status, keyword: req.query.keyword }),
-      counts: comments.adminCount(),
-    });
+  router.get('/comments', async (req, res) => {
+    try { res.json({ items: await comments.adminList({ status: req.query.status, keyword: req.query.keyword }), counts: await comments.adminCount() }); }
+    catch (error) { jsonError(res, error); }
+  });
+  // 官方管理面板的所有请求均继承博客会话与 CSRF，不向客户端暴露桥接令牌。
+  router.post('/twikoo', requireCsrf, async (req, res) => {
+    try {
+      const result = await twikoo.adminCall(req.body || {}, { ip: req.ip, ua: req.get('user-agent') });
+      res.status(result.status).json(result.body);
+    } catch (error) { jsonError(res, error); }
   });
   router.post('/comments/status', requireCsrf, async (req, res) => {
     try {
@@ -359,7 +366,6 @@ export function manageRouter({ requireApiAuth, requireCsrf }) {
         id: req.body?.id,
         comment: req.body?.comment,
         nick: req.body?.nick,
-        ipHash: comments.mailMd5Of(req.ip || ''),
       });
       res.json({ ok: true, ...result, message: '回复已发布。' });
     } catch (err) {

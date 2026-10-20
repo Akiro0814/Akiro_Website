@@ -1,6 +1,6 @@
 ---
 import Icon from '../../components/Icon.astro';
-import PostSummary from '../../components/PostSummary.astro';
+import PostSummary from '../../components/SpringPostCard.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import {
   getPostsByTag,
@@ -29,14 +29,14 @@ const { tag, posts, tags } = Astro.props;
 <BaseLayout
   title={`标签：${tag}`}
   description={`浏览带有“${tag}”标签的全部文章。`}
-  pageClass="content-page"
+  pageClass="content-page spring-inner"
 >
   <section class="archive-page">
     <a class="back-link" href="/archive/">
       <Icon name="arrow-right" size={16} class="back-link__arrow" />
       返回归档
     </a>
-    <header class="page-header">
+    <header class="page-header" data-animate>
       <p class="eyebrow">Tag</p>
       <h1>{tag}</h1>
       <p>这个标签下共有 {posts.length} 篇文章。</p>

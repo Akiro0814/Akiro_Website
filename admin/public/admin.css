@@ -2,10 +2,8 @@
    src/styles/global.css），让后台看起来属于同一产品。
    亮色与暗色主题跟随操作系统偏好。 */
 
-/* 全站字体：霞鹜文楷等宽（与前台一致）。子集化 woff2 分片的 @font-face
-   声明与前台共用同一份（/admin-assets/fonts.css，源文件 src/styles/fonts.css），
-   按 unicode-range 分片按需加载；字体未就绪时回退到系统字体。 */
-@import url('/admin-assets/fonts.css');
+/* 全站使用得意黑，共享 /admin-assets/fonts.css 声明与 /fonts 本地资源。 */
+@import url('/admin-assets/fonts.css?v=20261019-smiley-1');
 
 :root {
   --bg: #f8f7f4;
@@ -40,8 +38,8 @@
   --radius-sm: 8px;
   --shadow: 0 1px 2px rgba(27, 28, 30, 0.05), 0 8px 24px rgba(27, 28, 30, 0.06);
   --sidebar-w: 232px;
-  --font: 'LXGW WenKai Mono', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  --mono: 'LXGW WenKai Mono', ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+  --font: 'Smiley Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, 'Smiley Sans', monospace;
 }
 
 @media (prefers-color-scheme: dark) {

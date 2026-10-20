@@ -10,16 +10,16 @@ const total = categories.reduce((sum, c) => sum + c.links.length, 0);
 <BaseLayout
   title="网址导航"
   description="常用网站与工具的分类导航，按需快速访问。"
-  pageClass="content-page"
+  pageClass="content-page spring-inner"
 >
-  <header class="page-header">
+  <header class="page-header" data-animate>
     <p class="eyebrow">Navigation</p>
     <h1>网址导航</h1>
     <p>常用网站与工具的分类汇总，共 {total} 个站点。</p>
   </header>
 
   {categories.length === 0 ? (
-    <p class="empty-hint">还没有导航内容。在后台「网址导航」里添加后，到「构建发布」上线。</p>
+    <p class="empty-hint">还没有导航内容。过些日子再来看看。</p>
   ) : (
     <>
       <div class="nav-filter">
@@ -44,7 +44,7 @@ const total = categories.reduce((sum, c) => sum + c.links.length, 0);
           <div class="proj-grid">
             {cat.links.map((link) => (
               <a
-                class="navlink"
+                class="navlink" data-animate data-spotlight
                 href={link.url}
                 target="_blank"
                 rel="noopener noreferrer"

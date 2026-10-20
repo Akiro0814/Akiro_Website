@@ -80,10 +80,10 @@ const moodIcon = (mood?: string) => {
 <BaseLayout
   title="随笔"
   description="一些个人思考、日记和零碎感悟 —— 不成文章，随手记下。"
-  pageClass="content-page"
+  pageClass="content-page spring-inner"
 >
   <section class="notes-page">
-    <header class="page-header">
+    <header class="page-header" data-animate>
       <p class="eyebrow">Notes</p>
       <h1>随笔</h1>
       <p>一些个人思考、日记和零碎的感悟。不成文章，随手记下。</p>
@@ -96,7 +96,7 @@ const moodIcon = (mood?: string) => {
           <section class="notes-year" id={`y-${group.year}`}>
             <h2 class="notes-year__label"><span>{group.year}</span></h2>
             {group.items.map(({ note, Content }) => (
-              <article class="note" id={monthAnchor.get(note.id)}>
+              <article class="note" data-animate data-tilt data-spotlight id={monthAnchor.get(note.id)}>
                 <div class="note__meta">
                   <time datetime={note.data.date.toISOString()}>
                     {formatDate(note.data.date)}

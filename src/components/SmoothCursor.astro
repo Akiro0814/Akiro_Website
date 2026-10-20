@@ -1,18 +1,17 @@
 ---
-// 平滑跟随光标（Smooth Cursor）：进入页面后隐藏系统光标，改用网页内的自定义指针。
-//   - 指针素材为 shubiao.png（Q 版小公主 + 左上角金色四角星）
-//   - 热点精确对齐素材中星星的中心（星心 = 鼠标尖点），指哪打哪
-//   - 惯性平滑追随鼠标（光滑移动），移动时朝方向轻微倾斜
+// 极简光标（保留 SmoothCursor 组件名）：采用用户确认的墨黑 SVG。
+//   - 默认以 24×30px 显示；大小、缓动与反馈均由共享光标偏好控制
+//   - 图形围绕尖端缩放，移动采用短程缓动；按下和拖动立即贴合真实指针
 //   - 悬停链接/按钮时放大、按下时收缩反馈
 // 仅在支持鼠标的设备启用；文本输入框保留系统文本光标；
-// prefers-reduced-motion 时直接贴合、无倾斜。元素带 transition:persist，
+// prefers-reduced-motion 时关闭跟随缓动与缩放过渡。元素带 transition:persist，
 // View Transitions 换页时保持同一 DOM 节点。
 ---
 
 <div id="smooth-cursor" aria-hidden="true" transition:persist="smooth-cursor">
   <div id="sc-pos">
     <div class="sc-face">
-      <img src="/cursor/shubiao.png" alt="" draggable="false" />
+      <img src="/cursor/akiro-minimal-ink.svg" width="24" height="30" alt="" draggable="false" />
     </div>
   </div>
 </div>
@@ -27,7 +26,7 @@
     cursor: none !important;
   }
   /* 文本输入场景必须保留系统文本光标，否则无法看到插入点位置 */
-  :global(html.sc-on input:is(:not([type='button']):not([type='submit']):not([type='checkbox']):not([type='radio']))),
+  :global(html.sc-on input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='hidden'])),
   :global(html.sc-on textarea),
   :global(html.sc-on [contenteditable]) {
     cursor: text !important;
@@ -37,15 +36,25 @@
     position: fixed;
     inset: 0;
     pointer-events: none;
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    margin: 0;
+    border: 0;
+    background: transparent;
+    overflow: visible;
     z-index: 2147483000;
     opacity: 0;
     transition: opacity 0.15s ease-out;
   }
-  #smooth-cursor.sc-visible {
+  #smooth-cursor.sc-visible:not(.sc-text):not([data-enabled='false']) {
     opacity: 1;
   }
+  #smooth-cursor::backdrop { background: transparent; pointer-events: none; }
 
-  /* 外层每帧只写 transform（translate3d/rotate），缩放类动画放内层，互不覆盖 */
+  /* 外层只做视口定位，内层围绕热点缩放，确保悬停与按下不会挪动箭头尖端。 */
   #sc-pos {
     position: fixed;
     left: 0;
@@ -54,30 +63,28 @@
   }
 
   .sc-face {
-    /* 热点偏移：素材中星星中心位于 (14%, 20%)，
-       显示宽 100px 时即向左上偏移约 (14px, 19px)，让星心钉在鼠标位置 */
-    margin: -19px 0 0 -14px;
-    transition: transform 0.22s ease-out;
+    /* 以 SVG viewBox 比例计算偏移与缩放原点，修改尺寸后热点仍精确对齐。 */
+    margin: calc(var(--sc-size,24px) * -.1484375) 0 0 calc(var(--sc-size,24px) * -.2109375);
+    transform-origin: calc(var(--sc-size,24px) * .2109375) calc(var(--sc-size,24px) * .1484375);
+    transition: transform var(--sc-transition,180ms) cubic-bezier(0.16, 1, 0.3, 1);
     transform: scale(1);
   }
 
   .sc-face img {
     display: block;
-    width: 100px;
-    height: auto;
+    width: var(--sc-size,24px);
+    height: calc(var(--sc-size,24px) * 1.25);
     user-select: none;
-    /* 素材自带描边，浅阴影增加与页面内容的层次 */
-    filter: drop-shadow(0 3px 8px rgba(40, 60, 120, 0.22));
+    /* SVG 已含白色描边和轻阴影，不叠加旧光标的彩色阴影。 */
   }
 
   /* 悬停可交互元素：轻微放大 */
   :global(#smooth-cursor.sc-hover) .sc-face {
-    transform: scale(1.08);
+    transform: scale(var(--sc-hover,1.07));
   }
   /* 按下反馈：收缩 */
   :global(#smooth-cursor.sc-press) .sc-face {
-    transform: scale(0.9);
-    transition-duration: 0.1s;
+    transform: scale(var(--sc-press,.94));
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -85,45 +92,113 @@
       transition: none;
     }
     :global(#smooth-cursor.sc-hover) .sc-face {
-      transform: scale(1.04);
+      transform: scale(1);
     }
     :global(#smooth-cursor.sc-press) .sc-face {
-      transform: scale(0.96);
+      transform: scale(1);
     }
   }
 </style>
 
 <script>
+  import { CURSOR_STORAGE_KEY, getCursorSettings, reloadCursorSettings } from '../lib/cursor-settings.js';
+  import { advanceCursor } from '../lib/cursor-motion.js';
   // 单个 rAF 循环驱动全部状态；transition:persist 保证换页后元素仍在，
   // 事件全部委托到 window/document，无需在 astro:page-load 时重绑。
   const finePointer = window.matchMedia('(pointer: fine)');
 
   function initSmoothCursor() {
     const root = document.getElementById('smooth-cursor');
-    if (!root || finePointer.matches === false) return;
-    // ClientRouter 换页会重置 <html> 的 class，每次 init 都重新盖上（幂等）
-    document.documentElement.classList.add('sc-on');
+    if (!root) return;
+    // 原生 dialog 位于浏览器顶层，普通元素的 z-index 再大也无法覆盖它。
+    // 手动 popover 同样进入顶层；不重挂到带 GSAP transform 的 dialog 内，
+    // 从而保持指针一直使用视口坐标，避免弹窗进场时出现偏移。
+    const promote = () => {
+      if (!('showPopover' in root)) return;
+      root.setAttribute('popover', 'manual');
+      try {
+        if (root.matches(':popover-open')) root.hidePopover();
+        root.showPopover();
+      } catch { root.removeAttribute('popover'); }
+    };
+    // Astro 换页会替换 html 的属性，持久光标与新面板须重新应用同一份本机偏好。
+    const applyShell = (preferences: ReturnType<typeof getCursorSettings>) => {
+      const html = document.documentElement;
+      html.style.setProperty('--sc-size', `${preferences.size}px`);
+      html.style.setProperty('--sc-hover', String(preferences.hoverScale));
+      html.style.setProperty('--sc-press', String(preferences.pressScale));
+      html.style.setProperty('--sc-transition', `${preferences.transition}ms`);
+      const active = preferences.enabled && finePointer.matches && ('showPopover' in root || !document.querySelector('dialog[open]'));
+      html.classList.toggle('sc-on', active);
+      root.dataset.enabled = String(active);
+      if (active) {
+        if ('showPopover' in root && !root.matches(':popover-open')) promote();
+      } else {
+        root.classList.remove('sc-visible', 'sc-press');
+        if ('hidePopover' in root && root.matches(':popover-open')) root.hidePopover();
+      }
+    };
+    applyShell(getCursorSettings());
     if (root.dataset.bound === '1') return;
     root.dataset.bound = '1';
-
-    // 目标位置 = 真实指针；光标用惯性追随目标，形成光滑移动
+    window.addEventListener('akiro:modal', () => {
+      if (!settings.enabled || !finePointer.matches) return;
+      if ('showPopover' in root) promote();
+      else applyShell(settings);
+    });
+    // 自适应解析缓动兼顾漂浮感与快速移动的跟手性，不再对位置做硬截断。
+    let settings = getCursorSettings();
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     let targetX = window.innerWidth / 2;
     let targetY = window.innerHeight / 2;
-    let curX = targetX;
-    let curY = targetY;
-    let tilt = 0;
-    let lastTime = performance.now();
+    let currentX = targetX;
+    let currentY = targetY;
+    let positionKnown = false;
+    let pressed = false;
+    let lastFrame = performance.now();
+    const renderPosition = () => {
+      const pos = document.getElementById('sc-pos');
+      if (pos) pos.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+    };
+    const snapPosition = (x: number, y: number) => {
+      targetX = currentX = x;
+      targetY = currentY = y;
+      positionKnown = true;
+      renderPosition();
+    };
+    const applySettings = () => {
+      const previous = settings.enabled;
+      settings = getCursorSettings();
+      applyShell(settings);
+      if (previous !== settings.enabled || !finePointer.matches) positionKnown = false;
+      if (!settings.smooth || reducedMotion.matches) snapPosition(targetX, targetY);
+    };
+    window.addEventListener('akiro:cursor-settings', applySettings);
+    window.addEventListener('storage', (event) => {
+      if (event.key === CURSOR_STORAGE_KEY || event.key === null) reloadCursorSettings();
+    });
+    finePointer.addEventListener('change', applySettings);
+    reducedMotion.addEventListener('change', applySettings);
 
     // 悬停判定走事件委托；input/textarea 除外（那里保留系统文本光标）
     const HOVERABLE = 'a, button, label, summary, select, [role="button"], [role="link"]';
+    const TEXT_INPUT = "textarea, [contenteditable]:not([contenteditable='false']), input:not([type='button']):not([type='submit']):not([type='reset']):not([type='checkbox']):not([type='radio']):not([type='range']):not([type='color']):not([type='file']):not([type='hidden'])";
 
     window.addEventListener('mousemove', (e) => {
+      if (!settings.enabled || !finePointer.matches) return;
       targetX = e.clientX;
       targetY = e.clientY;
       const rootNow = document.getElementById('smooth-cursor');
       if (rootNow) {
-        rootNow.classList.add('sc-visible');
         const t = e.target;
+        const isText = t instanceof Element && t.closest(TEXT_INPUT) !== null;
+        // 首次出现或从输入框返回时直接定位，避免从旧位置飞入；拖动始终精确跟手。
+        if (!positionKnown || pressed || !settings.smooth || reducedMotion.matches || isText || rootNow.classList.contains('sc-text')) {
+          snapPosition(targetX, targetY);
+        }
+        rootNow.classList.add('sc-visible');
+        // 文本输入时只显示系统 I 形指针，避免两个光标同时出现。
+        rootNow.classList.toggle('sc-text', isText);
         rootNow.classList.toggle(
           'sc-hover',
           t instanceof Element && t.closest(HOVERABLE) !== null,
@@ -131,50 +206,44 @@
       }
     }, { passive: true });
 
-    window.addEventListener('mousedown', () => {
+    window.addEventListener('mousedown', (event) => {
+      if (!settings.enabled || !finePointer.matches) return;
+      pressed = true;
+      // 点击发生的这一刻同步归位，不让缓动中的视觉位置误导命中目标。
+      snapPosition(event.clientX, event.clientY);
       document.getElementById('smooth-cursor')?.classList.add('sc-press');
     });
-    window.addEventListener('mouseup', () => {
+    window.addEventListener('mouseup', (event) => {
+      pressed = false;
+      if (settings.enabled && finePointer.matches) snapPosition(event.clientX, event.clientY);
       document.getElementById('smooth-cursor')?.classList.remove('sc-press');
     });
-    document.documentElement.addEventListener('mouseenter', () => {
-      document.getElementById('smooth-cursor')?.classList.add('sc-visible');
-    });
-    document.documentElement.addEventListener('mouseleave', () => {
-      document.getElementById('smooth-cursor')?.classList.remove('sc-visible');
-    });
-
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const hide = () => {
+      positionKnown = false;
+      pressed = false;
+      document.getElementById('smooth-cursor')?.classList.remove('sc-visible', 'sc-press');
+    };
+    // 离开窗口或切换应用时清除按下状态，重新进入后从当前位置开始。
+    document.documentElement.addEventListener('mouseleave', hide);
+    window.addEventListener('blur', hide);
 
     function tick(now: number) {
-      const dt = Math.min(64, now - lastTime) || 16;
-      lastTime = now;
-
-      // 每帧重新取元素：换页/HMR 重建 DOM 时自愈，避免循环驱动游离节点
-      const pos = document.getElementById('sc-pos');
-      if (pos) {
-        if (reduced.matches) {
-          // 降级：直接贴合指针，无惯性、无倾斜
-          curX = targetX;
-          curY = targetY;
-          tilt = 0;
-        } else {
-          // 惯性追随：指数平滑、帧率无关；残留系数越小收敛越快（越跟手），
-          // 0.0002 对应约 117ms 跟随时间常数，顺滑与跟手的折中偏跟手一侧
-          const k = 1 - Math.pow(0.0002, dt / 1000);
-          const nextX = curX + (targetX - curX) * k;
-          const nextY = curY + (targetY - curY) * k;
-          const vx = nextX - curX;
-          curX = nextX;
-          curY = nextY;
-
-          // 移动感：横向速度转化为轻微倾斜角，指数回正
-          const targetTilt = Math.max(-6, Math.min(6, vx * 0.5));
-          tilt += (targetTilt - tilt) * Math.min(1, dt / 110);
-        }
-
-        pos.style.transform = `translate3d(${curX}px, ${curY}px, 0) rotate(${tilt.toFixed(2)}deg)`;
+      const dt = Math.max(0, now - lastFrame);
+      lastFrame = now;
+      if (!settings.enabled || !finePointer.matches) {
+        requestAnimationFrame(tick);
+        return;
       }
+      if (reducedMotion.matches || pressed || !settings.smooth) {
+        currentX = targetX;
+        currentY = targetY;
+      } else {
+        const next = advanceCursor({ x: currentX, y: currentY }, { x: targetX, y: targetY }, dt, settings);
+        currentX = next.x;
+        currentY = next.y;
+      }
+      // 每帧重新查找当前节点，保持 Astro 跨页与顶层 popover 的坐标一致。
+      renderPosition();
 
       requestAnimationFrame(tick);
     }

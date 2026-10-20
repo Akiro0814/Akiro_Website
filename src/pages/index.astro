@@ -1,160 +1,63 @@
 ---
 import Icon from '../components/Icon.astro';
-import PostSummary from '../components/PostSummary.astro';
+import ArticleRail from '../components/ArticleRail.astro';
+import ProgressiveBlur from '../components/ProgressiveBlur.astro';
 import SiteStats from '../components/SiteStats.astro';
+import SpringWaves from '../components/SpringWaves.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import {
-  formatDate,
-  getPostCategory,
-  getPostCover,
-  getPostDescription,
-  site,
-  sortPosts,
-  sortPostsByDate,
-} from '../lib/posts';
-import { getPublishedPosts } from '../lib/posts';
-import { getHero } from '../lib/site-content';
-
+import { site, sortPosts, sortPostsByDate, getPublishedPosts } from '../lib/posts';
+import { getHero, getProjects, getPresentation } from '../lib/site-content';
+import { readWallpapers } from '../lib/wallpapers.mjs';
 const hero = getHero();
-
+const presentation = getPresentation();
 const posts = sortPosts(await getPublishedPosts());
-const featuredPosts = posts.filter((post) => (post.data.sticky ?? 0) > 0);
-const latestPosts = sortPostsByDate(posts).slice(0, 8);
-
-// 首屏「精选」推荐：置顶文章优先，再以最新文章补足，最多 3 篇。
-const heroPicks = [
-  ...featuredPosts,
-  ...latestPosts.filter((post) => !featuredPosts.some((f) => f.id === post.id)),
-].slice(0, 5);
-
-// 为无封面的精选项生成暖陶色/琥珀色相，保持在站点色板之内。
-const coverHue = (value: string) => {
-  let hash = 0;
-  for (const char of value) {
-    hash = (hash * 31 + char.charCodeAt(0)) % 360;
-  }
-  return 12 + (hash % 32);
-};
-
+const latest = sortPostsByDate(posts);
+const featured = [...posts.filter((p) => (p.data.sticky ?? 0) > 0), ...latest.filter((p) => !(p.data.sticky ?? 0))].slice(0, presentation.featuredLimit);
+const projects = getProjects().filter((project) => project.featured).slice(0, presentation.projectsLimit);
+const wallpapers = readWallpapers();
+const background = presentation.wallpaperMode === 'gradient' ? '' : presentation.wallpaperMode === 'fixed' ? hero.backgroundUrl : wallpapers[0] || hero.backgroundUrl;
+const videoBackground = /\.(mp4|webm|ogg|mov|m4v)(?:$|\?)/i.test(background);
+const typedWords = presentation.heroWords.length ? presentation.heroWords : [site.author, hero.title, '记录，慢慢生长。'];
 ---
-
 <BaseLayout title={site.name} description={site.description} pageClass="home-page">
-  <section class="hero">
-    <div class="hero__intro">
-      <img
-        src="/avatars/avatar.jpg"
-        alt="L1angK1NG头像"
-        class="hero__avatar"
-        width="80"
-        height="80"
-      />
-      <p class="eyebrow">{hero.eyebrow}</p>
-      <h1 class="hero__title">{hero.title}</h1>
-      <p class="hero__bio">
-        {hero.bio}
-      </p>
-      <div class="hero__actions">
-        <a class="text-link" href={hero.actionHref}>
-          {hero.actionLabel}
-          <Icon name="arrow-right" size={18} />
-        </a>
-        <span class="hero__social" aria-label="社交链接">
-          {hero.socials.map((s) => (
-            <a class="icon-button" href={s.href} target={s.href.startsWith('http') ? '_blank' : undefined} rel={s.href.startsWith('http') ? 'noopener noreferrer' : undefined} aria-label={s.label}>
-              <Icon name={s.icon} />
-            </a>
-          ))}
-        </span>
-      </div>
+  <section class="atlas-hero">
+    <div class="atlas-hero__background" aria-hidden="true" data-wallpaper-host data-wallpaper-list={JSON.stringify(wallpapers)} data-wallpaper-fallback={hero.backgroundUrl} data-wallpaper-mode={presentation.wallpaperMode}>
+      {background && (videoBackground ? <video src={background} data-hero-media autoplay loop muted playsinline preload="metadata" aria-hidden="true" /> : <img src={background} data-hero-media alt="" fetchpriority="high" decoding="async" referrerpolicy="no-referrer" />)}
+      <div class="atlas-hero__landscape"><span></span><span></span><span></span></div>
     </div>
-
-    {/* 网站数据：置于首屏简介与「精选」分隔线之间 */}
-    <SiteStats />
-
-    {heroPicks.length > 0 && (
-      <aside class="hero__picks" aria-label="精选文章">
-        <p class="hero__picks-label">精选</p>
-        <div class="picks">
-          <a class="pick-hero" href={`/posts/${heroPicks[0].id}/`}>
-            {getPostCover(heroPicks[0]) ? (
-              <span class="pick-hero__thumb">
-                <img
-                  src={getPostCover(heroPicks[0])}
-                  alt=""
-                  loading="eager"
-                  fetchpriority="high"
-                  referrerpolicy="no-referrer"
-                />
-              </span>
-            ) : (
-              <span
-                class="pick-hero__thumb pick__thumb--fallback"
-                style={`--h:${coverHue(heroPicks[0].data.title)}`}
-              />
-            )}
-            <span class="post-meta">
-              {getPostCategory(heroPicks[0]) && <span>{getPostCategory(heroPicks[0])}</span>}
-              {heroPicks[0].data.date && (
-                <time datetime={heroPicks[0].data.date.toISOString()}>
-                  {formatDate(heroPicks[0].data.date)}
-                </time>
-              )}
-            </span>
-            <span class="pick-hero__title">{heroPicks[0].data.title}</span>
-            <span class="pick-hero__desc">{getPostDescription(heroPicks[0])}</span>
-          </a>
-
-          {heroPicks.length > 1 && (
-            <ul class="pick-side">
-              {heroPicks.slice(1, 5).map((post) => (
-                <li>
-                  <a class="pick-side__item" href={`/posts/${post.id}/`}>
-                    {getPostCover(post) ? (
-                      <span class="pick-side__thumb">
-                        <img src={getPostCover(post)} alt="" loading="lazy" referrerpolicy="no-referrer" />
-                      </span>
-                    ) : (
-                      <span
-                        class="pick-side__thumb pick__thumb--fallback"
-                        style={`--h:${coverHue(post.data.title)}`}
-                      />
-                    )}
-                    <span class="pick-side__text">
-                      <span class="pick-side__title">{post.data.title}</span>
-                      {post.data.date && (
-                        <time class="pick-side__date" datetime={post.data.date.toISOString()}>
-                          {formatDate(post.data.date)}
-                        </time>
-                      )}
-                    </span>
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </aside>
-    )}
+    <div class="atlas-hero__inner">
+      <div class="atlas-hero__identity" data-hero-reveal><img src={site.avatar} alt={`${site.author}头像`} width="44" height="44" /><span>{hero.eyebrow}<i></i>{presentation.heroIdentity}</span></div>
+      <p class="atlas-hero__eyebrow" data-hero-reveal>{presentation.heroKicker}</p>
+      <h1 class="atlas-hero__title" data-hero-reveal aria-label={typedWords[0]}><span data-typewriter data-type-words={JSON.stringify(typedWords)} aria-hidden="true">{typedWords[0]}</span><span class="atlas-type-cursor" aria-hidden="true">|</span></h1>
+      <p class="atlas-hero__bio" data-hero-reveal>{hero.bio}</p>
+      <div class="atlas-hero__actions" data-hero-reveal>{hero.actionLabel && hero.actionHref && <a class="atlas-button atlas-button--light" href={hero.actionHref} data-magnetic><Icon name="bookmark" size={18} />{hero.actionLabel}<Icon name="arrow-up-right" size={18}/></a>}{presentation.heroAboutLabel && <a class="atlas-button atlas-button--ghost" href="/about/" data-magnetic>{presentation.heroAboutLabel}<Icon name="arrow-up-right" size={18}/></a>}</div>
+      <nav class="atlas-social-dock" aria-label="社交链接" data-hero-reveal>{hero.socials.map((s) => <a href={s.href} aria-label={s.label} title={s.label} target={s.href.startsWith('http') ? '_blank' : undefined} rel={s.href.startsWith('http') ? 'noopener noreferrer' : undefined} data-magnetic><Icon name={s.icon} size={20}/><span>{s.label}</span></a>)}</nav>
+    </div>
+    <div class="atlas-hero__bottom"><a href="#home-sections" data-scroll-to><span class="atlas-scroll-line"></span><span>{presentation.scrollLabel}<small>SCROLL TO EXPLORE</small></span></a><span>{String(posts.length).padStart(2,'0')} 篇记录<span class="atlas-hero__dot">/</span>{String(getProjects().length).padStart(2,'0')} 个项目</span></div>
+    <SpringWaves />
   </section>
 
+  <div id="home-sections"></div>
+  {presentation.showWriting && <section class="atlas-rail atlas-section" data-rail>
+    <div class="atlas-section__inner atlas-section__split">
+      <header class="atlas-section-intro" data-animate><span class="atlas-section-intro__index">01 / WRITING</span><span class="atlas-section-intro__icon"><Icon name="bookmark" size={26}/></span><h2>{presentation.writingTitle}</h2><p>{presentation.writingBody}</p><a class="atlas-text-link" href="/archive/">{presentation.writingLinkLabel}<Icon name="arrow-up-right" size={18}/></a><div class="atlas-rail__progress" aria-hidden="true"><span data-rail-progress></span></div></header>
+      {featured.length ? <ArticleRail posts={featured} /> : <div class="atlas-empty" data-animate><Icon name="bookmark" size={32}/><h3>故事即将开始</h3><p>第一篇记录，正在路上。</p></div>}
+    </div>
+  </section>}
 
-  <section class="section">
-    <div class="section__header section__header--row">
-      <div>
-        <h2>最新文章</h2>
-        <p>持续更新 AI、开发和建站相关笔记。</p>
-      </div>
-      <a class="section__more" href="/archive/">
-        全部 {posts.length} 篇
-        <Icon name="arrow-right" size={16} />
-      </a>
+  {presentation.showStatus && <section class="atlas-section atlas-status-section"><div class="atlas-section__inner atlas-section__split">
+    <header class="atlas-section-intro" data-animate><span class="atlas-section-intro__index">02 / LITTLE UPDATES</span><span class="atlas-section-intro__icon"><Icon name="compass" size={26}/></span><h2>{presentation.statusTitle}</h2><p>{presentation.statusBody}</p><a class="atlas-text-link" href="/notes/">{presentation.statusLinkLabel}<Icon name="arrow-up-right" size={18}/></a></header>
+    <div class="atlas-status-grid">
+      <article class="atlas-status-card atlas-status-card--wide" data-animate data-spotlight><div class="atlas-card-meta"><span class="atlas-live-dot"></span>THE JOURNAL IS ALIVE</div><h3>{presentation.statusHeading}<span data-rotate-text data-rotate-words={JSON.stringify(presentation.statusWords)}>{presentation.statusWords[0] || ''}</span></h3>{presentation.showStats && <SiteStats />}</article>
+      <a href="/projects/" class="atlas-status-card atlas-status-card--code" data-animate data-tilt><div class="atlas-card-meta"><Icon name="layers" size={18}/>BUILDING THINGS</div><span class="atlas-code-art" aria-hidden="true">&lt;<i> / </i>&gt;</span><div><h3>{presentation.projectCardTitle}</h3><p>{presentation.projectCardBody}</p></div><span class="atlas-status-card__arrow"><Icon name="arrow-up-right"/></span></a>
+      <a href="/nav/" class="atlas-status-card atlas-status-card--links" data-animate data-tilt><div class="atlas-card-meta"><Icon name="compass" size={18}/>COLLECTING GOOD THINGS</div><span class="atlas-orbit-art" aria-hidden="true"><i>✳</i></span><div><h3>{presentation.bookmarkCardTitle}</h3><p>{presentation.bookmarkCardBody}</p></div><span class="atlas-status-card__arrow"><Icon name="arrow-up-right"/></span></a>
     </div>
-    <div class="post-list" aria-label="文章列表">
-      {latestPosts.length > 0 ? (
-        latestPosts.map((post) => <PostSummary post={post} />)
-      ) : (
-        <p class="empty-hint">还没有发布文章，敬请期待。</p>
-      )}
-    </div>
-  </section>
+  </div></section>}
+
+  {presentation.showProjects && projects.length > 0 && <section class="atlas-rail atlas-section atlas-projects-section" data-rail><div class="atlas-section__inner atlas-section__split">
+    <header class="atlas-section-intro" data-animate><span class="atlas-section-intro__index">03 / PLAYGROUND</span><span class="atlas-section-intro__icon"><Icon name="layers" size={26}/></span><h2>{presentation.projectsTitle}</h2><p>{presentation.projectsBody}</p><a class="atlas-text-link" href="/projects/">{presentation.projectsLinkLabel}<Icon name="arrow-up-right" size={18}/></a><div class="atlas-rail__progress" aria-hidden="true"><span data-rail-progress></span></div></header>
+    <ProgressiveBlur><div class="atlas-rail__viewport" data-rail-viewport tabindex="0" aria-label="项目展示，可横向滚动"><div class="atlas-rail__track" data-rail-track>{projects.map((p, i) => <a class="atlas-project-slice" href={`/projects/${p.slug}/`} data-animate data-parallax><img src={p.cover || '/covers/default-cover.svg'} alt="" loading="lazy" referrerpolicy="no-referrer"/><span class="atlas-project-slice__number">0{i + 1}</span><div><span>{p.tech?.slice(0, 3).join(' / ')}</span><h3>{p.title}</h3><p>{p.subtitle || p.description}</p></div><Icon name="arrow-up-right" size={22}/></a>)}</div></div></ProgressiveBlur>
+  </div></section>}
+
+  {presentation.showQuote && <section class="atlas-home-quote" data-animate><span aria-hidden="true">“</span><p>{presentation.quoteText}</p><small>{presentation.quoteSignature}</small><a href="/about/" class="atlas-text-link">认识 {site.author}<Icon name="arrow-up-right" size={17}/></a></section>}
 </BaseLayout>
