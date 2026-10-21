@@ -2,9 +2,8 @@
 // 打包为可缓存模块；播放器 DOM 带 transition:persist 换页复用同一节点，
 // 整个脚本只在首次加载初始化一次。歌单 ID 由组件 data 属性注入，
 // 未配置网易云 ID 时仍可读取后台管理的本地歌单，空歌单则隐藏入口。
-// 外部 Meting 解析请求统一走 ./music-api.js（含出站地址校验）；
+// 歌单只读公开 API 或静态发布快照；外部播放地址与歌词由后台按已发布 ID 解析。
 // 歌词 LRC 解析走 ./../lib/lrc.js（纯函数，单测覆盖）。
-import { fetchMetingPlaylist } from './music-api.js';
 import { gatewayUrl } from '../lib/gateway.js';
 import { parseLrc } from '../lib/lrc.js';
 
@@ -532,7 +531,7 @@ import { parseLrc } from '../lib/lrc.js';
         // 优先读博客自建歌单（后台「音乐」模块维护：本地上传 + 网易云导入）。
         let items = [];
         let managed = false;
-        // 本地 API 走哨兵门控：无后端时跳过请求，直接回退到网易云歌单。
+        // 本地 API 走哨兵门控：无后台时也只读取当前静态发布的歌单快照。
         try {
           const request = window.__blogApi?.gateFetch
             ? window.__blogApi.gateFetch('/api/public/playlist', {
@@ -552,15 +551,19 @@ import { parseLrc } from '../lib/lrc.js';
             }
           }
         } catch {
-          // 自建歌单不可用时回退到网易云歌单。
+          // 下方读取同版本静态快照，不在浏览器拉取不断变化的外部歌单。
         }
 
-        if (!managed && playlistId) {
-          items = await fetchMetingPlaylist(playlistId, { signal: fetchController.signal });
+        if (!managed) {
+          const response = await fetch('/_published/state.json', { signal: fetchController.signal });
+          if (response.ok) {
+            const state = await response.json();
+            items = Array.isArray(state.tracks) ? state.tracks : [];
+          }
         }
         // 服务端已处理环境歌单兜底，成功返回空列表表示没有可公开播放的歌曲。
         // 不在浏览器重新拉起旧歌单，避免后台全部下架后前台仍继续展示。
-        if ((managed || !playlistId) && !items.length) {
+        if (!items.length) {
           tracks = [];
           wantsPlayback = false;
           audio.pause();

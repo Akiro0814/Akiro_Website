@@ -85,7 +85,7 @@ DRAFT_ONLY_SECRET_BODY
   // 通过真实发布流水线重建，验证删除检测会清理 Astro 缓存，旧文章不会复活。
   fs.writeFileSync(path.join(root, '.content-build-manifest.json'), JSON.stringify(['src/content/posts/技术/中文文章.md']));
   fs.unlinkSync(path.join(root, 'src', 'content', 'posts', '技术', '中文文章.md'));
-  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ type: 'module', scripts: { build: `node "${astroBin.replaceAll('\\', '/')}" build` } }));
+  fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({ type: 'module', scripts: { build: 'astro build' } }));
   process.env.BACKUP_ENABLED = 'false';
   const { buildAndPublish } = await fixture.importModule('build.mjs');
   const published = await buildAndPublish();

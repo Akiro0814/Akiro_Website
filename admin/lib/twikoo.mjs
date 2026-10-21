@@ -5,6 +5,7 @@ import path from 'node:path';
 import { toTkRequest, getRequestTimesClearInterval } from 'tkserver';
 import { createHandler, scaffoldAdapters, FULL_CAPABILITIES, LokiDatabase, MongoDatabase, getPostSubmitService, resetRequestTimes } from '@twikoojs/common';
 import { DATA_DIR, readJSON, writeJSONAsync } from './store.mjs';
+import { sanitizeComments } from './published-comments.mjs';
 
 export const PUBLIC_TWIKOO_EVENTS = new Set(['GET_FUNC_VERSION', 'GET_CONFIG', 'GET_PASSWORD_STATUS', 'COMMENT_GET', 'COMMENT_SUBMIT', 'COMMENT_LIKE', 'COMMENT_DELETE_FOR_USER', 'GET_COMMENTS_COUNT', 'GET_RECENT_COMMENTS', 'COUNTER_GET', 'GET_QQ_NICK', 'CAP_CHALLENGE', 'CAP_REDEEM', 'UPLOAD_IMAGE']);
 const md5 = (value) => crypto.createHash('md5').update(value).digest('hex');
@@ -160,6 +161,20 @@ export function createTwikooService({ dataDir, legacyComments = () => [], secret
     },
     adminCall: (body, context) => run(() => invoke(body, context, true)),
     documents: () => run(allDocuments),
+    snapshot: () => run(async () => {
+      const documents = await allDocuments();
+      const publicConfig = await invoke({ event: 'GET_CONFIG' });
+      const adminConfig = await invoke({ event: 'GET_CONFIG_FOR_ADMIN' }, {}, true);
+      if (publicConfig.body.code !== 0 || adminConfig.body.code !== 0) throw Error('评论发布快照配置读取失败。');
+      // 官方公开配置不含分页/显示控制项，仅补齐明确允许公开的查询参数。
+      const config = { ...publicConfig.body.config };
+      for (const key of ['COMMENT_PAGE_SIZE', 'SHOW_UA', 'SHOW_REGION', 'TOP_DISABLED']) {
+        if (adminConfig.body.config?.[key] !== undefined) config[key] = adminConfig.body.config[key];
+      }
+      const counters = database ? await adapterDatabase.getAllCounters() : [];
+      return { comments: sanitizeComments(documents), config,
+        counters: counters.map(({ url, time }) => ({ url, time })) };
+    }),
     async close() { await Promise.allSettled([...requests]); await Promise.allSettled([...background]); await databaseQueue; if (timer) clearInterval(timer); if (database) await database.close(); },
     mode: remoteUrl ? 'remote' : mongoUri ? 'mongodb' : 'local',
   };

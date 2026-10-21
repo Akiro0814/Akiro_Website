@@ -17,5 +17,5 @@ export function renderPreview(markdown) {
     }
   });
   const html = marked.parse(withShortcodes, { async: false, gfm: true, breaks: true });
-  return String(html);
+  return String(html).replace(/(src=["'])\/uploads\//g, '$1/api/media/preview/');
 }

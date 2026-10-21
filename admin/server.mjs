@@ -33,6 +33,15 @@ const { renderPreview } = await import('./lib/preview.mjs');
 const views = await import('./views.mjs');
 const siteData = await import('./lib/site-data.mjs');
 const commentsLib = await import('./lib/comments.mjs');
+const { findMediaReferences } = await import('./lib/media-references.mjs');
+const { trackManagedWrite } = await import('./lib/managed-writes.mjs');
+const { twikoo } = await import('./lib/twikoo.mjs');
+async function mediaReferences(name) {
+  const [documents, config] = await Promise.all([
+    twikoo.documents(), twikoo.publicCall({ event: 'GET_CONFIG' }),
+  ]);
+  return findMediaReferences(name, { commentDocuments: documents, commentConfig: config.body.config || {} });
+}
 
 const app = express();
 const PORT = Number(process.env.ADMIN_PORT || 4000);
@@ -125,8 +134,9 @@ app.get('/admin-assets/shared/sanitize.js', (_req, res) => {
 
 // 共享的字体分片声明（与前台 src/styles/fonts.css 同一份源码）。
 app.get('/admin-assets/fonts.css', (_req, res) => {
-  res.type('text/css').sendFile(path.join(ROOT, 'src', 'styles', 'fonts.css'));
+  res.type('text/css').send(fs.readFileSync(path.join(ROOT, 'src/styles/fonts.css'), 'utf8').replaceAll('/fonts/', '/admin-assets/fonts/'));
 });
+app.use('/admin-assets/fonts', express.static(path.join(ROOT, 'public/fonts')));
 
 // —— 安全响应头 ——
 // 应用层自带基础安全头（nginx 配置同样提供，双保险）：即使部署者跳过 nginx
@@ -230,6 +240,16 @@ function requirePageAuth(req, res, next) {
   if (!req.session?.user) return res.redirect('/admin/login');
   return next();
 }
+
+// 新的后台写入在构建期间明确拒绝；已在执行的请求由构建协调器等待完成。
+// 构建/回滚本身由发布锁串行化，登录、退出与只读预览不参与内容写锁。
+app.use((req, res, next) => {
+  if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method) || !req.path.startsWith('/api/')
+    || /^\/api\/(?:public\/|login$|logout$|build(?:\/|$)|backup\/|preview$)/.test(req.path)) return next();
+  if (!req.session?.user) return next();
+  if (build.isBuilding()) return res.status(409).json({ error: '正在构建发布，请完成后再保存或删除。' });
+  trackManagedWrite(req, res, next);
+});
 
 // —— 页面路由 ——
 app.get('/admin/login', (req, res) => {
@@ -522,7 +542,7 @@ function listMedia() {
     return fs
       .readdirSync(UPLOAD_DIR, { withFileTypes: true })
       .filter((e) => e.isFile())
-      .map((e) => ({ name: e.name, url: `/uploads/${e.name}` }))
+      .map((e) => ({ name: e.name, url: `/uploads/${encodeURIComponent(e.name)}` }))
       .sort((a, b) => b.name.localeCompare(a.name));
   } catch (err) {
     logWarn('媒体目录读取失败', err);
@@ -531,6 +551,18 @@ function listMedia() {
 }
 
 app.get('/api/media', requireApiAuth, (_req, res) => res.json({ items: listMedia() }));
+app.get('/api/media/references', requireApiAuth, wrap(async (req, res) => {
+  const name = String(req.query.name || '');
+  if (!name || path.basename(name) !== name || name.startsWith('.')) return res.status(400).json({ error: '媒体名称无效' });
+  res.set('Cache-Control', 'no-store').json({ references: await mediaReferences(name) });
+}));
+// 源媒体只经登录保护的后台入口预览；前台 /uploads 始终读取已发布资源。
+app.get('/api/media/preview/:name', requireApiAuth, (req, res) => {
+  const name = req.params.name;
+  if (path.basename(name) !== name || name.startsWith('.')) return res.status(404).end();
+  res.set('Cache-Control', 'no-store');
+  res.sendFile(path.join(UPLOAD_DIR, name));
+});
 
 // 基于内容哈希去重：字节完全相同的文件无论上传时叫什么名字，都会映射到
 // 同一个已存储文件，这样多篇文章共享一份物理副本，而不是堆叠一堆带时间戳的
@@ -573,20 +605,6 @@ import { MAGIC_CHECKS, looksLikeSvg, sanitizeSvg } from './lib/upload-guard.mjs'
 // 媒体引用就存在于 Markdown 内容本身（封面 frontmatter 以及正文中的图片/链接）
 // —— 没有数据库，因此引用扫描会遍历内容文件。原始 URL 和百分号编码后的 URL
 // 两种形式都计入引用。
-function findUploadReferences(name) {
-  const needle = `/uploads/${name}`;
-  const needleEncoded = `/uploads/${encodeURIComponent(name)}`;
-  const refs = [];
-  for (const collectionName of Object.keys(content.COLLECTIONS)) {
-    for (const entry of content.listEntries(collectionName)) {
-      const haystack = `${entry.data?.cover ?? ''}\n${entry.body ?? ''}`;
-      if (haystack.includes(needle) || haystack.includes(needleEncoded)) {
-        refs.push(`${collectionName}/${entry.id}`);
-      }
-    }
-  }
-  return refs;
-}
 
 const SAFE_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.avif', '.ico']);
 // 单个图片 10MB 上限（与编辑器「插入图片」组件的客户端校验一致）。
@@ -635,10 +653,10 @@ app.post('/api/media/delete', requireApiAuth, requireCsrf, wrap(async (req, res)
   if (!name || name.startsWith('.') || !fs.existsSync(filePath) || !fs.statSync(filePath).isFile()) {
     return res.status(404).json({ error: '文件不存在' });
   }
-  const references = findUploadReferences(name);
+  const references = (await mediaReferences(name)).filter((r) => r.scope !== 'published');
   if (references.length > 0) {
     return res.status(409).json({
-      error: `该文件仍被 ${references.length} 篇内容引用（${references.join('、')}），请先移除引用再删除。`,
+      error: `该文件仍有 ${references.length} 处待发布内容或回收站引用（${references.map((r) => `${r.module}：${r.title}`).join('、')}），请先移除引用再删除。`,
       references,
     });
   }
@@ -655,6 +673,7 @@ app.use('/api/public', routesLib.publicRouter());
 app.use('/api/manage', routesLib.manageRouter({ requireApiAuth, requireCsrf }));
 // 本地音乐文件（data/music-files/）不随静态站构建，经 API 流式输出（支持 Range）。
 app.use('/api/music', routesLib.musicFilesRouter());
+app.use('/api/manage/music-preview', requireApiAuth, routesLib.musicFilesRouter({ preview: true }));
 
 // —— 构建 ——
 app.post('/api/build', requireApiAuth, requireCsrf, wrap(async (_req, res) => {
@@ -678,7 +697,7 @@ app.post('/api/build/rollback', requireApiAuth, requireCsrf, wrap(async (_req, r
 
 // 提供博客的 public/ 目录，让编辑器中的媒体和封面预览能正常解析。
 // 注册在所有路由之后，确保这里的静态服务不会遮蔽任何 admin/API 路由。
-app.use(express.static(path.join(ROOT, 'public'), { maxAge: '1h' }));
+// 不向匿名访客暴露 public 源目录，避免新增或删除媒体绕过发布。
 
 // 将已发布的站点（current/）作为最终回退提供服务，这样「构建并发布」按钮
 // 产出的内容就能在本地后台源上直接查看——与生产环境中 nginx 提供的字节完全

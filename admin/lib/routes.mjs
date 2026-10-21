@@ -9,16 +9,17 @@ import { twikoo } from './twikoo.mjs';
 import * as siteData from './site-data.mjs';
 import * as music from './music.mjs';
 import * as projects from './projects.mjs';
-import { projectCatalog } from './project-catalog.mjs';
 import * as stats from './stats.mjs';
 import { publishedPostCount } from './published-content.mjs';
+import { readPublishedState, publishedRoot } from './published-state.mjs';
+import { createPublishedComments, SNAPSHOT_COMMENT_EVENTS } from './published-comments.mjs';
 import { ROOT } from './env.mjs';
 import { readWallpapers } from '../../src/lib/wallpapers.mjs';
 
 const jsonError = (res, err, fallback = '操作失败') =>
   res.status(400).json({ error: err?.message || fallback });
 
-// 前台「网站数据」模块展示的聚合数据（公开接口与后台「站点数据」页共用一份口径）。
+// 后台「站点数据」页的实时聚合；公开接口单独读取已发布统计快照。
 // 总文章量只计已发布的文章（草稿不计），与前台归档页的「N 篇文章」一致；
 // 总评论量为系统内全部评论（含回复）。
 export async function siteStats() {
@@ -35,24 +36,31 @@ export async function siteStats() {
 // ============================ 公开接口 ============================
 export function publicRouter() {
   const router = express.Router();
+  // 固定本次响应的 release。所有公开展示均取发布快照，首次完整发布前不读源数据。
+  router.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store');
+    req.publishedRoot = publishedRoot();
+    req.published = readPublishedState(req.publishedRoot);
+    next();
+  });
   router.get('/project-catalog', async (req,res) => {
     if(!rateLimit(req,{key:'projects',max:120,windowMs:300_000}).ok) return res.status(429).json({error:'请求过于频繁'});
-    try {res.set('Cache-Control','no-store');res.json(await projectCatalog.read());}
+    try { if (!req.published) return res.status(503).json({error:'请先完成一次构建发布。'}); res.json(req.published.catalog);}
     catch {res.status(503).json({error:'项目同步暂不可用，请稍后再试。'});}
   });
 
-  // 每次读取本机目录，新增壁纸无需重新构建；接口只返回固定目录的安全图片 URL。
-  router.get('/wallpapers', (_req, res) => {
+  // 公开壁纸清单只读取发布快照。后台预览通过独立鉴权入口读取源目录。
+  router.get('/wallpapers', (req, res) => {
     res.set('Cache-Control', 'no-store');
-    res.json({ items: readWallpapers(ROOT) });
+    res.json({ items: req.published?.wallpapers || [] });
   });
-  // 图片也走已有 /api 反代，生产 current/ 静态快照之外的新图片可立即使用。
+  // 图片走已有 /api 反代，仅返回清单所属发布版本的文件。
   router.get('/wallpapers/:filename', (req, res) => {
     const name = req.params.filename;
     const url = `/wallpapers/${encodeURIComponent(name)}`;
-    if (!readWallpapers(ROOT).includes(url)) return res.status(404).end();
+    if (!req.published?.wallpapers?.includes(url) || path.basename(name) !== name) return res.status(404).end();
     res.set('Cache-Control', 'no-cache');
-    res.sendFile(path.join(ROOT, 'public', 'wallpapers', name));
+    res.sendFile(path.join(req.publishedRoot, 'wallpapers', name));
   });
 
   // —— 评论（Twikoo 协议：事件 POST /api/public/twikoo） ——
@@ -72,7 +80,10 @@ export function publicRouter() {
     }
     const body = req.body || {};
     try {
-      const result = await twikoo.publicCall(body, { ip: req.ip, ua: req.get('user-agent'), origin: req.get('origin') });
+      const result = SNAPSHOT_COMMENT_EVENTS.has(event)
+        ? await createPublishedComments(req.published?.comments || { comments: [], config: {}, counters: [] })(body)
+        : await twikoo.publicCall(body, { ip: req.ip, ua: req.get('user-agent'), origin: req.get('origin') });
+      if (event === 'COMMENT_SUBMIT' && result.body.code === 0) result.body.message = '评论已提交，等待站长构建发布后展示。';
       return res.status(result.status).json(result.body);
     } catch (err) {
       return jsonError(res, err);
@@ -80,12 +91,12 @@ export function publicRouter() {
   });
 
   // —— 友链 ——
-  router.get('/friends', (_req, res) => {
-    const data = siteData.getFriends();
+  router.get('/friends', (req, res) => {
+    const data = req.published?.friends || { notice: '', items: [] };
     res.json({
       notice: data.notice,
       // 前台只展示已通过审核的友链。
-      items: data.items.filter((f) => f.status === 'approved'),
+      items: data.items,
     });
   });
 
@@ -96,26 +107,26 @@ export function publicRouter() {
     }
     try {
       await siteData.applyFriend(req.body || {});
-      res.json({ ok: true, message: '申请已提交，等待站长审核。通过后将展示在友链页。' });
+      res.json({ ok: true, message: '申请已提交，审核通过并构建发布后将展示在友链页。' });
     } catch (err) {
       return jsonError(res, err);
     }
   });
 
   // —— 公告 ——
-  router.get('/announcements', (_req, res) => {
-    res.json({ items: siteData.activeAnnouncements() });
+  router.get('/announcements', (req, res) => {
+    res.json({ items: req.published?.announcements || [] });
   });
 
   // —— 项目 ——
-  router.get('/projects', (_req, res) => {
-    res.json({ items: projects.listProjects() });
+  router.get('/projects', (req, res) => {
+    res.json({ items: req.published?.projects || [] });
   });
   router.get('/projects/:slug', (req, res) => {
-    const project = projects.getProject(req.params.slug);
+    const project = req.published?.projects?.find((p) => p.slug === req.params.slug);
     if (!project) return res.status(404).json({ error: '项目不存在' });
     res.json({
-      project: { ...project, contentHtml: projects.renderProjectContent(project.content) },
+      project,
     });
   });
 
@@ -124,7 +135,7 @@ export function publicRouter() {
     const limit = rateLimit(req, { key: 'playlist', max: 60, windowMs: 60 * 1000 });
     if (!limit.ok) return res.status(429).json({ error: '请求过于频繁' });
     try {
-      res.json({ tracks: await music.publicPlaylist() });
+      res.json({ tracks: req.published?.tracks || [] });
     } catch (err) {
       jsonError(res, err, '歌单加载失败');
     }
@@ -134,6 +145,7 @@ export function publicRouter() {
   router.get('/playlist/resolve/:id', async (req, res) => {
     const limit = rateLimit(req, { key: 'resolve', max: 30, windowMs: 60 * 1000 });
     if (!limit.ok) return res.status(429).json({ error: '请求过于频繁' });
+    if (!req.published?.tracks?.some((t) => t.neteaseId === req.params.id)) return res.status(404).json({ error: '歌曲尚未发布' });
     try {
       const url = await music.resolvePlayUrl(req.params.id, { refresh: true });
       res.json({ url });
@@ -146,6 +158,7 @@ export function publicRouter() {
   router.get('/playlist/lyric/:id', async (req, res) => {
     const limit = rateLimit(req, { key: 'lyric', max: 60, windowMs: 60 * 1000 });
     if (!limit.ok) return res.status(429).json({ error: '请求过于频繁' });
+    if (!req.published?.tracks?.some((t) => t.neteaseId === req.params.id)) return res.status(404).json({ error: '歌曲尚未发布' });
     try {
       res.json({ lyric: await music.getLyric(req.params.id) });
     } catch (err) {
@@ -167,11 +180,11 @@ export function publicRouter() {
   });
 
   // —— 站点信息聚合（前端少发请求） ——
-  router.get('/site-info', (_req, res) => {
+  router.get('/site-info', (req, res) => {
     res.json({
-      profile: siteData.getProfile(),
-      nav: siteData.getNavLinks(),
-      announcements: siteData.activeAnnouncements(),
+      profile: req.published?.profile || {},
+      nav: req.published?.nav || {},
+      announcements: req.published?.announcements || [],
     });
   });
 
@@ -179,7 +192,7 @@ export function publicRouter() {
   router.get('/site-stats', async (req, res) => {
     const limit = rateLimit(req, { key: 'site-stats', max: 60, windowMs: 60 * 1000 });
     if (!limit.ok) return res.status(429).json({ error: '请求过于频繁，请稍后再试。' });
-    try { res.json(await siteStats()); } catch (error) { jsonError(res, error); }
+    res.json(req.published?.stats || { since: '', posts: publishedPostCount(), comments: 0, totalViews: 0, todayViews: 0 });
   });
 
   return router;
@@ -189,6 +202,13 @@ export function publicRouter() {
 export function manageRouter({ requireApiAuth, requireCsrf }) {
   const router = express.Router();
   router.use(requireApiAuth);
+  // 后台目录预览与公开快照分离，添加图片后可先检查，再统一构建发布。
+  router.get('/wallpapers', (_req, res) => res.set('Cache-Control', 'no-store').json({ items: readWallpapers(ROOT) }));
+  router.get('/wallpapers/:filename', (req, res) => {
+    const name = req.params.filename;
+    if (path.basename(name) !== name || !readWallpapers(ROOT).includes(`/wallpapers/${encodeURIComponent(name)}`)) return res.status(404).end();
+    res.set('Cache-Control', 'no-store').sendFile(path.join(ROOT, 'public/wallpapers', name));
+  });
 
   // —— 页面内容（主页 hero + 关于页） ——
   router.get('/profile', (_req, res) => res.json({ profile: siteData.getProfile() }));
@@ -229,7 +249,7 @@ export function manageRouter({ requireApiAuth, requireCsrf }) {
   router.post('/friends/review', requireCsrf, async (req, res) => {
     try {
       const item = await siteData.reviewFriend(req.body?.id, req.body?.status);
-      const label = item.status === 'approved' ? '已通过，前台即刻展示' : item.status === 'rejected' ? '已拒绝' : '已重置为待审核';
+      const label = item.status === 'approved' ? '已通过，构建发布后展示' : item.status === 'rejected' ? '已拒绝，构建发布后同步前台' : '已重置为待审核，构建发布后同步前台';
       res.json({ ok: true, item, message: label });
     } catch (err) {
       jsonError(res, err);
@@ -263,6 +283,11 @@ export function manageRouter({ requireApiAuth, requireCsrf }) {
 
   // —— 音乐管理 ——
   router.get('/music', (_req, res) => res.json({ tracks: music.listTracks() }));
+  router.get('/music/resolve/:id', async (req, res) => {
+    if (!music.listTracks().some((track) => track.neteaseId === req.params.id)) return res.status(404).json({ error: '歌曲不存在' });
+    try { res.json({ url: await music.resolvePlayUrl(req.params.id, { refresh: true }) }); }
+    catch (err) { jsonError(res, err, '试听地址解析失败'); }
+  });
   router.post('/music/upload', requireCsrf, express.raw({ type: () => true, limit: '30mb' }), (req, res) => {
     try {
       const query = req.query || {};
@@ -367,7 +392,7 @@ export function manageRouter({ requireApiAuth, requireCsrf }) {
         comment: req.body?.comment,
         nick: req.body?.nick,
       });
-      res.json({ ok: true, ...result, message: '回复已发布。' });
+      res.json({ ok: true, ...result, message: '回复已保存，构建发布后展示。' });
     } catch (err) {
       jsonError(res, err);
     }
@@ -380,7 +405,7 @@ export function manageRouter({ requireApiAuth, requireCsrf }) {
   router.get('/site-meta', (_req, res) => res.json({ meta: siteData.getSiteMeta() }));
   router.post('/site-meta', requireCsrf, async (req, res) => {
     try {
-      res.json({ ok: true, meta: await siteData.saveSiteMeta(req.body || {}), message: '开站日期已保存，前台即时生效。' });
+      res.json({ ok: true, meta: await siteData.saveSiteMeta(req.body || {}), message: '开站日期已保存，构建发布后生效。' });
     } catch (err) {
       jsonError(res, err);
     }
@@ -390,11 +415,13 @@ export function manageRouter({ requireApiAuth, requireCsrf }) {
 }
 
 // 本地音频流式输出：支持 Range（拖动进度条需要），缓存一天。
-export function musicFilesRouter() {
+export function musicFilesRouter({ preview = false } = {}) {
   const router = express.Router();
   router.get('/file/:name', (req, res) => {
     const name = path.basename(String(req.params.name || ''));
-    const file = path.join(MUSIC_FILES_DIR, name);
+    const root = preview ? MUSIC_FILES_DIR : publishedRoot();
+    if (!root || name !== String(req.params.name || '')) return res.status(404).end();
+    const file = preview ? path.join(root, name) : path.join(root, '_published/music', name);
     if (!name || name.startsWith('.') || !fs.existsSync(file) || !fs.statSync(file).isFile()) {
       return res.status(404).json({ error: '音频不存在' });
     }
@@ -408,8 +435,8 @@ export function musicFilesRouter() {
       '.ogg': 'audio/ogg',
     };
     res.setHeader('Content-Type', types[ext] || 'application/octet-stream');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    // express.static 不适用（目录在 data/ 下且要控制响应头），手动支持单段 Range。
+    res.setHeader('Cache-Control', preview ? 'no-store' : 'no-cache');
+    // 音频来自已发布副本或鉴权预览目录，手动支持单段 Range。
     const { size } = fs.statSync(file);
     const range = req.headers.range;
     if (range) {

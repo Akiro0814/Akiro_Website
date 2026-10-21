@@ -1,7 +1,7 @@
 ---
 // 网站数据：运行时间 / 总文章量 / 总评论量 / 总访问量 / 今日访问量。
 // 构建时先渲染一份快照值兜底（静态预览也能看到数字），浏览器加载后再经
-// /api/public/site-stats 刷新为实时值；运行时间由后台「站点数据」页设定的
+// /api/public/site-stats 读取已发布快照；运行时间由后台「站点数据」页设定的
 // 开站日期在浏览器实时计算（长停留跨天自动跟进）。
 import { getPublishedPosts } from '../lib/posts';
 import { getSiteStatsSnapshot } from '../lib/site-content';

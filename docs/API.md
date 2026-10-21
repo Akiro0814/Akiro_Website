@@ -9,16 +9,18 @@
 
 ## 公开接口（/api/public）
 
+所有展示接口读取 `current/_published/state.json`。后台保存、删除、审核与访客写入不会直接改变公开响应；成功构建统一切换，失败保持旧版，回滚恢复对应快照。首次完整发布前返回安全空值，项目目录返回 503，绝不回退读取待发布源数据。评论提交、点赞、访问打点与友链申请仍可实时写入运行库；公开展示等待发布。运行时长按已发布日期计算，已发布歌曲的临时播放地址允许刷新。
+
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
 | POST | `/api/public/twikoo` | Twikoo 协议评论接口：body `{ event, ... }`，事件 `COMMENT_GET`（拉评论树）/ `COMMENT_SUBMIT`（发评论/回复）/ `COMMENT_LIKE`（点赞，按 IP 哈希去重） |
 | GET | `/api/public/friends` | 友链列表（仅已审核）+ 申请须知文案 |
 | POST | `/api/public/friends/apply` | 提交友链申请（进待审核队列）；同 URL 重复提交视为更新 |
-| GET | `/api/public/announcements` | 当前启用且在有效期内的公告 |
+| GET | `/api/public/announcements` | 发布取样时启用且在有效期内的公告 |
 | GET | `/api/public/projects` | 项目展示列表 |
 | GET | `/api/public/projects/:slug` | 项目详情（含 Markdown 渲染正文） |
-| GET | `/api/public/project-catalog` | 项目与 GitHub 统一目录，带后台缓存和离线快照 |
-| GET | `/api/public/wallpapers` | 本机安全壁纸目录清单，响应禁止缓存 |
+| GET | `/api/public/project-catalog` | 已发布的项目与 GitHub 统一目录 |
+| GET | `/api/public/wallpapers` | 已发布壁纸清单，响应禁止缓存 |
 | GET | `/api/public/wallpapers/:filename` | 读取清单内的壁纸文件；不是任意路径文件读取接口 |
 | GET | `/api/public/playlist` | 自建歌单曲目（后台「音乐」模块维护） |
 | GET | `/api/public/playlist/resolve/:id` | 网易云曲目播放地址重新解析（播放失败后前端调用） |
@@ -56,12 +58,16 @@
 | 方法 | 路径 | 鉴权 | 说明 |
 | --- | --- | --- | --- |
 | GET | `/api/media` | 会话 | 已上传文件列表 |
+| GET | `/api/media/references?name=` | 会话 | 使用位置：scope 为 pending / trash / published，包含模块、标题、字段与编辑入口 |
+| GET | `/api/media/preview/:name` | 会话 | 待发布媒体预览，禁止缓存；公开 `/uploads/` 只读 current |
 | POST | `/api/upload?filename=` | 会话+CSRF | 图片上传（原始二进制 body，≤10MB）；扩展名白名单 + 文件头校验，SVG 自动剥离脚本能力；按内容哈希去重复用 |
-| POST | `/api/media/delete` | 会话+CSRF | 删除文件；仍被内容引用时返回 409 并列出引用位置 |
+| POST | `/api/media/delete` | 会话+CSRF | 删除文件；待发布内容或回收站仍引用时返回 409；删除源文件不影响已发布资源 |
 
 ## 动态模块管理（/api/manage）
 
 以下写操作均需 **会话+CSRF**，读操作需 **会话**：
+
+构建期间后台内容写操作返回 409，待构建完成重试。
 
 | 模块 | 读 | 写 |
 | --- | --- | --- |
@@ -75,6 +81,7 @@
 | Twikoo 完整管理 | — | POST `/api/manage/twikoo`，使用官方事件协议，继承博客会话及 CSRF |
 | 访问统计 | GET `/api/manage/stats` | —（公开打点写入） |
 | 仪表盘 | GET `/api/manage/dashboard` | — |
+| 壁纸预览 | GET `/api/manage/wallpapers`、`/api/manage/wallpapers/:filename` | — |
 | 开站日期 | GET `/api/manage/site-meta` | POST `/api/manage/site-meta`，body `{ since }` |
 
 `POST /api/manage/music/upload` 使用原始二进制 body，查询参数含 filename，可选 title、artist、cover。最大 30MB；服务端校验 mp3/flac/wav/m4a/ogg/aac 扩展名与基础容器/帧头，不合格时不写文件或歌单。图片最大 10MB；Twikoo 请求最大 16MB。
@@ -85,7 +92,7 @@
 | --- | --- | --- | --- |
 | POST | `/api/build` | 会话+CSRF | 触发「构建并发布」（`astro build` + 原子切换）；构建中重复调用返回 409 |
 | GET | `/api/build/status` | 会话 | 构建状态 / 日志 / 发布版本列表 |
-| POST | `/api/build/rollback` | 会话+CSRF | 只回滚静态产物；构建占锁时拒绝操作，不改源文件和动态数据 |
+| POST | `/api/build/rollback` | 会话+CSRF | 回滚页面、公开数据与媒体；构建占锁时拒绝操作，不覆盖编辑源文件与运行库 |
 | GET | `/api/backup/config` | 会话 | 备份仓库配置（保存值 / 生效值 / 来源） |
 | POST | `/api/backup/config` | 会话+CSRF | 保存备份仓库地址（留空回落默认来源） |
 
@@ -93,7 +100,9 @@
 
 | 方法 | 路径 | 说明 |
 | --- | --- | --- |
-| GET | `/api/music/file/:name` | `data/music-files/` 下音频流式输出，支持单段 Range（拖动进度条）；缓存一天 |
+| GET | `/api/music/file/:name` | 当前 release 的已发布音频，支持单段 Range（拖动进度条）；源文件删除不影响本版播放 |
+
+后台预听使用需登录的 `/api/manage/music-preview/file/:name`，读取待发布源音频并禁止缓存。
 
 ## 后台页面
 

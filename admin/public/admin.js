@@ -19,6 +19,9 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
   function toast(message, isError) {
     notify(message, !!isError);
   }
+  // 后台预览读取待发布媒体，写回字段与正文的地址仍保持公开路径。
+  const previewMediaUrl = (url) => String(url || '').startsWith('/uploads/')
+    ? `/api/media/preview/${url.slice('/uploads/'.length)}` : url;
 
   // 面板/编辑器露出时播放入场动画（每次调用都重新触发）。
   const reveal = (el) => {
@@ -448,11 +451,11 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
     };
 
     const galleryItemHtml = (url, name) =>
-      `<button type="button" class="img-gallery__item" data-url="${escText(url)}" title="${escText(name)}"><img src="${escText(url)}" alt="${escText(name)}" loading="lazy" /></button>`;
+      `<button type="button" class="img-gallery__item" data-url="${escText(url)}" title="${escText(name)}"><img src="${escText(previewMediaUrl(url))}" alt="${escText(name)}" loading="lazy" /></button>`;
 
     const selectImage = (url, name) => {
       imgState.url = url;
-      thumbEl.src = url;
+      thumbEl.src = previewMediaUrl(url);
       thumbEl.hidden = false;
       selectedNameEl.textContent = name || url;
       insertBtn.disabled = false;
@@ -733,10 +736,36 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
   });
 
   // —— 媒体删除（媒体页面） ——
+  document.querySelectorAll('[data-media-usage]').forEach((details) => {
+    details.addEventListener('toggle', async () => {
+      if (!details.open || details.dataset.loaded === '1' || details.dataset.loading === '1') return;
+      const body = details.querySelector('.media-usage__body');
+      details.dataset.loading = '1';
+      body.textContent = '正在查询使用位置…';
+      try {
+        const result = await api(`/api/media/references?name=${encodeURIComponent(details.dataset.mediaUsage)}`);
+        body.replaceChildren();
+        const refs = Array.isArray(result.references) ? result.references : [];
+        details.querySelector('summary').textContent = `使用位置 · ${refs.length} 处`;
+        if (!refs.length) body.textContent = '未发现站内引用。站外使用无法追踪。';
+        for (const ref of refs) {
+          const item = document.createElement('p');
+          const link = document.createElement('a');
+          if (typeof ref.href === 'string' && ref.href.startsWith('/admin/')) link.href = ref.href;
+          link.textContent = `${ref.module || ''} · ${ref.title || ''}`;
+          const label = ref.scope === 'published' ? '当前线上' : ref.scope === 'trash' ? '回收站' : '待发布内容';
+          item.append(`${label}：`, link, `（${ref.field || '正文'}）`);
+          body.append(item);
+        }
+        details.dataset.loaded = '1';
+      } catch (err) { body.textContent = `查询失败：${err.message}。收起后重新展开可重试。`; }
+      finally { delete details.dataset.loading; }
+    });
+  });
   document.querySelectorAll('[data-media-delete]').forEach((btn) => {
     btn.addEventListener('click', async () => {
       const name = btn.getAttribute('data-media-delete');
-      if (!await confirmAction(`确定删除「${name}」吗？若仍被文章或随笔引用，删除会被拒绝。`)) return;
+      if (!await confirmAction(`确定删除「${name}」吗？待发布内容或回收站仍引用时会拒绝删除。前台在下次构建发布后同步。`)) return;
       btn.disabled = true;
       try {
         await api('/api/media/delete', { method: 'POST', body: { name } });
@@ -852,13 +881,13 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
       if (!wallpaperStatus || !wallpaperList) return;
       wallpaperStatus.textContent = '正在读取目录…';
       try {
-        const result = await api('/api/public/wallpapers');
+        const result = await api('/api/manage/wallpapers');
         if (!wallpaperStatus.isConnected) return;
         const items = Array.isArray(result.items) ? result.items : [];
         wallpaperStatus.textContent = items.length ? `已发现 ${items.length} 张图片 · 随机模式每次进入首页重新选取` : '目录暂无图片。添加图片后点击刷新，或使用固定背景。';
         wallpaperList.replaceChildren();
         items.slice(0, 16).forEach((url) => {
-          const link = document.createElement('a'); link.href = `/api/public${url}`; link.target = '_blank'; link.rel = 'noopener noreferrer';
+          const link = document.createElement('a'); link.href = `/api/manage${url}`; link.target = '_blank'; link.rel = 'noopener noreferrer';
           const image = document.createElement('img'); image.src = link.href; image.alt = decodeURIComponent(url.split('/').at(-1)); image.loading = 'lazy';
           link.append(image); wallpaperList.append(link);
         });
@@ -1310,11 +1339,11 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
         if (!track) return;
         reveal(previewAudio);
         if (track.source === 'local') {
-          previewAudio.src = `/api/music/file/${encodeURIComponent(track.fileName)}`;
+          previewAudio.src = `/api/manage/music-preview/file/${encodeURIComponent(track.fileName)}`;
         } else {
           // 网易云曲目先解析出可播放地址再设 src。
           try {
-            const { url } = await api(`/api/public/playlist/resolve/${track.neteaseId}`);
+            const { url } = await api(`/api/manage/music/resolve/${track.neteaseId}`);
             previewAudio.src = url;
           } catch (err) {
             return toast(err.message, true);
@@ -1518,7 +1547,7 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
           method: 'POST',
           body: { id: val('cr-id'), comment: val('cr-text') },
         });
-        toast(result.message || '回复已发布');
+        toast(result.message || '回复已保存，构建发布后展示');
         reload();
       } catch (err) {
         toast(err.message, true);

@@ -2,6 +2,14 @@
    src/styles/global.css），让后台看起来属于同一产品。
    亮色与暗色主题跟随操作系统偏好。 */
 
+/* 媒体引用沿用后台字号与色彩，长文件名/字段在窄屏也能完整换行。 */
+.media-usage { margin-top: 12px; font-size: .85rem; overflow-wrap: anywhere; }
+.media-usage summary { cursor: pointer; padding: 8px 0; }
+.media-usage summary:focus-visible { outline: 2px solid currentColor; outline-offset: 3px; border-radius: 4px; }
+.media-usage__body { line-height: 1.7; }
+.media-usage__body p { margin: 8px 0; }
+.media-usage__body a { text-decoration: underline; text-underline-offset: 3px; }
+
 /* 全站使用得意黑，共享 /admin-assets/fonts.css 声明与 /fonts 本地资源。 */
 @import url('/admin-assets/fonts.css?v=20261019-smiley-1');
 

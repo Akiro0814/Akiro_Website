@@ -49,6 +49,13 @@ test('public catalog works through the gateway and preserves the existing manage
   let ready=false;
   for(let i=0;i<80;i++){try{if((await fetch(`${preview.url}/api/public/projects`)).ok){ready=true;break;}}catch{}await delay(100);}
   assert.ok(ready);
+  assert.equal((await fetch(`${preview.url}/api/public/project-catalog`)).status, 503);
+  const release=path.join(preview.sandbox,'current','_published');
+  fs.mkdirSync(release,{recursive:true});
+  const { buildProjectCatalog }=await import('../src/lib/project-catalog.js');
+  const managed=JSON.parse(fs.readFileSync(path.join(preview.sandbox,'data/projects.json'),'utf8')).projects;
+  const repos=JSON.parse(fs.readFileSync(path.join(preview.sandbox,'data/github-projects.json'),'utf8')).repos;
+  fs.writeFileSync(path.join(release,'state.json'),JSON.stringify({version:1,projects:managed,catalog:buildProjectCatalog({config:{githubUser:user},repos,managed})}));
   const before=await(await fetch(`${preview.url}/api/public/projects`)).json();
   assert.ok(Array.isArray(before.items));
   const target=Buffer.from(encodeURIComponent('/api/public/project-catalog')).toString('base64');

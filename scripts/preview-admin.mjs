@@ -31,6 +31,8 @@ export function startPreview({ port = 4413, quiet = false } = {}) {
       process.platform === 'win32' ? 'junction' : 'dir'
     );
   fs.mkdirSync(path.join(sandbox, 'data'), { recursive: true });
+  fs.mkdirSync(path.join(sandbox, 'scripts'), { recursive: true });
+  fs.copyFileSync(path.join(root, 'scripts/prepare-release.mjs'), path.join(sandbox, 'scripts/prepare-release.mjs'));
   for (const collection of ['posts', 'notes']) {
     const dir = path.join(sandbox, 'src', 'content', collection);
     fs.mkdirSync(dir, { recursive: true });
@@ -175,7 +177,9 @@ export function startPreview({ port = 4413, quiet = false } = {}) {
     url: `http://localhost:${port}`,
     stop: () =>
       new Promise((resolve) => {
-        if (child.exitCode !== null) {
+        // 被信号结束的进程 exitCode 仍为 null；若 exit 已先于清理钩子发生，
+        // 再等待一次 exit 会让整套回归永久挂起。
+        if (child.exitCode !== null || child.signalCode !== null) {
           resolve();
           return;
         }

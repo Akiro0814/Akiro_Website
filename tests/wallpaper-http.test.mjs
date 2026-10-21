@@ -5,7 +5,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { test } from 'node:test';
 import { startPreview } from '../scripts/preview-admin.mjs';
 
-test('运行中的隔离服务即时读取新增和删除的中文壁纸，返回原始字节并拒绝恶意路径', { timeout: 30000 }, async (t) => {
+test('壁纸只展示已发布版本，源文件增删不改变前台并拒绝恶意路径', { timeout: 30000 }, async (t) => {
   const preview = startPreview({ port: 4416, quiet: true });
   t.after(() => preview.stop());
   const endpoint = `${preview.url}/api/public/wallpapers`;
@@ -22,6 +22,12 @@ test('运行中的隔离服务即时读取新增和删除的中文壁纸，返�
   const bytes = Buffer.from('89504e470d0a1a0a', 'hex');
   fs.writeFileSync(path.join(dir, name), bytes);
   const url = `/wallpapers/${encodeURIComponent(name)}`;
+  assert.deepEqual((await (await fetch(endpoint)).json()).items, []);
+  assert.equal((await fetch(`${preview.url}/api/public${url}`)).status, 404);
+  const release = path.join(preview.sandbox, 'current');
+  fs.mkdirSync(path.join(release, '_published'), { recursive: true });
+  fs.cpSync(dir, path.join(release, 'wallpapers'), { recursive: true });
+  fs.writeFileSync(path.join(release, '_published/state.json'), JSON.stringify({ version: 1, wallpapers: [url] }));
   const listing = await fetch(endpoint);
   assert.equal(listing.headers.get('cache-control'), 'no-store');
   assert.deepEqual((await listing.json()).items, [url]);
@@ -34,6 +40,6 @@ test('运行中的隔离服务即时读取新增和删除的中文壁纸，返�
     assert.equal(response.status, 404, bad);
   }
   fs.unlinkSync(path.join(dir, name));
-  assert.deepEqual((await (await fetch(endpoint)).json()).items, []);
-  assert.equal((await fetch(`${preview.url}/api/public${url}`)).status, 404);
+  assert.deepEqual((await (await fetch(endpoint)).json()).items, [url]);
+  assert.equal((await fetch(`${preview.url}/api/public${url}`)).status, 200);
 });

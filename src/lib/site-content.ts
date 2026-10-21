@@ -221,7 +221,7 @@ export function getSiteMeta(): SiteMeta {
 }
 
 // —— 前台「网站数据」模块的构建期兜底快照 ——
-// 实时值由 /api/public/site-stats 提供；静态预览 / 接口不可用时展示构建时刻
+// 公开 API 与 HTML 使用同一发布快照；静态预览 / 接口不可用时展示构建时刻
 // 的快照。日界线与 admin/lib/stats.mjs 一致（北京时间 00:00）。
 export interface SiteStatsSnapshot {
   since: string;
@@ -231,6 +231,13 @@ export interface SiteStatsSnapshot {
 }
 
 export function getSiteStatsSnapshot(): SiteStatsSnapshot {
+  // 正式发布的 HTML 与公开 API 使用同一份预采集数据，避免构建跨越日界线
+  // 或构建期间新增访问时，两处展示出现不同的计数。
+  if (process.env.BLOG_RELEASE_BUILD === 'true') {
+    const state = readDataJson<{ stats?: SiteStatsSnapshot }>(path.join(dataDir(), 'release-state.json'), {});
+    if (!state.stats) throw new Error('缺少发布统计快照');
+    return state.stats;
+  }
   const { since } = getSiteMeta();
   const stats = readDataJson<{ total?: number; days?: Record<string, number | { pv?: number; count?: number }> }>(
     path.join(dataDir(), 'stats.json'),

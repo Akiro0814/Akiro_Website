@@ -288,7 +288,7 @@ export function saveFriend(input) {
   });
 }
 
-// 审核：approved 即刻出现在前台友链页，rejected 仅后台可见。
+// 审核只更新待发布状态，公开友链列表在下一次成功构建后切换。
 export function reviewFriend(id, status) {
   return withFileLock(FRIENDS_FILE, async () => {
     if (!['approved', 'pending', 'rejected'].includes(status)) throw new Error('审核状态无效');

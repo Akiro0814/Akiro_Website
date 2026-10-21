@@ -7,6 +7,18 @@ import { addRelease, createFixture } from './helpers/fixture.mjs';
 // 每个 fixture 都有自己的 ROOT；绝不构建或回滚真实博客。关闭所有远端备份。
 process.env.BACKUP_ENABLED = 'false';
 
+test('超过十五分钟的构建锁若仍属于存活进程，不能被回滚清理', async (t) => {
+  const fixture = createFixture(t);
+  const lock = path.join(fixture.root, '.build-lock');
+  fs.mkdirSync(lock);
+  fs.writeFileSync(path.join(lock, 'pid'), String(process.pid));
+  const old = new Date(Date.now() - 20 * 60000);
+  fs.utimesSync(lock, old, old);
+  const build = await fixture.importModule('build.mjs');
+  assert.throws(() => build.rollback(), /构建正在进行/);
+  assert.equal(fs.existsSync(lock), true);
+});
+
 test('搬迁后 current 的目标不存在，也能重新构建发布', async (t) => {
   const fixture = createFixture(t);
   const old = addRelease(fixture.root, 'old', { current: true });
@@ -88,7 +100,7 @@ test('Windows 构建产物短暂被占用时重试移动，成功前保留旧发
   const rename = fs.renameSync;
   let attempts = 0;
   t.mock.method(fs, 'renameSync', (from, to) => {
-    if (from === path.join(fixture.root, 'dist')) {
+    if (from === path.join(fixture.root, '.build-lock/workspace/dist')) {
       attempts += 1;
       assert.equal(fs.realpathSync(path.join(fixture.root, 'current')), current);
       if (attempts <= 2) throw Object.assign(new Error('temporary Windows file lock'), { code: 'EPERM' });
@@ -107,14 +119,14 @@ test('构建产物持续被占用时终止发布，保留旧站点与构建产�
   const build = await fixture.importModule('build.mjs');
   const rename = fs.renameSync;
   t.mock.method(fs, 'renameSync', (from, to) => {
-    if (from === path.join(fixture.root, 'dist')) {
+    if (from === path.join(fixture.root, '.build-lock/workspace/dist')) {
       throw Object.assign(new Error('persistent file lock'), { code: 'EPERM' });
     }
     return rename(from, to);
   });
   await assert.rejects(build.buildAndPublish(), /persistent file lock/);
   assert.equal(fs.realpathSync(path.join(fixture.root, 'current')), current);
-  assert.equal(fs.existsSync(path.join(fixture.root, 'dist', 'index.html')), true);
+  assert.equal(fs.existsSync(path.join(fixture.root, '.build-lock')), false);
   assert.equal(build.isBuilding(), false);
   assert.equal(build.lastBuildStatus().status, 'failed');
 });

@@ -586,20 +586,24 @@ export function mediaPage({ user, boot, files }) {
   const items = files
     .map(
       (f) => `<div class="media-item">
-        <img src="${esc(f.url)}" alt="${esc(f.name)}" loading="lazy" />
+        <img src="/api/media/preview/${esc(encodeURIComponent(f.name))}" alt="${esc(f.name)}" loading="lazy" />
         <div class="media-item__meta">
           <code>${esc(f.url)}</code>
           <div class="media-item__actions">
             <button type="button" class="btn btn--sm" data-copy="${esc(f.url)}">复制链接</button>
             <button type="button" class="btn btn--sm btn--danger" data-media-delete="${esc(f.name)}">删除</button>
           </div>
+          <details class="media-usage" data-media-usage="${esc(f.name)}">
+            <summary>查看使用位置</summary>
+            <div class="media-usage__body" role="status">展开后查询引用位置。</div>
+          </details>
         </div>
       </div>`,
     )
     .join('\n');
 
   const content = `
-    <header class="page__head"><h1>媒体</h1><p>上传到 public/uploads，构建时随站点一起发布。图片可直接插入正文。</p></header>
+    <header class="page__head"><h1>媒体</h1><p>上传和删除在构建发布后同步前台。展开“查看使用位置”可查看待发布、回收站与当前线上引用；站外使用无法追踪。</p><a class="btn btn--sm" href="/admin/build">前往构建发布</a></header>
     <section class="card">
       <div class="upload-zone" id="upload-zone">
         <p>拖拽图片到此处，或</p>
@@ -639,7 +643,7 @@ export function buildPage({ user, boot, status, releases, backupConfig }) {
 
   const content = `
     <header class="page__head page__head--row">
-      <div><h1>构建发布</h1><p>构建前台静态页面并原子切换，构建失败不影响线上。本地写作预览用 npm run dev（:4321，保存即热更新）；「查看发布结果」打开的才是构建产物。</p></div>
+      <div><h1>构建发布</h1><p>统一发布页面、数据与媒体快照，构建失败不影响线上。本地写作预览用 npm run dev（:4321，保存即热更新）；「查看发布结果」打开的才是构建产物。</p></div>
       <div class="actions">
         <button type="button" class="btn btn--primary" id="build-btn">构建并发布</button>
         <button type="button" class="btn" id="rollback-btn">回滚上一版</button>
@@ -850,7 +854,7 @@ export function linksPage({ user, boot, nav, friends }) {
 
   const content = `
     <header class="page__head page__head--row">
-      <div><h1>导航 · 友链</h1><p>前台「导航」页的分类网址与「友链」页的交换友链在此管理。导航保存后到「构建发布」上线；友链审核通过后即刻展示。${pendingCount ? `当前有 <strong>${pendingCount}</strong> 条友链待审。` : ''}</p></div>
+      <div><h1>导航 · 友链</h1><p>前台「导航」页的分类网址与「友链」页的交换友链在此管理。导航保存后到「构建发布」上线；友链审核通过后也需构建发布。${pendingCount ? `当前有 <strong>${pendingCount}</strong> 条友链待审。` : ''}</p></div>
       <div class="actions">
         <button type="button" class="btn" id="friend-new">手动添加友链</button>
         <button type="button" class="btn btn--primary" id="nav-save">保存导航</button>
@@ -903,7 +907,7 @@ export function musicPage({ user, boot, tracks }) {
     .map(
       (t) => `<tr data-track-row="${esc(t.id)}">
         <td class="cell-title">
-          ${t.cover ? `<img class="track-cover" src="${esc(t.cover)}" alt="" referrerpolicy="no-referrer" />` : '<span class="track-cover track-cover--fallback">♪</span>'}
+          ${t.cover ? `<img class="track-cover" src="${esc(t.cover.startsWith('/uploads/') ? '/api/media/preview/' + t.cover.slice(9) : t.cover)}" alt="" referrerpolicy="no-referrer" />` : '<span class="track-cover track-cover--fallback">♪</span>'}
           <span>${esc(t.title)}</span>
         </td>
         <td>${esc(t.artist)}</td>
@@ -921,7 +925,7 @@ export function musicPage({ user, boot, tracks }) {
 
   const content = `
     <header class="page__head page__head--row">
-      <div><h1>音乐</h1><p>前台播放器的歌单来源：本地上传音频，或导入网易云歌曲 / 歌单。保存即生效。</p></div>
+      <div><h1>音乐</h1><p>前台播放器的歌单来源：本地上传音频，或导入网易云歌曲 / 歌单。保存后构建发布生效。</p></div>
     </header>
 
     <section class="card">
@@ -1001,7 +1005,7 @@ export function announcementsPage({ user, boot, items }) {
 
   const content = `
     <header class="page__head page__head--row">
-      <div><h1>公告</h1><p>前台首页顶部公告栏内容，发布即生效（无需构建）。</p></div>
+      <div><h1>公告</h1><p>前台首页顶部公告栏内容，保存后统一构建发布生效。</p></div>
       <button type="button" class="btn btn--primary" id="ann-new">新建公告</button>
     </header>
 
@@ -1089,7 +1093,7 @@ export function commentsPage({ user, boot, items, counts, filter = {} }) {
       <input type="hidden" id="cr-id" />
       <label class="field"><span class="field__label">回复内容（支持 Markdown）</span><textarea class="input" id="cr-text" rows="3"></textarea></label>
       <div class="actions">
-        <button type="button" class="btn btn--primary" id="comment-reply-send">发布回复</button>
+        <button type="button" class="btn btn--primary" id="comment-reply-send">保存回复</button>
         <button type="button" class="btn" id="comment-reply-cancel">收起</button>
       </div>
     </section>`;
@@ -1097,7 +1101,7 @@ export function commentsPage({ user, boot, items, counts, filter = {} }) {
 }
 
 export function twikooPage({ user, boot }) {
-  return layout({ title: 'Twikoo 管理', active: 'comments', user, boot, content: `<header class="page__head"><h1>Twikoo 完整管理</h1><p>已通过博客账户登录。评论、审核、配置与导入导出使用同一个 Twikoo 数据库。</p><a class="btn btn--sm" href="/admin/comments">返回评论列表</a></header><section class="card" style="padding:0;overflow:hidden"><iframe src="/admin/twikoo-panel" title="Twikoo 官方管理面板" style="display:block;width:100%;min-height:850px;border:0" loading="eager"></iframe></section>` });
+  return layout({ title: 'Twikoo 管理', active: 'comments', user, boot, content: `<header class="page__head"><h1>Twikoo 完整管理</h1><p>已通过博客账户登录。评论、审核、配置与导入导出使用同一个 Twikoo 数据库；公开展示在构建发布后同步。</p><a class="btn btn--sm" href="/admin/comments">返回评论列表</a></header><section class="card" style="padding:0;overflow:hidden"><iframe src="/admin/twikoo-panel" title="Twikoo 官方管理面板" style="display:block;width:100%;min-height:850px;border:0" loading="eager"></iframe></section>` });
 }
 export function twikooPanel({ csrfToken }) {
   return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="${esc(csrfToken)}"><title>Twikoo 管理</title></head><body class="akiro-twikoo-admin"><button type="button" id="open-twikoo-admin">打开官方管理面板</button><p id="twikoo-status" role="status">正在加载 Twikoo…</p><div id="twikoo-admin-mount"></div><script src="/admin-assets/vendor/twikoo.js"></script><link rel="stylesheet" href="/admin-assets/twikoo-panel.css"><script src="/admin-assets/twikoo-panel.js" defer></script></body></html>`;
@@ -1187,7 +1191,7 @@ export function siteStatsPage({ user, boot, meta, preview, stats }) {
           <button type="button" class="btn btn--primary" id="site-meta-save">保存开站日期</button>
         </div>
       </div>
-      <p>可点日历图标选日期，或用上方 −／＋ 按钮逐日、逐月、逐年增减（两种方式联动）。前台「运行时间」按此日期实时计算，格式为「x年x月x天」；留空则不展示运行时间。保存后前台即时生效，无需构建发布。</p>
+      <p>可点日历图标选日期，或用上方 −／＋ 按钮逐日、逐月、逐年增减（两种方式联动）。前台「运行时间」按此日期实时计算，格式为「x年x月x天」；留空则不展示运行时间。保存后构建发布生效。</p>
     </section>
 
     <section class="card">

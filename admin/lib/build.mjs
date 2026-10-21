@@ -2,11 +2,11 @@
 // 不会返回构建到一半的页面。
 //
 // 这里产生的目录结构：
-//   dist/               Astro 构建产物（每次构建都是全新的）
+//   .build-lock/workspace/dist/   固定输入副本的 Astro 构建产物
 //   releases/<ts>/      已发布的快照
 //   current  -> releases/<ts>   nginx 对外提供服务的目录
 //
-// 成功时，dist/ 会被重命名为 releases/<ts>，`current` 链接在一步原子操作中
+// 成功时，副本的 dist/ 会被重命名为 releases/<ts>，`current` 链接在一步原子操作中
 // 完成切换（Windows junction 用两次重命名，存在短暂空窗）。失败时尝试恢复旧链接。
 import fs from 'node:fs';
 import path from 'node:path';
@@ -14,6 +14,8 @@ import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { ROOT } from './env.mjs';
 import { logWarn } from './log.mjs';
+import { createReleaseInput, completeReleaseInput } from './release-input.mjs';
+import { drainManagedWrites } from './managed-writes.mjs';
 
 const RELEASES_DIR = path.join(ROOT, 'releases');
 const CURRENT = path.join(ROOT, 'current');
@@ -33,10 +35,10 @@ const rmrf = (p) => {
 
 // Windows 上索引器、杀毒软件可能在构建刚结束时短暂占用产物目录。
 // 仅重试同一次原子移动；不复制文件，不在移动成功前切换线上链接。
-async function moveBuildOutput(releaseDir) {
+async function moveBuildOutput(releaseDir, source = DIST) {
   for (let attempt = 0; ; attempt += 1) {
     try {
-      fs.renameSync(DIST, releaseDir);
+      fs.renameSync(source, releaseDir);
       return;
     } catch (err) {
       if (process.platform !== 'win32' || !['EPERM', 'EACCES', 'EBUSY'].includes(err.code) || attempt >= 5) {
@@ -47,18 +49,8 @@ async function moveBuildOutput(releaseDir) {
   }
 }
 
-// 删除源文件时，Astro 的 content-layer 缓存不会被清理，因此重新构建可能仍会
-// 输出已删除的文章。解决办法是清空缓存，让构建重新扫描 src/content/ —— 但
-// 清空缓存也会破坏并发运行的 `npm run dev` 的状态，因为两者共用同一批文件。
-// 新增和修改无需清缓存即可被识别，所以只有确实发生删除时才清空缓存。是否
-// 发生删除，是通过我们自己维护的清单（记录上次构建所见的内容文件）来检测
-// 的 —— 刻意不去解析 Astro 内部的 data-store，其格式属于实现细节。
-function clearContentCache() {
-  rmrf(path.join(ROOT, '.astro'));
-  rmrf(path.join(ROOT, 'node_modules', '.astro'));
-  rmrf(path.join(ROOT, 'node_modules', '.vite'));
-}
-
+// 保留内容清单作为删除提示；正式构建始终使用无缓存的独立副本，
+// 不读取 Astro 内部缓存格式，也不清理正在运行的开发服务器缓存。
 const CONTENT_MANIFEST = path.join(ROOT, '.content-build-manifest.json');
 
 function listContentFiles() {
@@ -121,8 +113,17 @@ function acquireLock() {
       } catch {
         /* 忽略 */
       }
-      // 已崩溃的构建不应永远阻塞发布。
-      if (age > 15 * 60 * 1000) {
+      // 大型媒体复制和构建可能超过十五分钟。只有确认锁所属进程已退出，
+      // 才允许清理过期锁，不能删除仍在使用的构建副本。
+      let ownerAlive = false;
+      try {
+        const pid = Number(fs.readFileSync(path.join(LOCK_DIR, 'pid'), 'utf8'));
+        if (Number.isSafeInteger(pid) && pid > 0) {
+          try { process.kill(pid, 0); ownerAlive = true; }
+          catch (err) { ownerAlive = err.code !== 'ESRCH'; }
+        }
+      } catch { /* 无属主信息的旧锁按原有超时规则恢复 */ }
+      if (age > 15 * 60 * 1000 && !ownerAlive) {
         rmrf(LOCK_DIR);
         return acquireLock();
       }
@@ -146,7 +147,7 @@ export function stripAnsi(text) {
   return String(text ?? '').replace(ANSI_RE, '');
 }
 
-export function runCommand(command, args) {
+export function runCommand(command, args, { cwd = ROOT, env: extraEnv = {} } = {}) {
   return new Promise((resolve) => {
     // shell：npm 在 Windows 上是 .cmd 文件，Node 的 spawn 不借助 shell 无法
     // 运行 .cmd（报 EINVAL）。这里的命令是固定字符串（不含用户输入），因此
@@ -155,14 +156,14 @@ export function runCommand(command, args) {
     // 切到 UTF-8，避免 cmd 的报错以 GBK 字节混进日志（其余输出本来就是 UTF-8）。
     const isWin = process.platform === 'win32';
     // FORCE_COLOR / NO_COLOR 让构建工具尽量别输出颜色，转义序列再由 stripAnsi 兜底。
-    const env = { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1' };
+    const env = { ...process.env, FORCE_COLOR: '0', NO_COLOR: '1', ...extraEnv };
     const child = isWin
       ? spawn('cmd.exe', ['/d', '/s', '/c', `chcp 65001>nul&& ${command} ${args.join(' ')}`], {
-          cwd: ROOT,
+          cwd,
           env,
           windowsHide: true,
         })
-      : spawn(command, args, { cwd: ROOT, env, shell: true, windowsHide: true });
+      : spawn(command, args, { cwd, env, shell: true, windowsHide: true });
 
     // 收集原始字节，结束时整体解码：转义序列可能跨 chunk 边界，逐块 toString
     // 会留下半截转义码。构建输出仅几百 KB，无需流式处理。
@@ -296,12 +297,20 @@ export async function buildAndPublish() {
   const startedAt = new Date().toISOString();
   writeStatus({ status: 'building', startedAt });
   try {
-    let cacheRebuilt = false;
-    if (contentWasDeletedSinceLastBuild()) {
-      clearContentCache();
-      cacheRebuilt = true;
-    }
-    const { code, output } = await runCommand('npm', ['run', 'build']);
+    await drainManagedWrites();
+    const { twikoo } = await import('./twikoo.mjs');
+    const commentSnapshot = await twikoo.snapshot();
+    const workspace = createReleaseInput(commentSnapshot);
+    // 子进程只读固定副本，.env 已在父进程加载，不把原数据目录传给构建。
+    const options = { cwd: workspace, env: {
+      BLOG_DATA_DIR: path.join(workspace, 'data'), BLOG_RELEASE_BUILD: 'true',
+    } };
+    const prepared = await runCommand('node', ['scripts/prepare-release.mjs'], options);
+    const built = prepared.code === 0 ? await runCommand('npm', ['run', 'build'], options) : { code: prepared.code, output: '' };
+    const { code } = built;
+    const output = `${prepared.output}\n${built.output}`;
+    // 每次都在无缓存的新副本构建，删除无需再清理正在开发使用的共享缓存。
+    const cacheRebuilt = contentWasDeletedSinceLastBuild();
 
     if (code !== 0) {
       const status = {
@@ -315,7 +324,7 @@ export async function buildAndPublish() {
       return { ok: false, log: output, release: currentRelease(), message: '构建失败，线上站点保持原样。' };
     }
 
-    if (!fs.existsSync(DIST)) {
+    if (!fs.existsSync(path.join(workspace, 'dist'))) {
       const status = { status: 'failed', startedAt, finishedAt: new Date().toISOString(), log: output + '\n未找到构建产物 dist/。' };
       writeStatus(status);
       return { ok: false, log: output, release: currentRelease(), message: '构建未产出 dist/ 目录。' };
@@ -324,7 +333,8 @@ export async function buildAndPublish() {
     const stamp = new Date().toISOString().replace(/[:.]/g, '-');
     const releaseDir = path.join(RELEASES_DIR, stamp);
     fs.mkdirSync(RELEASES_DIR, { recursive: true });
-    await moveBuildOutput(releaseDir);
+    const outputDir = completeReleaseInput(workspace);
+    await moveBuildOutput(releaseDir, outputDir);
     publish(releaseDir);
     pruneReleases();
 
@@ -338,7 +348,7 @@ export async function buildAndPublish() {
     writeStatus(status);
     writeContentManifest();
     const cacheNote = cacheRebuilt
-      ? '（检测到已删除的内容，已重建构建缓存；若本地 npm run dev 预览异常请重启它）'
+      ? '（已在独立副本重建，删除的内容不会进入本次发布）'
       : '';
 
     // 发布成功后自动把个人数据备份到私人仓库（全程使用系统临时目录，本地

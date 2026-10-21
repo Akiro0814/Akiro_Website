@@ -1,5 +1,7 @@
 # 官方 Twikoo 集成
 
+公开展示统一在后台构建发布后更新：访客提交、点赞以及后台审核、回复、删除、配置修改先写入运行库，发布时生成脱敏快照。前台评论树、分页、计数和最近评论读取当前 release；失败构建保持旧版，回滚恢复对应展示快照，不覆盖运行库。
+
 本项目使用同版本的官方 `twikoo`、`tkserver` 与 `@twikoojs/common` 2.0.15，不再将自写的协议兼容接口称作 Twikoo。官方参考：[快速上手](https://twikoo.js.org/quick-start.html)、[自托管部署](https://twikoo.js.org/backend.html#私有部署)、[前端部署](https://twikoo.js.org/frontend.html)。
 
 ## 本地使用
