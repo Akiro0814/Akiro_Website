@@ -1,1 +1,0 @@
-{"projectGroups": [{"id": "open-source", "title": "开源项目", "description": "虚构审计分组", "items": [{"id": "audit-fallback", "title": "虚构项目回退", "href": "https://example.invalid", "description": "离线构建数据", "tags": ["QA"]}]}], "siteAuthor": "", "githubUser": "", "projectOverrides": {}, "githubRepo": "", "siteName": "博客", "siteDescription": ""}

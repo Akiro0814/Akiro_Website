@@ -5,7 +5,7 @@
 ## 本地使用
 
 ```powershell
-npm install
+npm ci
 npm run admin
 # 另一个终端
 npm run dev
@@ -51,4 +51,4 @@ Twikoo 会允许作者本人看到自己被隐藏/待审的评论。判断隐藏
 
 ## 验证
 
-`npm run test:twikoo-ui` 使用隔离数据和真实官方 SDK，验证前台提交、后台回复、独立访客下的隐藏/公开、完整管理面板配置保存到前台、鉴权、CSRF 与删除。Node 测试覆盖迁移幂等、重启保留状态、历史点赞及异步审核与并发读写。测试不发送真实通知、不写生产数据。
+隔离 SDK、HTTP、数据库及管理回归入口见[开发与测试](DEVELOPMENT.md#浏览器测试)。本地服务通过不等于外部 MongoDB、通知、验证码或图床已可用。

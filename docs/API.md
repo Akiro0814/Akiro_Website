@@ -1,11 +1,11 @@
 # 后台 API 参考
 
 > 后台服务（`admin/server.mjs`）暴露的 HTTP 接口速查。鉴权列说明：
-> - **公开**：无需登录，带按 IP 限流（超限返回 429，`/api/public/view` 超限返回 202 静默）。
+> - **公开**：无需登录，部分接口按 IP 限流（超限返回 429，`/api/public/view` 超限返回 202 静默）。
 > - **会话**：需登录（`connect.sid` 会话 cookie），未登录返回 401。
 > - **会话+CSRF**：写操作还要求 `X-CSRF-Token` 请求头（或 body 里的 `csrfToken`）与会话中一致。
 >
-> 所有接口收发均为 JSON（媒体上传为二进制 body，见下）。错误响应统一为 `{ "error": "中文说明" }`。
+> 管理接口以 JSON 为主；图片/音频上传使用二进制 body，Twikoo 使用事件协议。本地音频返回文件流。普通业务错误为 `{ "error": "中文说明" }`，Twikoo 另保留其协议响应。概览与维护入口见[文档索引](README.md)。
 
 ## 公开接口（/api/public）
 
@@ -17,12 +17,17 @@
 | GET | `/api/public/announcements` | 当前启用且在有效期内的公告 |
 | GET | `/api/public/projects` | 项目展示列表 |
 | GET | `/api/public/projects/:slug` | 项目详情（含 Markdown 渲染正文） |
+| GET | `/api/public/project-catalog` | 项目与 GitHub 统一目录，带后台缓存和离线快照 |
+| GET | `/api/public/wallpapers` | 本机安全壁纸目录清单，响应禁止缓存 |
+| GET | `/api/public/wallpapers/:filename` | 读取清单内的壁纸文件；不是任意路径文件读取接口 |
 | GET | `/api/public/playlist` | 自建歌单曲目（后台「音乐」模块维护） |
 | GET | `/api/public/playlist/resolve/:id` | 网易云曲目播放地址重新解析（播放失败后前端调用） |
 | GET | `/api/public/playlist/lyric/:id` | 网易云曲目歌词（LRC 文本，`{ lyric }`，无歌词返回空串） |
 | POST | `/api/public/view` | 访问统计打点：body `{ path, title }`；失败静默返回 `{ ok: true }` |
 | GET | `/api/public/site-info` | 站点信息聚合（profile + 导航 + 公告），前端少发请求 |
 | GET | `/api/public/site-stats` | 运行时间、已发布文章数、评论数、总访问与今日访问（北京时间日界线） |
+
+公开文章数读取当前发布版本的 `current/search.json`，不按源 Markdown 计数。首次发布前为 0，保存未发布不增加，回滚后跟随对应快照。
 
 ## 认证
 
@@ -43,6 +48,8 @@
 | POST | `/api/trash/restore` | 会话+CSRF | 恢复；body `{ collection, file }`，冲突时拒绝覆盖 |
 | POST | `/api/trash/purge` | 会话+CSRF | 彻底删除；body `{ collection, file }`，或 `{ collection, all: true }` 清空 |
 | POST | `/api/preview` | 会话+CSRF | Markdown → HTML 预览（前端展示前再过 DOM 白名单净化） |
+
+文章标题必填，随笔日期必填。保存日期使用有效 ISO 日历日期；缺失或清空随笔日期会在写入前返回 400。非法内容路径/未知集合返回 400，合法路径的内容不存在返回 404。
 
 ## 媒体
 
@@ -65,9 +72,12 @@
 | 音乐 | GET `/api/manage/music` | POST `/api/manage/music/upload`、`/music/import-netease`（`input` 为链接/ID，可选 `type: song\|playlist` 显式指定）、`/music/update`、`/music/delete`、`/music/reorder` |
 | 公告 | GET `/api/manage/announcements` | POST `/api/manage/announcements/save`、`/announcements/delete` |
 | 评论 | GET `/api/manage/comments` | POST `/api/manage/comments/status`、`/comments/delete`、`/comments/reply` |
+| Twikoo 完整管理 | — | POST `/api/manage/twikoo`，使用官方事件协议，继承博客会话及 CSRF |
 | 访问统计 | GET `/api/manage/stats` | —（公开打点写入） |
 | 仪表盘 | GET `/api/manage/dashboard` | — |
 | 开站日期 | GET `/api/manage/site-meta` | POST `/api/manage/site-meta`，body `{ since }` |
+
+`POST /api/manage/music/upload` 使用原始二进制 body，查询参数含 filename，可选 title、artist、cover。最大 30MB；服务端校验 mp3/flac/wav/m4a/ogg/aac 扩展名与基础容器/帧头，不合格时不写文件或歌单。图片最大 10MB；Twikoo 请求最大 16MB。
 
 ## 构建发布与备份
 
@@ -88,3 +98,22 @@
 ## 后台页面
 
 `/admin/login`（登录）、`/admin`（仪表盘）、`/admin/posts`、`/admin/notes`（内容列表与回收站）、`/admin/media`、`/admin/build`、`/admin/site-content`、`/admin/projects`、`/admin/links`、`/admin/music`、`/admin/announcements`、`/admin/comments`、`/admin/site-stats`。旧地址 `/admin/nav-links`、`/admin/friends` 跳转至 `/admin/links`，`/admin/stats` 跳转至 `/admin/site-stats`。
+
+`/admin/twikoo` 打开官方完整管理入口，`/admin/twikoo-panel` 为受保护的嵌入管理面板，均复用博客登录。
+
+## 网关与错误状态
+
+前台可通过 `/api/_` 统一派发：`X-Target`（兼容查询参数 r）为 `base64(encodeURIComponent(目标路径))`。服务端白名单仅允许本站 API/admin 目标；网关不免除会话、CSRF 或限流校验，不能代理外部 URL。
+
+| 状态 | 常见含义 |
+| --- | --- |
+| 400 | 非法参数、内容校验失败、无效文件类型/内容 |
+| 401 / 403 | 未登录/会话失效，或 CSRF/管理事件权限拒绝 |
+| 404 | 内容、项目或媒体不存在 |
+| 409 | 构建占锁或媒体仍被引用 |
+| 413 | 请求超过对应上传/协议上限 |
+| 416 | 音频 Range 无效 |
+| 429 | 登录保护或接口限流 |
+| 500 / 503 | 内部故障、构建失败或部分依赖服务不可用 |
+
+具体接口以 `admin/server.mjs` 与 `admin/lib/routes.mjs` 为准。数据库迁移与评论协议边界见 [Twikoo 手册](TWIKOO.md)。

@@ -1,5 +1,0 @@
-{
-  "scope": "docs/testing 文本证据",
-  "changedFiles": [],
-  "action": "仅移除断言日志可能包含的临时测试 CSRF 值；保留错误及结果"
-}

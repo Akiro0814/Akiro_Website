@@ -1,7 +1,7 @@
 // 后台服务：一个小型 Express 应用，负责验证唯一的管理员身份、编辑
 // src/content/ 中的 Markdown 内容，并触发静态构建 + 原子切换。
 //
-// 生产环境中由 nginx 反向代理在 /admin 和 /api 路径下提供服务（见 DEPLOY.md）；
+// 生产环境中由 nginx 反向代理在 /admin 和 /api 路径下提供服务（见 docs/DEPLOYMENT.md）；
 // 前台保持纯静态构建。
 import express from 'express';
 import session from 'express-session';

@@ -15,6 +15,9 @@ dist/
 # 本地 Agent 沟通、交接与执行清单
 /docs/superpowers/
 /docs/assets/spring-ui/
+/docs/assets/admin-pearl/
+# 测试报告、执行记录和自动截图仅用于本机，不作为维护文档入库。
+/docs/testing/
 
 # Deploy / build-on-publish artifacts (admin backend)
 releases/
@@ -28,7 +31,7 @@ dist-*/
 .current-old
 *.log
 
-# 个人博客数据：内容与媒体不进仓库（详见 DEPLOY.md「内容与媒体备份」）
+# 个人博客数据：内容与媒体不进仓库（详见 docs/DEPLOYMENT.md「数据备份与恢复」）
 src/content/
 public/uploads/
 # 官方 SDK 由 Astro 配置从锁定的 npm 依赖同步，避免重复提交第三方压缩产物。

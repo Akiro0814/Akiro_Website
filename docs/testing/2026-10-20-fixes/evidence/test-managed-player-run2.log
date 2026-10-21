@@ -1,6 +1,0 @@
-
-> Akiro_Website@0.0.1 test:managed-player
-> node scripts/check-managed-player.mjs
-
-✓ 无网易云 ID 也可读取后台本地歌单并实际播放生成的 WAV
-✓ 后台下架全部歌曲后播放器隐藏，不回退至已撤下的旧歌单

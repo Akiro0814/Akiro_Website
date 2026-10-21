@@ -1,9 +1,0 @@
-{
-  "businessFiles": 20,
-  "businessUnchanged": true,
-  "changes": {},
-  "gitBefore": " M data/announcements.json\n M data/profile.json\n D public/avatars/avatar.jpg\n M src/data/github-projects.json\n M src/data/site.config.json\n",
-  "gitAfter": " M data/announcements.json\n M data/profile.json\n D public/avatars/avatar.jpg\n M src/data/github-projects.json\n M src/data/site.config.json\n?? docs/testing/\n",
-  "originalModifiedPreserved": true,
-  "markdownCount": 0
-}
