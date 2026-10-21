@@ -1,0 +1,23 @@
+
+> Akiro_Website@0.0.1 build
+> astro build
+
+[astro.config] ⚠ SITE_URL 未配置或仍是占位符（当前：https://example.com）。
+  RSS / sitemap / canonical 将使用该值，请在 .env 的 SITE_URL 填写正式域名。
+21:39:25 [content] Syncing content
+21:39:25 [content] Astro config changed
+21:39:25 [content] Clearing content store
+21:39:25 [WARN] [glob-loader] No files found matching "**/*.md" in directory "src\content\posts"
+[InvalidContentEntryDataError] notes → missing-date data does not match collection schema.
+
+  date**: **date: Expected type `"date"`, received `"object"`
+
+  Hint:
+    See https://docs.astro.build/en/guides/content-collections/ for more information on content schemas.
+  Error reference:
+    https://docs.astro.build/en/reference/errors/invalid-content-entry-data-error/
+  Location:
+    C:\Users\LJB11\AppData\Local\Temp\blog-audit-2026-10-20_212951-flows\src\content\notes\missing-date.md:0:0
+  Stack trace:
+    at getEntryData (E:\Project\L1angK1NG_Website\node_modules\astro\dist\content\utils.js:121:9)
+    at async eval (E:\Project\L1angK1NG_Website\node_modules\astro\dist\content\loaders\glob.js:211:13)

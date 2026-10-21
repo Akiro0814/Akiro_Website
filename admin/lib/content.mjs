@@ -36,6 +36,8 @@ export const COLLECTIONS = {
     numberFields: [],
     boolFields: ['draft'],
     requireTitle: false,
+    // Astro 的 notes schema 要求日期；必须在写 Markdown 前拒绝缺失值。
+    requireDate: true,
   },
 };
 
@@ -53,19 +55,40 @@ const toDateInput = (value) => {
 
 const isEmpty = (v) => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
 
+// 仅用于可归因于请求参数的异常。服务端据此返回 400，而磁盘故障等仍返回 500。
+export class ContentInputError extends Error {
+  status = 400;
+}
+
+function validDate(value) {
+  // 表单和 API 使用同一 ISO 日期契约；宽松字符串会让 Date 静默进位，不能接受。
+  if (!(value instanceof Date) && (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}(?:$|[ T])/.test(value.trim()))) return false;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  // Date 会把 2 月 30 日自动进位；先核对输入的日历部分，避免错误日期被静默保存。
+  const match = typeof value === 'string' && value.trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:$|[ T])/);
+  if (match) {
+    const [, year, month, day] = match.map(Number);
+    const calendar = new Date(0);
+    calendar.setUTCFullYear(year, month - 1, day);
+    return calendar.getUTCFullYear() === year && calendar.getUTCMonth() === month - 1 && calendar.getUTCDate() === day;
+  }
+  return true;
+}
+
 // 将条目 id 解析为真实的文件路径，拒绝任何会逃出集合文件夹的取值
 // （id 来自 URL 和表单输入）。
 function resolveFile(collectionName, id) {
   const col = COLLECTIONS[collectionName];
-  if (!col) throw new Error('未知的内容类型');
+  if (!col) throw new ContentInputError('未知的内容类型');
   const safeId = String(id || '').replace(/\\/g, '/').replace(/\.md$/i, '');
   if (!safeId || safeId.includes('..') || path.isAbsolute(safeId) || safeId.startsWith('/')) {
-    throw new Error('非法的内容路径');
+    throw new ContentInputError('非法的内容路径');
   }
   const filePath = path.join(col.dir, safeId + '.md');
   const rel = path.relative(col.dir, filePath);
   if (rel.startsWith('..') || path.isAbsolute(rel)) {
-    throw new Error('非法的内容路径');
+    throw new ContentInputError('非法的内容路径');
   }
   return { col, id: safeId, filePath };
 }
@@ -175,6 +198,7 @@ function buildData(col, existing, input) {
       const v = input[field];
       if (isEmpty(v)) delete data[field];
       else {
+        if (!validDate(v)) throw new Error(`字段 ${field} 的日期无效`);
         const d = new Date(v);
         if (Number.isNaN(d.getTime())) throw new Error(`字段 ${field} 的日期格式无效`);
         data[field] = toDateInput(d);
@@ -217,10 +241,8 @@ export function validateEntry(col, data) {
   if (col.requireTitle && !String(data.title || '').trim()) {
     return '标题不能为空';
   }
-  if ('date' in data && data.date) {
-    const d = new Date(data.date);
-    if (Number.isNaN(d.getTime())) return '日期格式无效';
-  }
+  if (col.requireDate && !data.date) return '随笔日期不能为空';
+  if (data.date && !validDate(data.date)) return '日期格式无效';
   return null;
 }
 

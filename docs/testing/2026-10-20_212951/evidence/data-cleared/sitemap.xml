@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+
+  <url>
+    <loc>http://127.0.0.1:4521/</loc>
+    
+  </url>
+  <url>
+    <loc>http://127.0.0.1:4521/about/</loc>
+    
+  </url>
+  <url>
+    <loc>http://127.0.0.1:4521/archive/</loc>
+    
+  </url>
+  <url>
+    <loc>http://127.0.0.1:4521/friends/</loc>
+    
+  </url>
+  <url>
+    <loc>http://127.0.0.1:4521/nav/</loc>
+    
+  </url>
+  <url>
+    <loc>http://127.0.0.1:4521/notes/</loc>
+    
+  </url>
+  <url>
+    <loc>http://127.0.0.1:4521/projects/</loc>
+    
+  </url>
+  <url>
+    <loc>http://127.0.0.1:4521/search/</loc>
+    
+  </url>
+  <url>
+    <loc>http://127.0.0.1:4521/projects/audit/</loc>
+    
+  </url>
+</urlset>

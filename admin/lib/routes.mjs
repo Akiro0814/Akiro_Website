@@ -11,7 +11,7 @@ import * as music from './music.mjs';
 import * as projects from './projects.mjs';
 import { projectCatalog } from './project-catalog.mjs';
 import * as stats from './stats.mjs';
-import * as content from './content.mjs';
+import { publishedPostCount } from './published-content.mjs';
 import { ROOT } from './env.mjs';
 import { readWallpapers } from '../../src/lib/wallpapers.mjs';
 
@@ -25,7 +25,7 @@ export async function siteStats() {
   const s = stats.summary();
   return {
     since: siteData.getSiteMeta().since,
-    posts: content.listEntries('posts').filter((e) => !e.data.draft).length,
+    posts: publishedPostCount(),
     comments: (await comments.adminCount()).visible,
     totalViews: s.total,
     todayViews: s.today,

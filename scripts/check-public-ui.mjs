@@ -6,6 +6,9 @@ import path from 'node:path';
 import net from 'node:net';
 import { spawn } from 'node:child_process';
 import { chromium, expect } from '@playwright/test';
+import { runInPublicFixture, gotoStable } from './lib/public-ui-fixture.mjs';
+
+await runInPublicFixture(import.meta.url);
 
 const port = Number(process.env.PUBLIC_UI_PORT || 4331);
 const base = process.env.PUBLIC_UI_URL || `http://127.0.0.1:${port}`;
@@ -96,7 +99,7 @@ try {
   watchPage(page);
   // The reference must render without JavaScript exceptions. Third-party blocked
   // media is intentionally not classified as a JavaScript runtime exception.
-  await page.goto(base);
+  await gotoStable(page, base, '.atlas-hero');
   await page.locator('.atlas-hero').waitFor();
   await page.evaluate(() => document.fonts.ready);
   await page.waitForTimeout(1200);

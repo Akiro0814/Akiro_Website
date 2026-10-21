@@ -1,0 +1,25 @@
+
+> Akiro_Website@0.0.1 test:public-ui
+> node scripts/check-public-ui.mjs
+
+✓ Full viewport opening and desktop width
+✓ Typewriter text changes over time and layered waves animate
+✓ All five styles, all three modes, Escape focus and reload persistence
+✓ Light/dark toggle works and persists alongside visual style
+✓ Navigation dialog Escape, expanded state and focus restoration
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.waitFor: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('[data-rail]').first().locator('[data-rail-track]') to be visible[22m
+
+    at C:\Users\LJB11\AppData\Local\Temp\blog-audit-2026-10-20_212951\scripts\check-public-ui.mjs:181:15 {
+  log: [
+    "  - waiting for locator('[data-rail]').first().locator('[data-rail-track]') to be visible"
+  ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0

@@ -1,0 +1,21 @@
+
+> Akiro_Website@0.0.1 test:ui-polish
+> node scripts/check-ui-polish.mjs
+
+About hover evidence: {"documentChanged":false,"documentNavigations":0,"swaps":0,"navigation":"reload","fullReloadSignals":0,"aboutRequests":[{"type":"other","navigation":false}],"sourceCacheWritten":false}
+✓ About hover does not reload or mutate the GitHub source cache
+✓ Explore dialog keeps the custom cursor above the top layer
+✓ Appearance dialog keeps the custom cursor above the top layer
+✓ Cursor smoothly settles with bounded lag, snaps on click and respects reduced motion
+✓ Minimal cursor keeps its hotspot fixed during hover and press and persists across pages
+✓ Cursor settings preview, toggles, keyboard, persistence and independent reset work
+✓ Text inputs retain a system text pointer and touch devices keep the custom cursor hidden
+✓ Navbar avatar uses the same image as favicon
+✓ Glass cards use a translucent background and actual backdrop filtering
+✓ Smiley Sans is downloaded and applies to public navigation and body
+✓ Article heading and friend form use Smiley Sans
+✓ Comment textarea and submit follow the active theme
+✓ Restore site defaults clears visitor overrides and reapplies site appearance
+✓ No first-party JavaScript runtime exceptions
+UI polish: 14 checks passed, 0 failed
+Preview cleanup verified: port 4331 is free

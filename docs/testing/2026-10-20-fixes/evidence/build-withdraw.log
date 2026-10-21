@@ -1,0 +1,41 @@
+
+> Akiro_Website@0.0.1 build
+> astro build
+
+22:08:54 [content] Syncing content
+22:08:54 [content] Synced content
+22:08:54 [types] Generated 810ms
+22:08:54 [build] output: "static"
+22:08:54 [build] mode: "static"
+22:08:54 [build] directory: C:\Users\LJB11\AppData\Local\Temp\blog-fixes-20261020-flows\dist\
+22:08:54 [build] Collecting build info...
+22:08:54 [build] ✓ Completed in 879ms.
+22:08:54 [build] Building static entrypoints...
+22:08:55 [vite] ✓ built in 459ms
+22:08:55 [vite] ✓ built in 114ms
+22:08:55 [build] Rearranging server assets...
+
+ generating static routes 
+22:08:55   ├─ /404.html (+21ms) 
+22:08:55   ├─ /about/index.html (+13ms) 
+22:08:55   ├─ /archive/index.html (+9ms) 
+22:08:55   ├─ /friends/index.html (+9ms) 
+22:08:55   ├─ /nav/index.html (+9ms) 
+22:08:55   ├─ /notes/index.html (+8ms) 
+22:08:55   ├─ /projects/audit/index.html (+15ms) 
+22:08:55   ├─ /projects/index.html (+7ms) 
+22:08:55   ├─ /robots.txt (+3ms) 
+22:08:55   ├─ /rss.xml (+5ms) 
+22:08:55   ├─ /search/index.html (+9ms) 
+22:08:55   ├─ /search.json (+3ms) 
+22:08:55   ├─ /sitemap.xml (+4ms) 
+22:08:55   ├─ /index.html (+11ms) 
+22:08:55 ✓ Completed in 172ms.
+
+22:08:55 [build] ✓ Completed in 844ms.
+22:08:55 [build] 10 page(s) built in 1.73s
+22:08:55 [build] Complete!
+
+
+—— 数据备份 ——
+备份未启用（BACKUP_ENABLED=false），已跳过。

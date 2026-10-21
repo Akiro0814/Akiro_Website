@@ -5,6 +5,9 @@ import net from 'node:net';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
 import { chromium } from '@playwright/test';
+import { runInPublicFixture } from './lib/public-ui-fixture.mjs';
+
+await runInPublicFixture(import.meta.url);
 
 const port = Number(process.env.UI_POLISH_PORT || 4331);
 const base = `http://127.0.0.1:${port}`;

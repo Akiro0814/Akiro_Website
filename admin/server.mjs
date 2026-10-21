@@ -701,8 +701,11 @@ app.use((err, req, res, _next) => {
   // 上传超限：给出可操作的提示而不是笼统的服务器错误。
   if (err?.type === 'entity.too.large') {
     if (req.path.endsWith('/twikoo')) return res.status(413).json({ error: 'Twikoo 请求不能超过 16MB，请分批导入或压缩图片。' });
+    if (req.path === '/api/manage/music/upload') return res.status(413).json({ error: '音频不能超过 30MB，请压缩后再上传。' });
     return res.status(413).json({ error: '图片不能超过 10MB，请压缩后再上传。' });
   }
+  // 只将明确的内容参数异常映射为 400；不把磁盘/程序内部错误当作客户端错误。
+  if (err instanceof content.ContentInputError) return res.status(400).json({ error: err.message });
   console.error('[admin]', err);
   if (req.path.startsWith('/api/')) return res.status(500).json({ error: '服务器内部错误' });
   return res.status(500).send('服务器内部错误');

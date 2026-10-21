@@ -1,0 +1,92 @@
+[
+  {
+    "command": "verify",
+    "exit": 0,
+    "seconds": 20.96,
+    "log": "verify.log"
+  },
+  {
+    "command": "test:admin-ui",
+    "exit": 0,
+    "seconds": 23.5,
+    "log": "test-admin-ui.log"
+  },
+  {
+    "command": "test:admin-segments",
+    "exit": 0,
+    "seconds": 24.88,
+    "log": "test-admin-segments.log"
+  },
+  {
+    "command": "test:public-ui",
+    "exit": 0,
+    "seconds": 81.63,
+    "log": "test-public-ui.log"
+  },
+  {
+    "command": "test:empty-ui",
+    "exit": 0,
+    "seconds": 63.67,
+    "log": "test-empty-ui.log"
+  },
+  {
+    "command": "test:ui-polish",
+    "exit": 0,
+    "seconds": 82.3,
+    "log": "test-ui-polish.log"
+  },
+  {
+    "command": "test:alignment-ui",
+    "exit": 0,
+    "seconds": 10.6,
+    "log": "test-alignment-ui.log"
+  },
+  {
+    "command": "test:managed-player",
+    "exit": 1,
+    "seconds": 8.32,
+    "log": "test-managed-player.log"
+  },
+  {
+    "command": "test:managed-player",
+    "exit": 0,
+    "seconds": 7.6,
+    "log": "test-managed-player-run2.log"
+  },
+  {
+    "command": "test:twikoo-ui",
+    "exit": 0,
+    "seconds": 15.19,
+    "log": "test-twikoo-ui-run1.log"
+  },
+  {
+    "command": "test:liquid-glass",
+    "exit": 0,
+    "seconds": 9.5,
+    "log": "test-liquid-glass-run1.log"
+  },
+  {
+    "command": "test:reading-ui",
+    "exit": 0,
+    "seconds": 48.28,
+    "log": "test-reading-ui-run1.log"
+  },
+  {
+    "command": "test:project-ui",
+    "exit": 0,
+    "seconds": 36.54,
+    "log": "test-project-ui-run1.log"
+  },
+  {
+    "command": "test:public-ui",
+    "exit": 0,
+    "seconds": 89.97,
+    "log": "test-public-ui-run2.log"
+  },
+  {
+    "command": "test:public-ui",
+    "exit": 0,
+    "seconds": 63.57,
+    "log": "test-public-ui-run3.log"
+  }
+]

@@ -6,6 +6,9 @@ import net from 'node:net';
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { chromium } from '@playwright/test';
+import { runInPublicFixture } from './lib/public-ui-fixture.mjs';
+
+await runInPublicFixture(import.meta.url);
 
 const port = 4345, base = `http://127.0.0.1:${port}`;
 await new Promise((resolve, reject) => { const probe = net.createServer(); probe.once('error', reject); probe.listen(port, '127.0.0.1', () => probe.close(resolve)); });

@@ -9,6 +9,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { readJSON, writeJSON, newId, MUSIC_FILES_DIR } from './store.mjs';
 import { safeFetch } from './safe-fetch.mjs';
+import { validateAudio } from './audio-guard.mjs';
 
 const MUSIC_FILE = 'music.json';
 const EMPTY = { tracks: [] };
@@ -94,8 +95,8 @@ export function reorderTracks(ids) {
 // —— 本地上传 ——
 // 音频先做内容哈希去重（与媒体库同一策略），再登记为 local 曲目。
 export function addLocalTrack({ buffer, originalName, title, artist, cover }) {
-  if (!Buffer.isBuffer(buffer) || buffer.length === 0) throw new Error('音频文件为空');
-  const ext = path.extname(originalName || '').toLowerCase();
+  // 客户端 accept 仅是选择器提示；服务端必须独立验证，拒绝时不产生文件或记录。
+  const ext = validateAudio(buffer, originalName);
   const hash = crypto.createHash('sha256').update(buffer).digest('hex');
 
   fs.mkdirSync(MUSIC_FILES_DIR, { recursive: true });

@@ -1,0 +1,6 @@
+{
+  "chromium": "156.0.8078.4",
+  "playwright": "1.64.0",
+  "node": "v24.19.0",
+  "timezone": "Asia/Shanghai"
+}

@@ -55,3 +55,26 @@ test('回收站能恢复中文路径和正文，路径穿越被拒绝', async (t
   assert.equal(content.listTrash('posts').length, 0);
   assert.throws(() => content.getEntry('posts', '../../package'), /非法/);
 });
+
+test('随笔缺失、清空或无效日历日期不能落盘，编辑未提交日期时保留旧值', async (t) => {
+  const fixture = createFixture(t);
+  const content = await fixture.importModule('content.mjs');
+  for (const date of [undefined, '', null, 'not-a-date', '2026-02-30', '2026-2-30', '2026/02/30', '2026-13-01']) {
+    assert.throws(() => content.saveEntry('notes', '日期校验', { title: '虚构随笔', date }, '正文'), /日期/);
+    assert.equal(content.getEntry('notes', '日期校验'), null);
+  }
+  content.saveEntry('notes', '日期校验', { date: '2024-02-29 12:30' }, '原文');
+  content.saveEntry('notes', '日期校验', { title: '改标题' }, '新文', '日期校验');
+  const before = content.getEntry('notes', '日期校验');
+  assert.equal(before.data.date, '2024-02-29 12:30');
+  assert.throws(() => content.saveEntry('notes', '日期校验', { date: '' }, '错误内容', '日期校验'), /日期/);
+  assert.equal(content.getEntry('notes', '日期校验').raw, before.raw);
+  assert.doesNotThrow(() => content.saveEntry('posts', '无日期文章', { title: '可选日期' }, '正文'));
+});
+
+test('无效集合与非法路径使用 400 输入异常，不伪装为服务器故障', async (t) => {
+  const content = await createFixture(t).importModule('content.mjs');
+  for (const [collection, id] of [['posts', '../../.env'], ['posts', ''], ['unknown', 'entry']]) {
+    assert.throws(() => content.getEntry(collection, id), (error) => error.status === 400);
+  }
+});

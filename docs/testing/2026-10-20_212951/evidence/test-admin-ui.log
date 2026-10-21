@@ -1,0 +1,24 @@
+
+> Akiro_Website@0.0.1 test:admin-ui
+> node scripts/check-admin-ui.mjs
+
+✓ 登录失败保留输入并显示内联错误
+✓ 真实登录、成功动画与仪表盘渲染
+✓ 自定义下拉方向键与 Escape
+✓ 主题、密度、Escape 与焦点恢复
+✓ 侧栏折叠与恢复
+✓ 全部 11 个后台模块无刷新导航与活动菜单
+✓ 列表筛选和分页
+✓ 看板、矩阵、图谱下钻、暂停、缩放与重置
+✓ 删除确认取消不会执行操作
+✓ 日历浮层打开与 Escape 关闭
+✓ 编辑器设置抽屉、Markdown 预览与未保存保护
+✓ 命令面板键盘搜索并导航
+✓ 导航分类星图使用真实链接数据
+✓ 真实保存成功清除修改浮条并显示 Toast
+✓ 每日访问热力使用真实日统计
+✓ 快速连续导航不会提交过期内容
+✓ 减少动态效果时页面与画布保持可见
+✓ 390px 手机导航、遮罩收起与无横向溢出
+✓ 浏览器无运行时错误
+Admin visual regression: 19 checks passed. Screenshots: C:\Users\LJB11\AppData\Local\Temp\blog-audit-2026-10-20_212951\docs\assets\admin-pearl

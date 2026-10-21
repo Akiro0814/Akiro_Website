@@ -1,0 +1,113 @@
+{
+  "results": [
+    {
+      "id": "ROLLBACK-02",
+      "label": "回滚后从浏览器归档页与公开 API 再次对照文章量",
+      "status": "通过",
+      "ms": 1132
+    },
+    {
+      "id": "API-02",
+      "label": "非法内容路径返回可诊断的客户端错误且不泄露文件",
+      "status": "通过",
+      "ms": 5
+    },
+    {
+      "id": "API-03",
+      "label": "公开管理事件与无效评论状态分别拒绝",
+      "status": "通过",
+      "ms": 8
+    },
+    {
+      "id": "MEDIA-04",
+      "label": "解除引用后的媒体可以删除并核实文件消失",
+      "status": "通过",
+      "actual": {
+        "removed": 2
+      },
+      "ms": 25
+    }
+  ],
+  "api": [
+    {
+      "url": "/api/build/rollback",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "release": "2026-10-20T14-08-55-830Z",
+        "message": "已回滚到 2026-10-20T14-08-55-830Z"
+      }
+    },
+    {
+      "url": "/search.json",
+      "status": 200,
+      "body": []
+    },
+    {
+      "url": "/api/public/site-stats",
+      "status": 200,
+      "body": {
+        "since": "2026-01-01",
+        "posts": 0,
+        "comments": 0,
+        "totalViews": 53,
+        "todayViews": 53
+      }
+    },
+    {
+      "url": "/api/entry/posts?path=..%2F..%2F.env",
+      "status": 400,
+      "body": {
+        "error": "非法的内容路径"
+      }
+    },
+    {
+      "url": "/api/public/twikoo",
+      "status": 403,
+      "body": {
+        "code": 1000,
+        "message": "此操作请登录博客后台后执行。"
+      }
+    },
+    {
+      "url": "/api/manage/comments/status",
+      "status": 400,
+      "body": {
+        "error": "状态无效"
+      }
+    },
+    {
+      "url": "/api/media",
+      "status": 200,
+      "body": {
+        "items": [
+          {
+            "name": "1792505292342-audit.svg",
+            "url": "/uploads/1792505292342-audit.svg"
+          },
+          {
+            "name": "1792505292329-audit.png",
+            "url": "/uploads/1792505292329-audit.png"
+          }
+        ]
+      }
+    },
+    {
+      "url": "/api/media/delete",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "message": "已删除。"
+      }
+    },
+    {
+      "url": "/api/media/delete",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "message": "已删除。"
+      }
+    }
+  ],
+  "events": []
+}

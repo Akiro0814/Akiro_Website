@@ -1,0 +1,30 @@
+✔ 保存提交失败时原文不变，改路径的源文件仍可读，临时文件被清理 (83.562ms)
+✔ 中文路径保存、编辑时保留未暴露的 frontmatter 字段 (44.087ms)
+✔ 新建或重命名冲突不覆盖已有文章 (40.1235ms)
+✔ 回收站能恢复中文路径和正文，路径穿越被拒绝 (46.868ms)
+✖ 随笔缺失、清空或无效日历日期不能落盘，编辑未提交日期时保留旧值 (40.6479ms)
+✔ 无效集合与非法路径使用 400 输入异常，不伪装为服务器故障 (39.4382ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 382.8223
+
+✖ failing tests:
+
+test at tests\content.test.mjs:59:1
+✖ 随笔缺失、清空或无效日历日期不能落盘，编辑未提交日期时保留旧值 (40.6479ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (file:///C:/Users/LJB11/AppData/Local/Temp/blog-fixes-20261020/tests/content.test.mjs:63:12)
+      at async Test.run (node:internal/test_runner/test:1389:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:960:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /日期/,
+    operator: 'throws',
+    diff: 'simple'
+  }

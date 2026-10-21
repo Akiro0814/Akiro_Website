@@ -1,0 +1,2 @@
+# 原始测试证据保留字节和断言日志缩进，不因 Git 换行转换破坏本机 SHA-256 清单。
+**/evidence/** -text whitespace=-blank-at-eol,-blank-at-eof,cr-at-eol

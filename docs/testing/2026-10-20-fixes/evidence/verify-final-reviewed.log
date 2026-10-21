@@ -1,0 +1,287 @@
+
+> Akiro_Website@0.0.1 verify
+> npm run lint && npm test && npm run check && npm run build && npm run check:dist
+
+
+> Akiro_Website@0.0.1 lint
+> eslint admin scripts src/lib src/scripts tests
+
+
+> Akiro_Website@0.0.1 test
+> node --test
+
+✔ 真实后台拒绝非法路径/缺日期/无效音频，并保留权限和公开发布计数语义 (1442.7945ms)
+✔ appearance accepts supported values and recovers from invalid saved settings (1.4212ms)
+✔ command search excludes external, login and malformed destinations (0.3091ms)
+✔ content graph preserves real titles, unknown categories and stable edit destinations (1.6692ms)
+✔ daily heat uses actual daily counts without inventing hourly activity (9.9106ms)
+✔ invalid content dates stay out of the timeline without breaking the content views (0.1985ms)
+✔ invalid persisted appearance cannot become a CSS style or mode (1.0476ms)
+✔ time-driven style follows morning, daytime and evening (0.1519ms)
+✔ scroll style clamps position and has deterministic sections (0.0945ms)
+✔ Akiro is the default administrator and explicit deployment credentials remain valid (266.671ms)
+✔ 搬迁后 current 的目标不存在，也能重新构建发布 (1281.4434ms)
+✔ 构建失败保留原发布，释放构建锁 (944.988ms)
+✔ 已有构建时拒绝回滚，不改变当前发布 (47.3711ms)
+✔ 回滚切换静态版本，不改写内容和动态数据 (51.1791ms)
+✔ 切换失败时保留旧发布并清理临时链接 (589.7253ms)
+✔ current 若为真实目录则拒绝替换，保留其内容 (625.933ms)
+✔ Windows 构建产物短暂被占用时重试移动，成功前保留旧发布 (950.9453ms)
+✔ 构建产物持续被占用时终止发布，保留旧站点与构建产物并释放锁 (2206.8766ms)
+✔ 保存提交失败时原文不变，改路径的源文件仍可读，临时文件被清理 (190.1406ms)
+✔ 中文路径保存、编辑时保留未暴露的 frontmatter 字段 (103.63ms)
+✔ 新建或重命名冲突不覆盖已有文章 (111.6494ms)
+✔ 回收站能恢复中文路径和正文，路径穿越被拒绝 (120.1926ms)
+✔ 随笔缺失、清空或无效日历日期不能落盘，编辑未提交日期时保留旧值 (110.808ms)
+✔ 无效集合与非法路径使用 400 输入异常，不伪装为服务器故障 (95.9227ms)
+✔ 自适应跟随跨刷新率一致，停下后单调收敛，不发生硬阈值跳变 (0.94ms)
+✔ 远距离移动自动更快响应，长帧恢复直接归位 (0.7717ms)
+✔ 光标默认关闭平滑跟随，主动选择与所有参数限制在可用范围内 (1.5471ms)
+✔ 损坏或被禁用的本地存储安全回退，不覆盖有效关闭偏好 (0.5377ms)
+✔ hover prefetches share one read and cached data without requiring disk writes (2.1228ms)
+✔ unavailable GitHub keeps previous successful data and backs off repeated hover requests (1.333ms)
+✔ unconfigured users and invalid responses safely use supplied fallback (0.5356ms)
+✔ 用户仓库分页完整读取，后续页失败时保留整份旧清单 (0.9113ms)
+✔ hero media accepts image/video URLs and excludes executable or protocol-relative URLs (1.7349ms)
+✔ hero background survives partial saves, clears explicitly and rejects invalid protocols without losing data (128.1607ms)
+✔ 胶囊位移中心平坦、边缘对称，解码后的实际位移不被归一化裁切 (21.5906ms)
+✔ 不同圆角、最小尺寸和纹理预算均生成有限位移 (32.8269ms)
+✔ 非法类型、伪音频、空文件与超过 30MB 在写文件/歌单之前拒绝 (147.9461ms)
+✔ 有效 WAV 与大写扩展名可上传，重复文件复用，删除最后引用才清理文件 (120.0673ms)
+✔ 支持的音频格式校验真实容器/帧头，拒绝只有标签的 MP3 与其他伪文件头 (1.6231ms)
+✔ 前台配置只接受支持的模式和数量，缺少字段保留当前值 (3.2511ms)
+✔ 后台保存配置与显式清空列表不会被默认值覆盖 (134.9732ms)
+✔ managed duplicates are identified by repository even with different primary links (3.7001ms)
+✔ GitHub、后台和静态项目按同一仓库去重，保留详情与零星标 (1.8417ms)
+✔ 危险外链不进入项目卡片，公开仓库列表不混入私有数据 (0.429ms)
+✔ project service shares refreshes, persists public metadata, and restores it after restart (120.8622ms)
+✔ switching GitHub accounts never reuses the previous account snapshot (95.5053ms)
+✔ public catalog works through the gateway and preserves the existing managed-project API (1081.7272ms)
+✔ 公开 UI empty fixture 自动造数、实体依赖且不复制私人内容/凭据 (85.0289ms)
+✔ 公开 UI normal fixture 自动造数、实体依赖且不复制私人内容/凭据 (95.7261ms)
+✔ 实际 Astro 构建：中文 URL、图注、草稿隔离与删除后发布 (8030.8997ms)
+✔ 公开计数只读取 current 发布快照，保存未发布与失败构建不改变它 (1301.9244ms)
+✔ 回滚后公开计数从 1 跟随快照变为 0，不改变源数据 (81.5031ms)
+✔ 回滚后公开计数从 0 跟随快照变为 1，不改变源数据 (77.5302ms)
+✔ 静态统计支持当前格式，按北京时间换日 (362.6746ms)
+✔ 静态统计支持旧数字格式，按北京时间换日 (295.1659ms)
+✔ 静态统计支持旧 count 格式，按北京时间换日 (316.5638ms)
+✔ 静态统计支持缺失今日数据，按北京时间换日 (268.0982ms)
+✔ 静态统计支持今日为零，按北京时间换日 (185.1641ms)
+✔ JSON 同步和异步提交失败时旧数据完整，临时文件被清理 (122.5485ms)
+✔ 并发直接写入使用独立临时文件，产物始终是完整 JSON (132.2892ms)
+✔ 原子提交遇到短暂文件占用会重试，成功前不删除旧目标 (149.6149ms)
+✔ 持续占用时有限重试后失败，保留旧数据且清理临时文件 (475.7251ms)
+✔ 同文件的并发读改写不丢计数 (287.3528ms)
+✔ 失败更新不落盘，也不阻塞队列中的后续更新 (73.3635ms)
+✔ 异步审核写入与并发读写共享持久化互斥，退出会等待后置任务 (1513.5852ms)
+✔ 官方 Twikoo 前台提交、后台审核与回复使用同一持久数据库，公开接口不能管理 (160.4465ms)
+✔ 旧评论与楼中楼幂等迁移，重启后保留审核状态和删除结果且不改旧文件 (163.3102ms)
+✔ 运行中的隔离服务即时读取新增和删除的中文壁纸，返回原始字节并拒绝恶意路径 (1118.5914ms)
+✔ 壁纸仅扫描普通图片文件，编码中文和特殊文件名，不遍历子目录或链接 (27.4818ms)
+✔ 壁纸目录本身是 junction 或符号链接时不扫描外部文件 (9.2615ms)
+✔ 每次进入重新选择壁纸，多图时排除上次选择，并拒绝目录穿越及外部 URL (0.6776ms)
+✔ 媒体发生错误后，旧动效设置的 hidden 状态不会遮住已加载的回退图片 (3.3484ms)
+ℹ tests 72
+ℹ suites 0
+ℹ pass 72
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8912.8083
+
+> Akiro_Website@0.0.1 check
+> astro check
+
+12:01:39 [content] Syncing content
+12:01:39 [content] Astro config changed
+12:01:39 [content] Clearing content store
+12:01:39 [WARN] [glob-loader] No files found matching "**/*.md" in directory "src\content\posts"
+12:01:39 [WARN] [glob-loader] No files found matching "**/*.md" in directory "src\content\notes"
+12:01:39 [content] Synced content
+12:01:39 [types] Generated 489ms
+12:01:39 [check] Getting diagnostics for Astro files in C:\Users\LJB11\AppData\Local\Temp\blog-fixes-20261020...
+[96msrc/content.config.ts[0m:[93m47[0m:[93m6[0m - [93mwarning[0m[90m ts(6385): [0m'(): ZodObject<{ date: ZodCoercedDate<unknown>; title: ZodOptional<ZodString>; mood: ZodOptional<ZodString>; tags: ZodPreprocess<ZodOptional<ZodArray<ZodString>>>; draft: ZodOptional<...>; }, $loose>' is deprecated.
+
+[7m47[0m     .passthrough(),
+[7m  [0m [93m     ~~~~~~~~~~~[0m
+[96msrc/content.config.ts[0m:[93m45[0m:[93m14[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m45[0m       draft: z.boolean().optional(),
+[7m  [0m [93m             ~[0m
+[96msrc/content.config.ts[0m:[93m43[0m:[93m13[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m43[0m       mood: z.string().optional(),
+[7m  [0m [93m            ~[0m
+[96msrc/content.config.ts[0m:[93m42[0m:[93m14[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m42[0m       title: z.string().optional(),
+[7m  [0m [93m             ~[0m
+[96msrc/content.config.ts[0m:[93m41[0m:[93m13[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m41[0m       date: z.coerce.date(),
+[7m  [0m [93m            ~[0m
+[96msrc/content.config.ts[0m:[93m39[0m:[93m11[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m39[0m   schema: z
+[7m  [0m [93m          ~[0m
+[96msrc/content.config.ts[0m:[93m34[0m:[93m6[0m - [93mwarning[0m[90m ts(6385): [0m'(): ZodObject<{ title: ZodString; description: ZodOptional<ZodString>; date: ZodOptional<ZodCoercedDate<unknown>>; updated: ZodOptional<ZodCoercedDate<...>>; ... 8 more ...; draft: ZodOptional<...>; }, $loose>' is deprecated.
+
+[7m34[0m     .passthrough(),
+[7m  [0m [93m     ~~~~~~~~~~~[0m
+[96msrc/content.config.ts[0m:[93m32[0m:[93m14[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m32[0m       draft: z.boolean().optional(),
+[7m  [0m [93m             ~[0m
+[96msrc/content.config.ts[0m:[93m31[0m:[93m15[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m31[0m       author: z.string().optional(),
+[7m  [0m [93m              ~[0m
+[96msrc/content.config.ts[0m:[93m30[0m:[93m19[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m30[0m       main_color: z.string().optional(),
+[7m  [0m [93m                  ~[0m
+[96msrc/content.config.ts[0m:[93m29[0m:[93m15[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m29[0m       sticky: z.coerce.number().optional(),
+[7m  [0m [93m              ~[0m
+[96msrc/content.config.ts[0m:[93m24[0m:[93m14[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m24[0m       cover: z.string().optional(),
+[7m  [0m [93m             ~[0m
+[96msrc/content.config.ts[0m:[93m23[0m:[93m16[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m23[0m       updated: z.coerce.date().optional(),
+[7m  [0m [93m               ~[0m
+[96msrc/content.config.ts[0m:[93m22[0m:[93m13[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m22[0m       date: z.coerce.date().optional(),
+[7m  [0m [93m            ~[0m
+[96msrc/content.config.ts[0m:[93m21[0m:[93m20[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m21[0m       description: z.string().optional(),
+[7m  [0m [93m                   ~[0m
+[96msrc/content.config.ts[0m:[93m20[0m:[93m14[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m20[0m       title: z.string(),
+[7m  [0m [93m             ~[0m
+[96msrc/content.config.ts[0m:[93m18[0m:[93m11[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m18[0m   schema: z
+[7m  [0m [93m          ~[0m
+[96msrc/content.config.ts[0m:[93m14[0m:[93m12[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m14[0m }, z.array(z.string()).optional());
+[7m  [0m [93m           ~[0m
+[96msrc/content.config.ts[0m:[93m14[0m:[93m4[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m14[0m }, z.array(z.string()).optional());
+[7m  [0m [93m   ~[0m
+[96msrc/content.config.ts[0m:[93m4[0m:[93m20[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m4[0m const stringList = z.preprocess((value) => {
+[7m [0m [93m                   ~[0m
+[96msrc/content.config.ts[0m:[93m1[0m:[93m28[0m - [93mwarning[0m[90m ts(6385): [0m'z' is deprecated.
+
+[7m1[0m import { defineCollection, z } from 'astro:content';
+[7m [0m [93m                           ~[0m
+
+[96msrc/components/SpringPostCard.astro[0m:[93m14[0m:[93m107[0m - [93mwarning[0m[90m ts(6133): [0m'src' is declared but its value is never read.
+
+[7m14[0m       <img src={cover} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/covers/default-cover.svg'" />
+[7m  [0m [93m                                                                                                          ~~~[0m
+[96msrc/components/SpringPostCard.astro[0m:[93m14[0m:[93m89[0m - [93mwarning[0m[90m ts(6133): [0m'onerror' is declared but its value is never read.
+
+[7m14[0m       <img src={cover} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/covers/default-cover.svg'" />
+[7m  [0m [93m                                                                                        ~~~~~~~[0m
+
+[96msrc/pages/posts/[...slug].astro[0m:[93m137[0m:[93m45[0m - [93mwarning[0m[90m ts(6133): [0m'src' is declared but its value is never read.
+
+[7m137[0m             onerror="this.onerror=null;this.src='/covers/default-cover.svg'"
+[7m   [0m [93m                                            ~~~[0m
+[96msrc/pages/posts/[...slug].astro[0m:[93m137[0m:[93m27[0m - [93mwarning[0m[90m ts(6133): [0m'onerror' is declared but its value is never read.
+
+[7m137[0m             onerror="this.onerror=null;this.src='/covers/default-cover.svg'"
+[7m   [0m [93m                          ~~~~~~~[0m
+[96msrc/pages/posts/[...slug].astro[0m:[93m121[0m:[93m43[0m - [93mwarning[0m[90m ts(6133): [0m'src' is declared but its value is never read.
+
+[7m121[0m           onerror="this.onerror=null;this.src='/covers/default-cover.svg'"
+[7m   [0m [93m                                          ~~~[0m
+[96msrc/pages/posts/[...slug].astro[0m:[93m121[0m:[93m25[0m - [93mwarning[0m[90m ts(6133): [0m'onerror' is declared but its value is never read.
+
+[7m121[0m           onerror="this.onerror=null;this.src='/covers/default-cover.svg'"
+[7m   [0m [93m                        ~~~~~~~[0m
+
+[96msrc/scripts/site/copy-code.js[0m:[93m16[0m:[93m29[0m - [93mwarning[0m[90m ts(6387): [0mThe signature '(commandId: string, showUI?: boolean | undefined, value?: string | undefined): boolean' of 'document.execCommand' is deprecated.
+
+[7m16[0m     const copied = document.execCommand('copy');
+[7m  [0m [93m                            ~~~~~~~~~~~[0m
+
+Result (85 files): 
+- 0 errors
+- 0 warnings
+- 28 hints
+
+
+> Akiro_Website@0.0.1 build
+> astro build
+
+12:01:46 [content] Syncing content
+12:01:46 [WARN] [glob-loader] No files found matching "**/*.md" in directory "src\content\posts"
+12:01:46 [WARN] [glob-loader] No files found matching "**/*.md" in directory "src\content\notes"
+12:01:46 [content] Synced content
+12:01:46 [types] Generated 419ms
+12:01:46 [build] output: "static"
+12:01:46 [build] mode: "static"
+12:01:46 [build] directory: C:\Users\LJB11\AppData\Local\Temp\blog-fixes-20261020\dist\
+12:01:46 [build] Collecting build info...
+12:01:46 [build] ✓ Completed in 464ms.
+12:01:46 [build] Building static entrypoints...
+12:01:47 [vite] ✓ built in 343ms
+12:01:47 [vite] ✓ built in 84ms
+12:01:47 [build] Rearranging server assets...
+
+ generating static routes 
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+12:01:47   ├─ /404.html (+14ms) 
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+12:01:47   ├─ /about/index.html (+9ms) 
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+12:01:47   ├─ /archive/index.html (+6ms) 
+12:01:47   ├─ /friends/index.html (+5ms) 
+12:01:47   ├─ /nav/index.html (+5ms) 
+The collection "notes" does not exist or is empty. Please check your content config file for errors.
+12:01:47   ├─ /notes/index.html (+5ms) 
+12:01:47   ├─ /projects/index.html (+14ms) 
+12:01:47   ├─ /robots.txt (+3ms) 
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+12:01:47   ├─ /rss.xml (+3ms) 
+12:01:47   ├─ /search/index.html (+5ms) 
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+12:01:47   ├─ /search.json (+2ms) 
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+12:01:47   ├─ /sitemap.xml (+2ms) 
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+12:01:47   ├─ /index.html (+8ms) 
+12:01:47 ✓ Completed in 112ms.
+
+12:01:47 [build] ✓ Completed in 601ms.
+12:01:47 [build] 9 page(s) built in 1.08s
+12:01:47 [build] Complete!
+
+> Akiro_Website@0.0.1 check:dist
+> node scripts/check-dist.mjs
+
+✓ index.html 已生成
+✓ 字体引用全部为 woff2（1 个分片）
+✓ 产物不含原始 TTF
+✓ 无 @vite/client 开发残留
+✓ 主题初始化内联片段存在
+✓ API 降级哨兵内联片段存在
+✓ 页面脚本已打包（12 个 chunk）
+✓ 搜索索引的 0 个文章 URL 均有对应产物
+产物体检全部通过

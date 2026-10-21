@@ -1,0 +1,92 @@
+import pathlib,json,re,collections
+folder=pathlib.Path('docs/testing/2026-10-20-fixes');ev=folder/'evidence';entries=json.loads((ev/'entries.json').read_text(encoding='utf8'));latest={r['command']:r for r in entries}
+text='''# V2.3.1 问题修复与复测报告
+
+完成日期：2026-10-21（Asia/Shanghai）。工作于 2026-10-20 开始并跨日继续，因此沿用当前目录名。测试对象为 `E:\\Project\\L1angK1NG_Website` 的当前工作区及全部未提交改动，原基线提交为 `bd9bf4bda0512902a7606dcb6729917050ca571a`。
+
+## 结论
+
+原测试报告中的 **R-01～R-04 四项产品缺陷及 T-01～T-02 两项测试脚本问题均已修复并复测通过**。当前没有这六项的待修复问题。
+
+- 最终 `npm run verify`：72 个 Node 用例全部通过；lint 通过；Astro 检查 0 errors、0 warnings，另有 28 个现有 schema 弃用提示；构建 9 个空博客页面；产物检查通过。
+- 11 个 UI 测试入口的最终有效结果全部通过，合计 94 组具名检查。公开 UI 连续三次通过，无自动重试或吞掉断言错误。
+- 真实 HTTP、文件持久化、静态发布、回滚、浏览器与索引闭环：84 个用例通过，0 失败；Firefox/WebKit 启动的两个用例仍因未安装浏览器而阻塞，不计通过。
+- 实际业务文件集合及 20 个 SHA-256 前后相同，真实 Markdown 数量仍为 0；原有空博客配置改动保留。本次没有向真实媒体库、评论库或统计文件造数。
+
+测试依旧不证明真实第三方服务、远程备份、nginx/HTTPS 或生产部署可用。没有调用真实远程备份、评论通知或邮件。
+
+## 修复方案与证据
+
+| 问题 | 实现 | 复测证据 | 结果 |
+| --- | --- | --- | --- |
+| R-01 随笔无日期仍保存成功，导致全站构建失败 | notes 声明必填日期；写入前校验 ISO 日期及真实日历日期，拒绝 2 月 30 日、宽松斜杠/不补零日期和空值；编辑未提供日期保留原日期，显式清空拒绝且原文件不变；日期控件标明必填语义 | content.test、admin-api.test；闭环 NOTE-01；red.log、red-date-format.log、red-note-label.log → 最终 verify | 通过 |
+| R-02 回滚后公开文章量不一致 | `published-content.mjs` 读取 `current/search.json`，与归档/公开索引共享 release；直接兼容旧版本产物，不恢复动态库，不再把源内容量当公开文章量；首次发布前为 0 | published-stats.test 双方向回滚/失败构建；PUB-03、ROLLBACK-02，rollback-comparison.json | 通过 |
+| R-03 任意扩展及伪音频上传成功 | 新增服务端 mp3/flac/wav/m4a/ogg/aac 白名单、容器/帧头与截断检查、30MB 上限；在建目录、去重或写歌单前拒绝；超限明确返回音频 30MB 提示 | music-upload.test、admin-api.test 413；真实 WAV 上传/206 Range/Audio 播放，MUSIC-01/02/03 | 通过 |
+| R-04 非法路径误报 500 | 明确的 ContentInputError 携带 400；统一中间件仅识别这一输入异常，磁盘/内部错误仍 500；非法路径不读取目标文件，也不向客户端发内部堆栈 | content.test、admin-api.test；API-01/02/03 | 通过 |
+| T-01 UI 脚本依赖真实站点非空 | 四个入口自动创建正常 fixture（12 篇虚构文章、离线项目、固定日期）；新 empty-ui 覆盖 8 页 × 2 尺寸及空搜索索引；不复制真实内容、媒体、凭据或评论库 | public-ui-fixture.test；四个入口及 empty-ui 全部通过，原工作区仍空 | 通过 |
+| T-02 首次导航 evaluate 竞态 | 首次访问依次等待 networkidle、主元素、文档完成和字体就绪；初始化数据在服务启动前完成；保留异常使测试失败，不捕获后静默重试 | public-ui 首次及连续 run2/run3，每次 11 组通过 | 通过 |
+
+音频校验是基础容器/帧头校验，不是完整解码器。合法容器也可能包含当前浏览器不支持的编码，仍由播放器报告解码失败；没有承诺任意上传内容都可在所有浏览器播放。六种格式均有基础头部契约测试，实际浏览器解码对照使用生成的合法 WAV。
+
+使用当前 release 的搜索索引作为计数来源，避免新增一份可能与旧 release 脱节的 manifest；未发布编辑仍显示在后台源内容列表。评论和访问量继续使用实时库，不随文章回滚。无有效发布产物时返回 0，不回退到源文件数量。
+
+## 回归执行明细
+
+表中 UI 数量为脚本具名断言组，不是把脚本个数当用例数；每组可能包含多个底层断言。重复运行不增加唯一覆盖数。
+
+| 入口 | 实际用例/组数 | 结果 | 耗时 | 证据 |
+| --- | --- | --- | --- | --- |
+| npm run verify（最后审查后） | Node 72；另含 lint/check/build/check:dist | 通过 | 未单独计时 | [verify-final-reviewed.log](evidence/verify-final-reviewed.log) |
+'''
+for name,r in latest.items():
+ if name=='verify':continue
+ raw=(ev/r['log']).read_text(encoding='utf8');count=len(re.findall('^✓',raw,re.M))
+ text+=f"| npm run {name} | {count} 组 | {'通过' if r['exit']==0 else '失败'} | {r['seconds']}s | [{r['log']}](evidence/{r['log']}) |\n"
+text+='''
+公开 UI 三次耗时和结果保存在 [entries.json](evidence/entries.json)，日志为 test-public-ui.log、test-public-ui-run2.log、test-public-ui-run3.log。原有正常 UI 77 组 + 新空博客 17 组 = 94 组。
+
+播放器首次启动发生 Windows Chromium 进程初始化失败（退出码 3221225794），未进入产品断言；原日志保存在 [test-managed-player.log](evidence/test-managed-player.log)。在同一源码下独立重跑通过，真实 API 上传播放闭环也通过。初次回归运行在跨日继续前中止于该入口，后续入口从保存的记录顺序补跑，没有用历史成绩代替。
+
+新用例先执行并失败的日志：[核心修复前](evidence/red.log)、[夹具缺失](evidence/red-fixture.log)、[日期必填语义](evidence/red-note-label.log)、[宽松日期进位](evidence/red-date-format.log)。随后实现并通过：[核心首轮](evidence/green-core.log)、[夹具首轮](evidence/green-fixture.log)、[最终验证](evidence/verify-final-reviewed.log)。
+
+## 真实前后台闭环
+
+本次使用原审计闭环脚本的修正版本重新执行，使用另一个完整实体副本，不在原博客启动写服务。专用账号随机生成，凭据只留在进程内存；请求证据的 token/secret/password 字段替换为脱敏标记。
+
+| 集合 | 用例数 | 通过 | 失败 | 阻塞 | 原始结果 |
+| --- | --- | --- | --- | --- | --- |
+'''
+for name,key in [('flows-results.json','rows'),('extra-results.json','results'),('focused-results.json','results')]:
+ rows=json.loads((ev/name).read_text(encoding='utf8'))[key];c=collections.Counter(r['status'] for r in rows)
+ text+=f"| {name} | {len(rows)} | {c['通过']} | {c['失败']} | {c['阻塞']} | [{name}](evidence/{name}) |\n"
+text+='''
+关键结果：公开文章与草稿落盘 → 发布前页面保持旧版 → 真 Astro 构建发布 → 页面/搜索/RSS/sitemap 更新；改标题、正文、分类、标签、媒体 → 重建更新；撤回/删除/回收站恢复 → 发布后公开数据一致；全清空触发 Astro 缓存重建 → 服务重启后旧内容不复活。新注入无效文件导致发布失败时，current 与可访问版本保持原样。
+
+本次回滚双向计数均一致。第二方向快照中 `publishedArticles=1`、`runtimeArticles=1`、`markdownCount=0`，证明公开 API 确实跟随回滚版本而不是偶然与源内容相等。证据：[rollback-comparison.json](evidence/rollback-comparison.json)、[归档截图](evidence/rollback-count-mismatch.png)。截图保留原复现文件名，但其本次值已一致。
+
+音频：有效 WAV HTTP 200、文件存在、Range 206、浏览器 currentTime 推进；下架列表为空、删除清理文件；invalid.exe 与伪 MP3 均 HTTP 400，不落盘。缺失日期随笔 HTTP 400，不再尝试构建非法条目。路径穿越请求 HTTP 400，公开 Twikoo 管理事件 403，未登录 401、缺 CSRF 403、内容不存在 404。
+
+8 条并发文章、8 条并发公告及少量重复创建均完成，未见丢失更新/重复记录/损坏文件。未扩大到多后台进程或高负载压测。
+
+## 隔离、收尾与交付范围
+
+- 依赖在两层副本中均为实体复制。上轮 node_modules junction 导致缓存共享的隔离瑕疵已在复测方式中消除；本次缓存重建不会清理原依赖目录。
+- fixture 单测分别验证空/正常数据、不导入真实凭据/文章/媒体/评论库，并在修改副本依赖后确认来源文件不变。
+- [protection-cleanup.json](evidence/protection-cleanup.json) 保存真实业务哈希保护结果及两个副本清理结果；本次小型位置元数据一并移除。上一轮自动审批拒绝清理的两个旧元数据文件未再次触碰。
+- [ports-after.json](evidence/ports-after.json) 确认本次测试端口均已释放；不停止用户原有服务。
+- 源码新增/修改集中在内容校验、发布计数、音频校验、错误分类、四个 UI 入口、公共隔离工具和新增回归测试；日期控件仅补必填语义，没有重构页面结构或样式。依赖版本没有调整。
+- 当前空博客配置的既有 5 项改动保持原样，与修复作为 V2.3.1 当前版本提交；没有把任何虚构 fixture 写入真实内容目录。
+- README 只新增一个 V2.3.1 简洁版本记录。Git 目标为 origin/main，提交与远端一致性由推送后的 Git 读回确认。
+- 本机保存全部截图；仓库只保留关键对照截图、JSON、日志、脚本及报告，重复 UI 截图按 docs/testing/.gitignore 保留在本地。历史测试报告保持其原始失败结论，本报告记录修复后的结果。
+
+## 继续适用的限制
+
+Firefox/WebKit 未安装，仍标阻塞；没有测试真实 GitHub/网易云/Meting/外部 Twikoo、MongoDB、远程备份恢复、生产 HTTPS/nginx、30 分钟自然空闲会话或真实用户性能。两份报告中的这些未验证项不属于已确认产品缺陷，不虚构修复或通过。
+
+本次公开 UI 三次均无页面脚本异常，但有被测试策略阻断/模拟的 API 或第三方资源请求，详见原始日志；不据此声明线上零失败请求。Astro 的 28 个 hints 为现有 schema 弃用提示，当前 0 errors/0 warnings，未为消除提示而更新依赖。
+
+复现：安装与锁文件一致的依赖及 Chromium 后，在项目根目录执行 `npm run verify`，再逐项执行 package.json 的 11 个 test:* UI 入口。四个有正常内容前提的入口及空博客入口会自行准备副本；可用 `UI_EVIDENCE_DIR` 指定证据输出。若需在完全不改原缓存的前提下运行整个 verify，请先实体复制整个工作区及依赖到临时目录、排除真实 .env 和业务库后运行，如本次 prepare-flows/run-regression 所示。不要在真实内容库执行报告里的造数请求。
+'''
+(folder/'修复复测报告.md').write_text(text,encoding='utf8')
+plan=folder/'修复计划.md';plan.write_text(plan.read_text(encoding='utf-8-sig').replace('- [ ]','- [x]'),encoding='utf8')
+print('修复复测报告已生成')

@@ -1,0 +1,14 @@
+
+> Akiro_Website@0.0.1 build
+> astro build
+
+21:39:10 [content] Syncing content
+unexpected end of the stream within a flow collection
+  Location:
+    C:\Users\LJB11\AppData\Local\Temp\blog-audit-2026-10-20_212951-flows\src\content\posts\audit-broken.md:2:0
+  Stack trace:
+    at generateError (file:///E:/Project/L1angK1NG_Website/node_modules/js-yaml/dist/js-yaml.mjs:1140:12)
+    at readFlowCollection (file:///E:/Project/L1angK1NG_Website/node_modules/js-yaml/dist/js-yaml.mjs:1663:5)
+    at readBlockMapping (file:///E:/Project/L1angK1NG_Website/node_modules/js-yaml/dist/js-yaml.mjs:1912:13)
+    at readDocument (file:///E:/Project/L1angK1NG_Website/node_modules/js-yaml/dist/js-yaml.mjs:2283:5)
+    at load2 (file:///E:/Project/L1angK1NG_Website/node_modules/js-yaml/dist/js-yaml.mjs:2341:23)

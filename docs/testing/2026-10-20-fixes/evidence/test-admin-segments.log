@@ -1,0 +1,9 @@
+
+> Akiro_Website@0.0.1 test:admin-segments
+> node scripts/check-admin-segments.mjs
+
+✓ 初始主题与密度选项的背景和按钮四边对齐
+✓ 所有主题和密度切换后保持对齐
+✓ 手机尺寸变化后自动重算对齐
+✓ 文章/随笔/导航全部视图选项在按压后对齐
+✓ 减少动画下立即对齐，无页面脚本异常

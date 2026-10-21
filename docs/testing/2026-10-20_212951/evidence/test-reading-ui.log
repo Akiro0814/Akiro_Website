@@ -1,0 +1,18 @@
+
+> Akiro_Website@0.0.1 test:reading-ui
+> node scripts/check-reading-ui.mjs
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+locator.getAttribute: Timeout 30000ms exceeded.
+Call log:
+[2m  - waiting for locator('.atlas-writing-card a').first()[22m
+
+    at C:\Users\LJB11\AppData\Local\Temp\blog-audit-2026-10-20_212951\scripts\check-reading-ui.mjs:26:71 {
+  log: [ "  - waiting for locator('.atlas-writing-card a').first()" ],
+  name: 'TimeoutError'
+}
+
+Node.js v24.19.0

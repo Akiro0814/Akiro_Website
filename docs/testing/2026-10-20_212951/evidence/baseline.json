@@ -1,0 +1,30 @@
+{
+  "root": "E:\\Project\\L1angK1NG_Website",
+  "sandbox": "C:\\Users\\LJB11\\AppData\\Local\\Temp\\blog-audit-2026-10-20_212951",
+  "report": "E:\\Project\\L1angK1NG_Website\\docs\\testing\\2026-10-20_212951",
+  "time": "2026-10-20_212951",
+  "businessHashes": {
+    "data\\announcements.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "data\\backup-config.json": "46bbd695f24821f550d976768fa030ffe02bb1cee2eb9664c5d5f9c536a3b382",
+    "data\\comments.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "data\\friends.json": "7cc219b154b06f063874d9f83746444fb47c7604d326819b3b76bcc625872742",
+    "data\\login-tokens.json": "f04853af06c13a96aeba620372b1480c12390b08ea96eeb047bd5eb03f9565c1",
+    "data\\music.json": "b6426a48c13c3e52fb8c1434cdb34cedf9e3d7328590fad23e369ebcf21a5bfc",
+    "data\\nav.json": "9ca1c6388f8ad2aee285067861e2cc3587f0fa39388d32d120c8626b53d9d746",
+    "data\\profile.json": "7d92599673d2526c6678661b02e3725123f0f76205245e0a9fd39f40e60b0247",
+    "data\\projects.json": "50320f0663ede494b90075f591d20f42d272e0ca2fb4dbf4949f55ed0b696bd1",
+    "data\\site-meta.json": "e57948275cccc9a901afff601ec1b7f77c56dccf34f8f248f9f2c15b6e31d8eb",
+    "data\\stats.json": "55a0e499ed99730c9be6f34ea485588da31e40a45acaf493224f6ce76868f9b4",
+    "data\\twikoo-summary.json": "3143bbb12a9a73da5fd63e5879582c46e8c7cbb3b3ba9e2c78e63b4296be9726",
+    "data\\twikoo\\db.json": "9ae6d71a5b4edf97c5b11a0dd779c2b8478602b4ef3a706e4181b3784bcd9dec",
+    "data\\twikoo\\db.json.0": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "data\\twikoo\\db.json.1": "7189b3b39f045e4e59f5c32017b05553a9636b2577121ad0679513778c95a2de",
+    "data\\twikoo\\db.json.2": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "data\\twikoo\\db.json.3": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "src\\data\\github-projects.json": "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570",
+    "src\\data\\site.config.json": "4523c9376768031f7df5fa7430119bef48e09045f97ca69d5ee6e92319d8fc17",
+    "public\\wallpapers\\.gitkeep": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "git": " M data/announcements.json\n M data/profile.json\n D public/avatars/avatar.jpg\n M src/data/github-projects.json\n M src/data/site.config.json\n",
+  "head": "bd9bf4bda0512902a7606dcb6729917050ca571a"
+}

@@ -1,0 +1,2027 @@
+{
+  "rows": [
+    {
+      "id": "AUTH-01",
+      "label": "匿名管理接口及页面保护",
+      "status": "通过",
+      "ms": 26
+    },
+    {
+      "id": "EMPTY-01",
+      "label": "空博客 API 与已有构建索引均为空",
+      "status": "通过",
+      "ms": 74
+    },
+    {
+      "id": "empty-1440-%2F",
+      "label": "empty 1440 / HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 1551
+      },
+      "ms": 1551
+    },
+    {
+      "id": "empty-1440-%2Farchive%2F",
+      "label": "empty 1440 /archive/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 1221
+      },
+      "ms": 1222
+    },
+    {
+      "id": "empty-1440-%2Fnotes%2F",
+      "label": "empty 1440 /notes/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 1292
+      },
+      "ms": 1292
+    },
+    {
+      "id": "empty-1440-%2Fprojects%2F",
+      "label": "empty 1440 /projects/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 976
+      },
+      "ms": 976
+    },
+    {
+      "id": "empty-1440-%2Fnav%2F",
+      "label": "empty 1440 /nav/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 946
+      },
+      "ms": 947
+    },
+    {
+      "id": "empty-1440-%2Ffriends%2F",
+      "label": "empty 1440 /friends/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 968
+      },
+      "ms": 968
+    },
+    {
+      "id": "empty-1440-%2Fabout%2F",
+      "label": "empty 1440 /about/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 982
+      },
+      "ms": 982
+    },
+    {
+      "id": "empty-1440-%2Fsearch%2F",
+      "label": "empty 1440 /search/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 962
+      },
+      "ms": 962
+    },
+    {
+      "id": "empty-1440-%2Fdoes-not-exist%2F",
+      "label": "empty 1440 /does-not-exist/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 404,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 946
+      },
+      "ms": 946
+    },
+    {
+      "id": "empty-390-%2F",
+      "label": "empty 390 / HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 1126
+      },
+      "ms": 1126
+    },
+    {
+      "id": "empty-390-%2Farchive%2F",
+      "label": "empty 390 /archive/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 1030
+      },
+      "ms": 1030
+    },
+    {
+      "id": "empty-390-%2Fnotes%2F",
+      "label": "empty 390 /notes/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 1069
+      },
+      "ms": 1069
+    },
+    {
+      "id": "empty-390-%2Fprojects%2F",
+      "label": "empty 390 /projects/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 953
+      },
+      "ms": 953
+    },
+    {
+      "id": "empty-390-%2Fnav%2F",
+      "label": "empty 390 /nav/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 930
+      },
+      "ms": 930
+    },
+    {
+      "id": "empty-390-%2Ffriends%2F",
+      "label": "empty 390 /friends/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 950
+      },
+      "ms": 950
+    },
+    {
+      "id": "empty-390-%2Fabout%2F",
+      "label": "empty 390 /about/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 946
+      },
+      "ms": 946
+    },
+    {
+      "id": "empty-390-%2Fsearch%2F",
+      "label": "empty 390 /search/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 921
+      },
+      "ms": 921
+    },
+    {
+      "id": "empty-390-%2Fdoes-not-exist%2F",
+      "label": "empty 390 /does-not-exist/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 404,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 936
+      },
+      "ms": 936
+    },
+    {
+      "id": "AUTH-02",
+      "label": "错误凭据拒绝、正确凭据浏览器登录、Cookie 属性",
+      "status": "通过",
+      "ms": 10637
+    },
+    {
+      "id": "AUTH-03",
+      "label": "登录后写入缺少或错误 CSRF 均拒绝",
+      "status": "通过",
+      "ms": 12
+    },
+    {
+      "id": "VAL-01",
+      "label": "文章必填标题、非法日期、未知集合、无效 ID",
+      "status": "通过",
+      "ms": 21
+    },
+    {
+      "id": "UPLOAD-01",
+      "label": "拒绝伪图片、不支持类型、空文件及超 10MB",
+      "status": "通过",
+      "ms": 46
+    },
+    {
+      "id": "UPLOAD-02",
+      "label": "图片上传、去重、SVG 净化并核实落盘",
+      "status": "通过",
+      "ms": 22
+    },
+    {
+      "id": "DATA-01",
+      "label": "保存公开文章和草稿，落盘成功、发布前静态页面不变",
+      "status": "通过",
+      "ms": 27
+    },
+    {
+      "id": "DATA-02",
+      "label": "重复创建同一路径应拒绝覆盖，已有文件保留",
+      "status": "通过",
+      "ms": 6
+    },
+    {
+      "id": "MEDIA-03",
+      "label": "被文章引用的图片禁止删除",
+      "status": "通过",
+      "ms": 7
+    },
+    {
+      "id": "DYN-01",
+      "label": "项目创建与更新、必填校验、重复 slug 拒绝",
+      "status": "通过",
+      "ms": 39
+    },
+    {
+      "id": "DYN-02",
+      "label": "友链申请去重、待审隐藏、审核后即时公开及落盘",
+      "status": "通过",
+      "ms": 43
+    },
+    {
+      "id": "DYN-03",
+      "label": "导航/公告/个人资料/日期设置保存及公开 API 对照",
+      "status": "通过",
+      "ms": 65
+    },
+    {
+      "id": "DYN-04",
+      "label": "并发 8 次公告独立新增与重复 ID 幂等",
+      "status": "通过",
+      "ms": 51
+    },
+    {
+      "id": "COMMENT-01",
+      "label": "真实本地 Twikoo 提交/隐藏/回复/公开计数一致",
+      "status": "通过",
+      "ms": 633
+    },
+    {
+      "id": "PUB-01",
+      "label": "完整真实构建发布、静态前台与草稿过滤",
+      "status": "通过",
+      "actual": {
+        "release": "2026-10-20T13-34-29-118Z",
+        "cacheRebuilt": false
+      },
+      "ms": 2854
+    },
+    {
+      "id": "normal-1440-%2F",
+      "label": "normal 1440 / HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 1394
+      },
+      "ms": 1394
+    },
+    {
+      "id": "normal-1440-%2Farchive%2F",
+      "label": "normal 1440 /archive/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 1217
+      },
+      "ms": 1217
+    },
+    {
+      "id": "normal-1440-%2Fposts%2F%E5%AE%A1%E8%AE%A1%E6%96%87%E7%AB%A0%2F",
+      "label": "normal 1440 /posts/审计文章/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 1198
+      },
+      "ms": 1198
+    },
+    {
+      "id": "normal-1440-%2Fcategories%2F%E5%AE%A1%E8%AE%A1%E5%88%86%E7%B1%BB%2F",
+      "label": "normal 1440 /categories/审计分类/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 940
+      },
+      "ms": 940
+    },
+    {
+      "id": "normal-1440-%2Ftags%2F%E5%AE%A1%E8%AE%A1%E6%A0%87%E7%AD%BE%2F",
+      "label": "normal 1440 /tags/审计标签/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 948
+      },
+      "ms": 948
+    },
+    {
+      "id": "normal-1440-%2Fnotes%2F",
+      "label": "normal 1440 /notes/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 1225
+      },
+      "ms": 1225
+    },
+    {
+      "id": "normal-1440-%2Fprojects%2F",
+      "label": "normal 1440 /projects/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 961
+      },
+      "ms": 961
+    },
+    {
+      "id": "normal-1440-%2Fprojects%2Faudit%2F",
+      "label": "normal 1440 /projects/audit/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 1164
+      },
+      "ms": 1164
+    },
+    {
+      "id": "normal-1440-%2Fnav%2F",
+      "label": "normal 1440 /nav/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 946
+      },
+      "ms": 946
+    },
+    {
+      "id": "normal-1440-%2Ffriends%2F",
+      "label": "normal 1440 /friends/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 949
+      },
+      "ms": 950
+    },
+    {
+      "id": "normal-1440-%2Fabout%2F",
+      "label": "normal 1440 /about/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 964
+      },
+      "ms": 964
+    },
+    {
+      "id": "normal-1440-%2Fsearch%2F",
+      "label": "normal 1440 /search/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 1440,
+        "scroll": 1440,
+        "loadMs": 961
+      },
+      "ms": 961
+    },
+    {
+      "id": "normal-390-%2F",
+      "label": "normal 390 / HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 1083
+      },
+      "ms": 1083
+    },
+    {
+      "id": "normal-390-%2Farchive%2F",
+      "label": "normal 390 /archive/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 1034
+      },
+      "ms": 1034
+    },
+    {
+      "id": "normal-390-%2Fposts%2F%E5%AE%A1%E8%AE%A1%E6%96%87%E7%AB%A0%2F",
+      "label": "normal 390 /posts/审计文章/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 1052
+      },
+      "ms": 1052
+    },
+    {
+      "id": "normal-390-%2Fcategories%2F%E5%AE%A1%E8%AE%A1%E5%88%86%E7%B1%BB%2F",
+      "label": "normal 390 /categories/审计分类/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 942
+      },
+      "ms": 942
+    },
+    {
+      "id": "normal-390-%2Ftags%2F%E5%AE%A1%E8%AE%A1%E6%A0%87%E7%AD%BE%2F",
+      "label": "normal 390 /tags/审计标签/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 963
+      },
+      "ms": 963
+    },
+    {
+      "id": "normal-390-%2Fnotes%2F",
+      "label": "normal 390 /notes/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 1049
+      },
+      "ms": 1049
+    },
+    {
+      "id": "normal-390-%2Fprojects%2F",
+      "label": "normal 390 /projects/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 959
+      },
+      "ms": 959
+    },
+    {
+      "id": "normal-390-%2Fprojects%2Faudit%2F",
+      "label": "normal 390 /projects/audit/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 1054
+      },
+      "ms": 1054
+    },
+    {
+      "id": "normal-390-%2Fnav%2F",
+      "label": "normal 390 /nav/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 949
+      },
+      "ms": 949
+    },
+    {
+      "id": "normal-390-%2Ffriends%2F",
+      "label": "normal 390 /friends/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 954
+      },
+      "ms": 954
+    },
+    {
+      "id": "normal-390-%2Fabout%2F",
+      "label": "normal 390 /about/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 957
+      },
+      "ms": 957
+    },
+    {
+      "id": "normal-390-%2Fsearch%2F",
+      "label": "normal 390 /search/ HTTP/布局/页面脚本",
+      "status": "通过",
+      "actual": {
+        "status": 200,
+        "client": 390,
+        "scroll": 390,
+        "loadMs": 945
+      },
+      "ms": 945
+    },
+    {
+      "id": "UI-01",
+      "label": "前台搜索标题中文命中、空结果、主题切换刷新持久化及键盘焦点",
+      "status": "失败",
+      "actual": "Expected \"actual\" to be strictly unequal to:\n\n'light'",
+      "ms": 1764
+    },
+    {
+      "id": "UI-02",
+      "label": "减少动画偏好、表单标签和动态模块真实 UI",
+      "status": "通过",
+      "actual": {
+        "inputs": []
+      },
+      "ms": 634
+    },
+    {
+      "id": "DATA-03",
+      "label": "修改标题正文分类标签封面，发布后旧索引值替换",
+      "status": "通过",
+      "actual": {
+        "release": "2026-10-20T13-34-59-957Z",
+        "cacheRebuilt": false
+      },
+      "ms": 3593
+    },
+    {
+      "id": "DATA-04",
+      "label": "服务重启/浏览器刷新后内容、动态数据、评论仍一致",
+      "status": "失败",
+      "actual": "locator.fill: Timeout 8000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByLabel('用户名', { exact: true })\u001b[22m\n",
+      "ms": 8601
+    },
+    {
+      "id": "DATA-05",
+      "label": "撤回为草稿后发布，页面/搜索/RSS/sitemap 均移除",
+      "status": "失败",
+      "actual": "Expected values to be strictly equal:\n\n403 !== 200\n",
+      "ms": 15
+    },
+    {
+      "id": "DATA-06",
+      "label": "删除进回收站、恢复、重新发布并核对底层文件",
+      "status": "失败",
+      "actual": "Expected values to be strictly equal:\n\n403 !== 200\n",
+      "ms": 5
+    },
+    {
+      "id": "PUB-02",
+      "label": "人为无效 frontmatter 导致构建失败，当前可访问版本保持原样",
+      "status": "失败",
+      "actual": "Expected values to be strictly equal:\n\n403 !== 500\n",
+      "ms": 8
+    },
+    {
+      "id": "PUB-03",
+      "label": "回滚静态快照后公开统计与发布内容保持一致",
+      "status": "失败",
+      "actual": "Expected values to be strictly equal:\n\n403 !== 200\n",
+      "ms": 5
+    },
+    {
+      "id": "DATA-07",
+      "label": "清空全部内容、发布清理 Astro 缓存与旧产物，重启不复活",
+      "status": "失败",
+      "actual": "Expected values to be strictly equal:\n\n403 !== 200\n",
+      "ms": 11
+    },
+    {
+      "id": "COMMENT-02",
+      "label": "评论删除联动回复计数，重启后不恢复",
+      "status": "失败",
+      "actual": "Expected values to be strictly equal:\n\n403 !== 200\n",
+      "ms": 6
+    },
+    {
+      "id": "AUTH-04",
+      "label": "退出后旧会话、错误 Cookie、管理接口均失效",
+      "status": "失败",
+      "actual": "Expected values to be strictly equal:\n\n403 !== 200\n",
+      "ms": 5
+    },
+    {
+      "id": "BROWSER-Firefox",
+      "label": "Firefox 启动可用性",
+      "status": "阻塞",
+      "actual": "browserType.launch: Executable doesn't exist at C:\\Users\\LJB11\\AppData\\Local\\ms-playwright\\firefox-1555\\firefox\\firefox.exe"
+    },
+    {
+      "id": "BROWSER-WebKit",
+      "label": "WebKit 启动可用性",
+      "status": "阻塞",
+      "actual": "browserType.launch: Executable doesn't exist at C:\\Users\\LJB11\\AppData\\Local\\ms-playwright\\webkit-2370\\Playwright.exe"
+    }
+  ],
+  "requests": [
+    {
+      "url": "/api/list/posts",
+      "status": 401,
+      "body": {
+        "error": "未登录或会话已过期。"
+      }
+    },
+    {
+      "url": "/api/public/site-stats",
+      "status": 200,
+      "body": {
+        "since": "",
+        "posts": 0,
+        "comments": 0,
+        "totalViews": 0,
+        "todayViews": 0
+      }
+    },
+    {
+      "url": "/api/public/friends",
+      "status": 200,
+      "body": {
+        "notice": "",
+        "items": []
+      }
+    },
+    {
+      "url": "/api/public/playlist",
+      "status": 200,
+      "body": {
+        "tracks": []
+      }
+    },
+    {
+      "url": "/api/public/projects",
+      "status": 200,
+      "body": {
+        "items": []
+      }
+    },
+    {
+      "url": "/api/login",
+      "status": 401,
+      "body": {
+        "error": "用户名或密码错误。（还可尝试 7 次）"
+      }
+    },
+    {
+      "url": "/api/save/posts",
+      "status": 403,
+      "body": {
+        "error": "CSRF 校验失败，请刷新页面后重试。"
+      }
+    },
+    {
+      "url": "/api/save/posts",
+      "status": 403,
+      "body": {
+        "error": "CSRF 校验失败，请刷新页面后重试。"
+      }
+    },
+    {
+      "url": "/api/save/posts",
+      "status": 400,
+      "body": {
+        "error": "标题不能为空"
+      }
+    },
+    {
+      "url": "/api/save/posts",
+      "status": 400,
+      "body": {
+        "error": "字段 date 的日期格式无效"
+      }
+    },
+    {
+      "url": "/api/save/unknown",
+      "status": 400,
+      "body": {
+        "error": "未知的内容类型"
+      }
+    },
+    {
+      "url": "/api/entry/posts?path=missing",
+      "status": 404,
+      "body": {
+        "error": "内容不存在"
+      }
+    },
+    {
+      "url": "/api/upload?filename=fake.png",
+      "status": 400,
+      "body": {
+        "error": "文件内容与扩展名不符，已拒绝上传"
+      }
+    },
+    {
+      "url": "/api/upload?filename=test.exe",
+      "status": 400,
+      "body": {
+        "error": "不支持的文件类型"
+      }
+    },
+    {
+      "url": "/api/upload?filename=empty.png",
+      "status": 400,
+      "body": {
+        "error": "文件为空"
+      }
+    },
+    {
+      "url": "/api/upload?filename=huge.png",
+      "status": 413,
+      "body": {
+        "error": "图片不能超过 10MB，请压缩后再上传。"
+      }
+    },
+    {
+      "url": "/api/upload?filename=audit.png",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "url": "/uploads/1792503265393-audit.png",
+        "name": "1792503265393-audit.png",
+        "duplicate": false
+      }
+    },
+    {
+      "url": "/api/upload?filename=audit.png",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "url": "/uploads/1792503265393-audit.png",
+        "name": "1792503265393-audit.png",
+        "duplicate": true,
+        "message": "文件内容与已有文件相同，已复用现有文件。"
+      }
+    },
+    {
+      "url": "/api/upload?filename=audit.svg",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "url": "/uploads/1792503265404-audit.svg",
+        "name": "1792503265404-audit.svg",
+        "duplicate": false
+      }
+    },
+    {
+      "url": "/api/save/posts",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "id": "审计文章",
+        "message": "已保存到文件。发布需到「构建发布」。"
+      }
+    },
+    {
+      "url": "/api/save/posts",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "id": "audit-draft",
+        "message": "已保存到文件。发布需到「构建发布」。"
+      }
+    },
+    {
+      "url": "/api/save/notes",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "id": "audit-note",
+        "message": "已保存到文件。发布需到「构建发布」。"
+      }
+    },
+    {
+      "url": "/api/save/posts",
+      "status": 400,
+      "body": {
+        "error": "该路径已存在内容，请换一个路径"
+      }
+    },
+    {
+      "url": "/api/media/delete",
+      "status": 409,
+      "body": {
+        "error": "该文件仍被 1 篇内容引用（posts/审计文章），请先移除引用再删除。",
+        "references": [
+          "posts/审计文章"
+        ]
+      }
+    },
+    {
+      "url": "/api/manage/projects/save",
+      "status": 400,
+      "body": {
+        "error": "项目名称不能为空"
+      }
+    },
+    {
+      "url": "/api/manage/projects/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "project": {
+          "id": "9d935a69e3e183da",
+          "slug": "audit",
+          "title": "虚构审计项目",
+          "subtitle": "",
+          "description": "",
+          "cover": "",
+          "status": "已上线",
+          "tech": [
+            "Astro"
+          ],
+          "links": [],
+          "featured": false,
+          "order": 0,
+          "content": "## 项目正文\n虚构项目",
+          "createdAt": 1792503265457,
+          "updatedAt": 1792503265457
+        },
+        "message": "项目已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/projects/save",
+      "status": 400,
+      "body": {
+        "error": "路径 audit 已被其他项目占用"
+      }
+    },
+    {
+      "url": "/api/manage/projects/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "project": {
+          "id": "9d935a69e3e183da",
+          "slug": "audit",
+          "title": "虚构审计项目",
+          "subtitle": "",
+          "description": "项目说明更新",
+          "cover": "",
+          "status": "已上线",
+          "tech": [
+            "Astro"
+          ],
+          "links": [],
+          "featured": false,
+          "order": 0,
+          "content": "## 项目正文\n虚构项目",
+          "createdAt": 1792503265457,
+          "updatedAt": 1792503265469
+        },
+        "message": "项目已保存。"
+      }
+    },
+    {
+      "url": "/api/public/projects/audit",
+      "status": 200,
+      "body": {
+        "project": {
+          "id": "9d935a69e3e183da",
+          "slug": "audit",
+          "title": "虚构审计项目",
+          "subtitle": "",
+          "description": "项目说明更新",
+          "cover": "",
+          "status": "已上线",
+          "tech": [
+            "Astro"
+          ],
+          "links": [],
+          "featured": false,
+          "order": 0,
+          "content": "## 项目正文\n虚构项目",
+          "createdAt": 1792503265457,
+          "updatedAt": 1792503265469,
+          "contentHtml": "<h2>项目正文</h2>\n<p>虚构项目</p>\n"
+        }
+      }
+    },
+    {
+      "url": "/api/public/friends/apply",
+      "status": 400,
+      "body": {
+        "error": "站点链接需以 http(s):// 开头"
+      }
+    },
+    {
+      "url": "/api/public/friends/apply",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "message": "申请已提交，等待站长审核。通过后将展示在友链页。"
+      }
+    },
+    {
+      "url": "/api/public/friends/apply",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "message": "申请已提交，等待站长审核。通过后将展示在友链页。"
+      }
+    },
+    {
+      "url": "/api/manage/friends",
+      "status": 200,
+      "body": {
+        "notice": "",
+        "items": [
+          {
+            "id": "381101c105d081fe",
+            "name": "虚构友链",
+            "url": "https://audit.example.invalid",
+            "avatar": "",
+            "desc": "",
+            "email": "reader@example.invalid",
+            "status": "pending",
+            "createdAt": 1792503265496,
+            "reviewedAt": 0
+          }
+        ]
+      }
+    },
+    {
+      "url": "/api/public/friends",
+      "status": 200,
+      "body": {
+        "notice": "",
+        "items": []
+      }
+    },
+    {
+      "url": "/api/manage/friends/review",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "381101c105d081fe",
+          "name": "虚构友链",
+          "url": "https://audit.example.invalid",
+          "avatar": "",
+          "desc": "",
+          "email": "reader@example.invalid",
+          "status": "approved",
+          "createdAt": 1792503265496,
+          "reviewedAt": 1792503265519
+        },
+        "message": "已通过，前台即刻展示"
+      }
+    },
+    {
+      "url": "/api/public/friends",
+      "status": 200,
+      "body": {
+        "notice": "",
+        "items": [
+          {
+            "id": "381101c105d081fe",
+            "name": "虚构友链",
+            "url": "https://audit.example.invalid",
+            "avatar": "",
+            "desc": "",
+            "email": "reader@example.invalid",
+            "status": "approved",
+            "createdAt": 1792503265496,
+            "reviewedAt": 1792503265519
+          }
+        ]
+      }
+    },
+    {
+      "url": "/api/manage/nav",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "nav": {
+          "categories": [
+            {
+              "id": "cat-1",
+              "name": "审计导航",
+              "links": [
+                {
+                  "name": "虚构站点",
+                  "url": "https://audit.example.invalid",
+                  "desc": "",
+                  "icon": ""
+                }
+              ]
+            }
+          ]
+        },
+        "message": "导航已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/announcements/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "audit-ann",
+          "title": "审计公告",
+          "content": "虚构公告",
+          "link": "",
+          "enabled": true,
+          "startAt": 0,
+          "endAt": 0,
+          "createdAt": 1792503265543
+        },
+        "message": "公告已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/announcements/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "audit-expired",
+          "title": "已过期",
+          "content": "",
+          "link": "",
+          "enabled": true,
+          "startAt": 0,
+          "endAt": 1,
+          "createdAt": 1792503265550
+        },
+        "message": "公告已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/profile",
+      "status": 200,
+      "body": {
+        "profile": {
+          "presentation": {
+            "siteName": "博客",
+            "author": "",
+            "description": "",
+            "avatar": "/covers/default-cover.svg",
+            "brandCaption": "PERSONAL JOURNAL",
+            "heroKicker": "THE LITTLE THINGS, KEPT.",
+            "heroIdentity": "个人博客 / 灵感与日常",
+            "heroWords": [],
+            "heroAboutLabel": "此间主人",
+            "scrollLabel": "慢慢往下看",
+            "writingTitle": "写下来的，\n都是片刻。",
+            "writingBody": "一些实践，一些想法。把走过的路和遇到的问题，慢慢写成自己的答案。",
+            "writingLinkLabel": "全部文章",
+            "statusTitle": "此时，\n还在生长。",
+            "statusBody": "让写作和创造成为日常。这是这个小站留下的足迹，也是下一次出发的起点。",
+            "statusLinkLabel": "看看日常",
+            "projectCardTitle": "想法，正在运行",
+            "projectCardBody": "工具、应用与小实验",
+            "bookmarkCardTitle": "值得收藏的角落",
+            "bookmarkCardBody": "让好用的东西，有处可寻",
+            "statusHeading": "把普通的日子，\n过成自己的",
+            "statusWords": [
+              "小小实验。",
+              "灵感花园。",
+              "独家记忆。"
+            ],
+            "projectsTitle": "让灵感，\n有迹可循。",
+            "projectsBody": "从一个念头到一个可以运行的作品。探索还没结束，欢迎来看看。",
+            "projectsLinkLabel": "所有项目",
+            "quoteText": "好奇心不必急着抵达，\n记录本身，就是一种答案。",
+            "quoteSignature": "KEEP EXPLORING · KEEP CREATING",
+            "footerQuote": "把好奇心留给世界，把日常留在这里。",
+            "featuredLimit": 6,
+            "projectsLimit": 6,
+            "showWriting": true,
+            "showStatus": true,
+            "showStats": true,
+            "showProjects": true,
+            "showQuote": true,
+            "defaultStyle": "life",
+            "defaultMode": "manual",
+            "defaultTheme": "auto",
+            "wallpaperMode": "gradient",
+            "navItems": [
+              "/",
+              "/archive/",
+              "/projects/",
+              "/notes/",
+              "/about/"
+            ]
+          },
+          "hero": {
+            "backgroundUrl": "",
+            "eyebrow": "",
+            "title": "",
+            "bio": "",
+            "actionLabel": "浏览文章",
+            "actionHref": "/archive/",
+            "socials": []
+          },
+          "about": {
+            "lead": "",
+            "subs": [],
+            "facts": [],
+            "socials": []
+          },
+          "footer": {
+            "tagline": "",
+            "links": [],
+            "copyright": "",
+            "attribution": ""
+          }
+        }
+      }
+    },
+    {
+      "url": "/api/manage/profile",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "profile": {
+          "presentation": {
+            "siteName": "博客",
+            "author": "",
+            "description": "",
+            "avatar": "/covers/default-cover.svg",
+            "brandCaption": "PERSONAL JOURNAL",
+            "heroKicker": "THE LITTLE THINGS, KEPT.",
+            "heroIdentity": "个人博客 / 灵感与日常",
+            "heroWords": [],
+            "heroAboutLabel": "此间主人",
+            "scrollLabel": "慢慢往下看",
+            "writingTitle": "写下来的，\n都是片刻。",
+            "writingBody": "一些实践，一些想法。把走过的路和遇到的问题，慢慢写成自己的答案。",
+            "writingLinkLabel": "全部文章",
+            "statusTitle": "此时，\n还在生长。",
+            "statusBody": "让写作和创造成为日常。这是这个小站留下的足迹，也是下一次出发的起点。",
+            "statusLinkLabel": "看看日常",
+            "projectCardTitle": "想法，正在运行",
+            "projectCardBody": "工具、应用与小实验",
+            "bookmarkCardTitle": "值得收藏的角落",
+            "bookmarkCardBody": "让好用的东西，有处可寻",
+            "statusHeading": "把普通的日子，\n过成自己的",
+            "statusWords": [
+              "小小实验。",
+              "灵感花园。",
+              "独家记忆。"
+            ],
+            "projectsTitle": "让灵感，\n有迹可循。",
+            "projectsBody": "从一个念头到一个可以运行的作品。探索还没结束，欢迎来看看。",
+            "projectsLinkLabel": "所有项目",
+            "quoteText": "好奇心不必急着抵达，\n记录本身，就是一种答案。",
+            "quoteSignature": "KEEP EXPLORING · KEEP CREATING",
+            "footerQuote": "把好奇心留给世界，把日常留在这里。",
+            "featuredLimit": 6,
+            "projectsLimit": 6,
+            "showWriting": true,
+            "showStatus": true,
+            "showStats": true,
+            "showProjects": true,
+            "showQuote": true,
+            "defaultStyle": "life",
+            "defaultMode": "manual",
+            "defaultTheme": "auto",
+            "wallpaperMode": "gradient",
+            "navItems": [
+              "/",
+              "/archive/",
+              "/projects/",
+              "/notes/",
+              "/about/"
+            ]
+          },
+          "hero": {
+            "backgroundUrl": "",
+            "eyebrow": "",
+            "title": "审计首页标题",
+            "bio": "",
+            "actionLabel": "浏览文章",
+            "actionHref": "/archive/",
+            "socials": []
+          },
+          "about": {
+            "lead": "",
+            "subs": [],
+            "facts": [],
+            "socials": []
+          },
+          "footer": {
+            "tagline": "",
+            "links": [],
+            "copyright": "",
+            "attribution": ""
+          }
+        },
+        "message": "页面内容已保存。"
+      }
+    },
+    {
+      "url": "/api/public/site-info",
+      "status": 200,
+      "body": {
+        "profile": {
+          "presentation": {
+            "siteName": "博客",
+            "author": "",
+            "description": "",
+            "avatar": "/covers/default-cover.svg",
+            "brandCaption": "PERSONAL JOURNAL",
+            "heroKicker": "THE LITTLE THINGS, KEPT.",
+            "heroIdentity": "个人博客 / 灵感与日常",
+            "heroWords": [],
+            "heroAboutLabel": "此间主人",
+            "scrollLabel": "慢慢往下看",
+            "writingTitle": "写下来的，\n都是片刻。",
+            "writingBody": "一些实践，一些想法。把走过的路和遇到的问题，慢慢写成自己的答案。",
+            "writingLinkLabel": "全部文章",
+            "statusTitle": "此时，\n还在生长。",
+            "statusBody": "让写作和创造成为日常。这是这个小站留下的足迹，也是下一次出发的起点。",
+            "statusLinkLabel": "看看日常",
+            "projectCardTitle": "想法，正在运行",
+            "projectCardBody": "工具、应用与小实验",
+            "bookmarkCardTitle": "值得收藏的角落",
+            "bookmarkCardBody": "让好用的东西，有处可寻",
+            "statusHeading": "把普通的日子，\n过成自己的",
+            "statusWords": [
+              "小小实验。",
+              "灵感花园。",
+              "独家记忆。"
+            ],
+            "projectsTitle": "让灵感，\n有迹可循。",
+            "projectsBody": "从一个念头到一个可以运行的作品。探索还没结束，欢迎来看看。",
+            "projectsLinkLabel": "所有项目",
+            "quoteText": "好奇心不必急着抵达，\n记录本身，就是一种答案。",
+            "quoteSignature": "KEEP EXPLORING · KEEP CREATING",
+            "footerQuote": "把好奇心留给世界，把日常留在这里。",
+            "featuredLimit": 6,
+            "projectsLimit": 6,
+            "showWriting": true,
+            "showStatus": true,
+            "showStats": true,
+            "showProjects": true,
+            "showQuote": true,
+            "defaultStyle": "life",
+            "defaultMode": "manual",
+            "defaultTheme": "auto",
+            "wallpaperMode": "gradient",
+            "navItems": [
+              "/",
+              "/archive/",
+              "/projects/",
+              "/notes/",
+              "/about/"
+            ]
+          },
+          "hero": {
+            "backgroundUrl": "",
+            "eyebrow": "",
+            "title": "审计首页标题",
+            "bio": "",
+            "actionLabel": "浏览文章",
+            "actionHref": "/archive/",
+            "socials": []
+          },
+          "about": {
+            "lead": "",
+            "subs": [],
+            "facts": [],
+            "socials": []
+          },
+          "footer": {
+            "tagline": "",
+            "links": [],
+            "copyright": "",
+            "attribution": ""
+          }
+        },
+        "nav": {
+          "categories": [
+            {
+              "id": "cat-1",
+              "name": "审计导航",
+              "links": [
+                {
+                  "name": "虚构站点",
+                  "url": "https://audit.example.invalid",
+                  "desc": "",
+                  "icon": ""
+                }
+              ]
+            }
+          ]
+        },
+        "announcements": [
+          {
+            "id": "audit-ann",
+            "title": "审计公告",
+            "content": "虚构公告",
+            "link": "",
+            "enabled": true,
+            "startAt": 0,
+            "endAt": 0,
+            "createdAt": 1792503265543
+          }
+        ]
+      }
+    },
+    {
+      "url": "/api/manage/site-meta",
+      "status": 400,
+      "body": {
+        "error": "开站日期无效"
+      }
+    },
+    {
+      "url": "/api/manage/site-meta",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "meta": {
+          "since": "2026-01-01"
+        },
+        "message": "开站日期已保存，前台即时生效。"
+      }
+    },
+    {
+      "url": "/api/public/site-stats",
+      "status": 200,
+      "body": {
+        "since": "2026-01-01",
+        "posts": 1,
+        "comments": 0,
+        "totalViews": 18,
+        "todayViews": 18
+      }
+    },
+    {
+      "url": "/api/manage/announcements/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "audit-concurrent-0",
+          "title": "并发0",
+          "content": "",
+          "link": "",
+          "enabled": false,
+          "startAt": 0,
+          "endAt": 0,
+          "createdAt": 1792503265600
+        },
+        "message": "公告已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/announcements/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "audit-concurrent-1",
+          "title": "并发1",
+          "content": "",
+          "link": "",
+          "enabled": false,
+          "startAt": 0,
+          "endAt": 0,
+          "createdAt": 1792503265604
+        },
+        "message": "公告已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/announcements/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "audit-concurrent-2",
+          "title": "并发2",
+          "content": "",
+          "link": "",
+          "enabled": false,
+          "startAt": 0,
+          "endAt": 0,
+          "createdAt": 1792503265610
+        },
+        "message": "公告已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/announcements/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "audit-concurrent-3",
+          "title": "并发3",
+          "content": "",
+          "link": "",
+          "enabled": false,
+          "startAt": 0,
+          "endAt": 0,
+          "createdAt": 1792503265613
+        },
+        "message": "公告已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/announcements/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "audit-concurrent-4",
+          "title": "并发4",
+          "content": "",
+          "link": "",
+          "enabled": false,
+          "startAt": 0,
+          "endAt": 0,
+          "createdAt": 1792503265617
+        },
+        "message": "公告已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/announcements/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "audit-concurrent-5",
+          "title": "并发5",
+          "content": "",
+          "link": "",
+          "enabled": false,
+          "startAt": 0,
+          "endAt": 0,
+          "createdAt": 1792503265620
+        },
+        "message": "公告已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/announcements/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "audit-concurrent-6",
+          "title": "并发6",
+          "content": "",
+          "link": "",
+          "enabled": false,
+          "startAt": 0,
+          "endAt": 0,
+          "createdAt": 1792503265623
+        },
+        "message": "公告已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/announcements/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "audit-concurrent-7",
+          "title": "并发7",
+          "content": "",
+          "link": "",
+          "enabled": false,
+          "startAt": 0,
+          "endAt": 0,
+          "createdAt": 1792503265627
+        },
+        "message": "公告已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/announcements/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "audit-concurrent-0",
+          "title": "重复",
+          "content": "",
+          "link": "",
+          "enabled": false,
+          "startAt": 0,
+          "endAt": 0,
+          "createdAt": 1792503265635
+        },
+        "message": "公告已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/announcements/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "audit-concurrent-0",
+          "title": "重复",
+          "content": "",
+          "link": "",
+          "enabled": false,
+          "startAt": 0,
+          "endAt": 0,
+          "createdAt": 1792503265639
+        },
+        "message": "公告已保存。"
+      }
+    },
+    {
+      "url": "/api/manage/announcements/save",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "item": {
+          "id": "audit-concurrent-0",
+          "title": "重复",
+          "content": "",
+          "link": "",
+          "enabled": false,
+          "startAt": 0,
+          "endAt": 0,
+          "createdAt": 1792503265643
+        },
+        "message": "公告已保存。"
+      }
+    },
+    {
+      "url": "/api/public/twikoo",
+      "status": 200,
+      "body": {
+        "id": "effd100ee6c241038eca1837c2414bec",
+        "code": 0,
+        "accessToken": "[REDACTED]"
+      }
+    },
+    {
+      "url": "/api/public/site-stats",
+      "status": 200,
+      "body": {
+        "since": "2026-01-01",
+        "posts": 1,
+        "comments": 1,
+        "totalViews": 18,
+        "todayViews": 18
+      }
+    },
+    {
+      "url": "/api/manage/comments/status",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "code": 0,
+        "updated": 1,
+        "message": "评论状态已更新。"
+      }
+    },
+    {
+      "url": "/api/public/site-stats",
+      "status": 200,
+      "body": {
+        "since": "2026-01-01",
+        "posts": 1,
+        "comments": 0,
+        "totalViews": 18,
+        "todayViews": 18
+      }
+    },
+    {
+      "url": "/api/manage/comments/status",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "code": 0,
+        "updated": 1,
+        "message": "评论状态已更新。"
+      }
+    },
+    {
+      "url": "/api/manage/comments/reply",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "id": "ee91f1daca2a48a295548f238517250a",
+        "code": 0,
+        "message": "回复已发布。"
+      }
+    },
+    {
+      "url": "/api/public/twikoo",
+      "status": 200,
+      "body": {
+        "code": 0,
+        "data": [
+          {
+            "id": "effd100ee6c241038eca1837c2414bec",
+            "nick": "虚构审计读者",
+            "mailMd5": "ca7ec92d4a365bd56439b053adea0f82",
+            "link": "",
+            "comment": "<p>审计评论</p>",
+            "os": " ",
+            "browser": " ",
+            "ipRegion": "",
+            "master": false,
+            "like": 0,
+            "ups": 0,
+            "downs": 0,
+            "liked": false,
+            "disliked": false,
+            "replies": [
+              {
+                "id": "ee91f1daca2a48a295548f238517250a",
+                "nick": "虚构管理员",
+                "mailMd5": "266ef63041cdcfe4b19fe77278f3b4af",
+                "link": "",
+                "comment": "<p>审计后台回复</p>\n",
+                "os": " ",
+                "browser": " ",
+                "ipRegion": "",
+                "master": true,
+                "like": 0,
+                "ups": 0,
+                "downs": 0,
+                "liked": false,
+                "disliked": false,
+                "replies": [],
+                "rid": "effd100ee6c241038eca1837c2414bec",
+                "pid": "effd100ee6c241038eca1837c2414bec",
+                "ruser": "虚构审计读者",
+                "isSpam": false,
+                "isOwner": false,
+                "created": 1792503266222,
+                "updated": 1792503266222
+              }
+            ],
+            "pid": "",
+            "ruser": null,
+            "isSpam": false,
+            "isOwner": false,
+            "created": 1792503265651,
+            "updated": 1792503266193
+          }
+        ],
+        "more": false,
+        "count": 1,
+        "accessToken": "[REDACTED]"
+      }
+    },
+    {
+      "url": "/api/public/site-stats",
+      "status": 200,
+      "body": {
+        "since": "2026-01-01",
+        "posts": 1,
+        "comments": 2,
+        "totalViews": 18,
+        "todayViews": 18
+      }
+    },
+    {
+      "url": "/api/build",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "log": "\n> Akiro_Website@0.0.1 build\n> astro build\n\n21:34:27 [vite] Re-optimizing dependencies because vite config has changed\n21:34:28 [content] Syncing content\n21:34:28 [content] Synced content\n21:34:28 [types] Generated 603ms\n21:34:28 [build] output: \"static\"\n21:34:28 [build] mode: \"static\"\n21:34:28 [build] directory: C:\\Users\\LJB11\\AppData\\Local\\Temp\\blog-audit-2026-10-20_212951-flows\\dist\\\n21:34:28 [build] Collecting build info...\n21:34:28 [build] ✓ Completed in 638ms.\n21:34:28 [build] Building static entrypoints...\n21:34:28 [vite] ✓ built in 308ms\n21:34:28 [vite] ✓ built in 83ms\n21:34:28 [build] Rearranging server assets...\n\n generating static routes \n21:34:28   ├─ /404.html (+16ms) \n21:34:28   ├─ /about/index.html (+9ms) \n21:34:28   ├─ /archive/index.html (+6ms) \n21:34:28   ├─ /categories/审计分类/index.html (+5ms) \n21:34:28   ├─ /friends/index.html (+4ms) \n21:34:29   ├─ /nav/index.html (+5ms) \n21:34:29   ├─ /notes/index.html (+5ms) \n21:34:29   ├─ /posts/审计文章/index.html (+5ms) \n21:34:29   ├─ /projects/audit/index.html (+13ms) \n21:34:29   ├─ /projects/index.html (+6ms) \n21:34:29   ├─ /robots.txt (+2ms) \n21:34:29   ├─ /rss.xml (+3ms) \n21:34:29   ├─ /search/index.html (+4ms) \n21:34:29   ├─ /search.json (+2ms) \n21:34:29   ├─ /sitemap.xml (+2ms) \n21:34:29   ├─ /tags/审计标签/index.html (+4ms) \n21:34:29   ├─ /tags/中文/index.html (+3ms) \n21:34:29   ├─ /index.html (+7ms) \n21:34:29 ✓ Completed in 138ms.\n\n21:34:29 [build] ✓ Completed in 592ms.\n21:34:29 [build] 14 page(s) built in 1.24s\n21:34:29 [build] Complete!\n\n\n—— 数据备份 ——\n备份未启用（BACKUP_ENABLED=false），已跳过。",
+        "release": "2026-10-20T13-34-29-118Z",
+        "cacheRebuilt": false,
+        "backup": {
+          "ok": true,
+          "committed": false,
+          "pushed": false,
+          "dir": "C:\\Users\\LJB11\\AppData\\Local\\Temp\\blog-audit-2026-10-20_212951-flows-backup-tmp",
+          "skipped": true,
+          "summary": "备份未启用（BACKUP_ENABLED=false），已跳过。"
+        },
+        "message": "构建成功并已发布。数据备份：备份未启用（BACKUP_ENABLED=false），已跳过。"
+      }
+    },
+    {
+      "url": "/api/save/posts",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "id": "审计文章",
+        "message": "已保存到文件。发布需到「构建发布」。"
+      }
+    },
+    {
+      "url": "/api/build",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "log": "\n> Akiro_Website@0.0.1 build\n> astro build\n\n21:34:58 [vite] Re-optimizing dependencies because vite config has changed\n21:34:59 [content] Syncing content\n21:34:59 [content] Synced content\n21:34:59 [types] Generated 693ms\n21:34:59 [build] output: \"static\"\n21:34:59 [build] mode: \"static\"\n21:34:59 [build] directory: C:\\Users\\LJB11\\AppData\\Local\\Temp\\blog-audit-2026-10-20_212951-flows\\dist\\\n21:34:59 [build] Collecting build info...\n21:34:59 [build] ✓ Completed in 736ms.\n21:34:59 [build] Building static entrypoints...\n21:34:59 [vite] ✓ built in 361ms\n21:34:59 [vite] ✓ built in 102ms\n21:34:59 [build] Rearranging server assets...\n\n generating static routes \n21:34:59   ├─ /404.html (+17ms) \n21:34:59   ├─ /about/index.html (+10ms) \n21:34:59   ├─ /archive/index.html (+9ms) \n21:34:59   ├─ /categories/新分类/index.html (+7ms) \n21:34:59   ├─ /friends/index.html (+6ms) \n21:34:59   ├─ /nav/index.html (+6ms) \n21:34:59   ├─ /notes/index.html (+7ms) \n21:34:59   ├─ /posts/审计文章/index.html (+6ms) \n21:34:59   ├─ /projects/audit/index.html (+13ms) \n21:34:59   ├─ /projects/index.html (+6ms) \n21:34:59   ├─ /robots.txt (+2ms) \n21:34:59   ├─ /rss.xml (+3ms) \n21:34:59   ├─ /search/index.html (+5ms) \n21:34:59   ├─ /search.json (+3ms) \n21:34:59   ├─ /sitemap.xml (+3ms) \n21:34:59   ├─ /tags/新标签/index.html (+4ms) \n21:34:59   ├─ /index.html (+9ms) \n21:34:59 ✓ Completed in 156ms.\n\n21:34:59 [build] ✓ Completed in 694ms.\n21:34:59 [build] 13 page(s) built in 1.43s\n21:34:59 [build] Complete!\n\n\n—— 数据备份 ——\n备份未启用（BACKUP_ENABLED=false），已跳过。",
+        "release": "2026-10-20T13-34-59-957Z",
+        "cacheRebuilt": false,
+        "backup": {
+          "ok": true,
+          "committed": false,
+          "pushed": false,
+          "dir": "C:\\Users\\LJB11\\AppData\\Local\\Temp\\blog-audit-2026-10-20_212951-flows-backup-tmp",
+          "skipped": true,
+          "summary": "备份未启用（BACKUP_ENABLED=false），已跳过。"
+        },
+        "message": "构建成功并已发布。数据备份：备份未启用（BACKUP_ENABLED=false），已跳过。"
+      }
+    },
+    {
+      "url": "/api/save/posts",
+      "status": 403,
+      "body": {
+        "error": "CSRF 校验失败，请刷新页面后重试。"
+      }
+    },
+    {
+      "url": "/api/delete/posts",
+      "status": 403,
+      "body": {
+        "error": "CSRF 校验失败，请刷新页面后重试。"
+      }
+    },
+    {
+      "url": "/api/build",
+      "status": 403,
+      "body": {
+        "error": "CSRF 校验失败，请刷新页面后重试。"
+      }
+    },
+    {
+      "url": "/api/build/rollback",
+      "status": 403,
+      "body": {
+        "error": "CSRF 校验失败，请刷新页面后重试。"
+      }
+    },
+    {
+      "url": "/api/list/posts",
+      "status": 200,
+      "body": {
+        "items": [
+          {
+            "id": "审计文章",
+            "filePath": "C:\\Users\\LJB11\\AppData\\Local\\Temp\\blog-audit-2026-10-20_212951-flows\\src\\content\\posts\\审计文章.md",
+            "data": {
+              "title": "审计标题 V2",
+              "date": "2026-10-20 08:00",
+              "categories": [
+                "新分类"
+              ],
+              "tags": [
+                "新标签"
+              ],
+              "cover": "/uploads/1792503265393-audit.png"
+            },
+            "body": "## 新章节\n审计正文 V2\n",
+            "raw": "---\ntitle: 审计标题 V2\ndate: '2026-10-20 08:00'\ncategories:\n  - 新分类\ntags:\n  - 新标签\ncover: /uploads/1792503265393-audit.png\n---\n## 新章节\n审计正文 V2\n"
+          },
+          {
+            "id": "audit-draft",
+            "filePath": "C:\\Users\\LJB11\\AppData\\Local\\Temp\\blog-audit-2026-10-20_212951-flows\\src\\content\\posts\\audit-draft.md",
+            "data": {
+              "title": "DRAFT_AUDIT_SENTINEL",
+              "date": "2026-10-20 08:00",
+              "categories": [
+                "审计分类"
+              ],
+              "tags": [
+                "审计标签",
+                "中文"
+              ],
+              "draft": true
+            },
+            "body": "DRAFT_BODY_SENTINEL\n",
+            "raw": "---\ntitle: DRAFT_AUDIT_SENTINEL\ndate: '2026-10-20 08:00'\ncategories:\n  - 审计分类\ntags:\n  - 审计标签\n  - 中文\ndraft: true\n---\nDRAFT_BODY_SENTINEL\n"
+          }
+        ]
+      }
+    },
+    {
+      "url": "/api/delete/posts",
+      "status": 403,
+      "body": {
+        "error": "CSRF 校验失败，请刷新页面后重试。"
+      }
+    },
+    {
+      "url": "/api/manage/comments/delete",
+      "status": 403,
+      "body": {
+        "error": "CSRF 校验失败，请刷新页面后重试。"
+      }
+    },
+    {
+      "url": "/api/logout",
+      "status": 403,
+      "body": {
+        "error": "CSRF 校验失败，请刷新页面后重试。"
+      }
+    }
+  ],
+  "browserEvents": [
+    {
+      "type": "requestfailed",
+      "url": "https://owo.imaegoo.com/owo.json",
+      "error": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "http",
+      "url": "http://127.0.0.1:4521/does-not-exist/",
+      "status": 404
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "requestfailed",
+      "url": "https://owo.imaegoo.com/owo.json",
+      "error": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "http",
+      "url": "http://127.0.0.1:4521/does-not-exist/",
+      "status": 404
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    },
+    {
+      "type": "requestfailed",
+      "url": "https://owo.imaegoo.com/owo.json",
+      "error": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "requestfailed",
+      "url": "https://cravatar.cn/avatar/ca7ec92d4a365bd56439b053adea0f82?d=initials&name=%E8%99%9A%E6%9E%84%E5%AE%A1%E8%AE%A1%E8%AF%BB%E8%80%85",
+      "error": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "requestfailed",
+      "url": "https://cravatar.cn/avatar/266ef63041cdcfe4b19fe77278f3b4af?d=initials&name=%E8%99%9A%E6%9E%84%E7%AE%A1%E7%90%86%E5%91%98",
+      "error": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "requestfailed",
+      "url": "https://owo.imaegoo.com/owo.json",
+      "error": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "requestfailed",
+      "url": "https://cravatar.cn/avatar/ca7ec92d4a365bd56439b053adea0f82?d=initials&name=%E8%99%9A%E6%9E%84%E5%AE%A1%E8%AE%A1%E8%AF%BB%E8%80%85",
+      "error": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "requestfailed",
+      "url": "https://cravatar.cn/avatar/266ef63041cdcfe4b19fe77278f3b4af?d=initials&name=%E8%99%9A%E6%9E%84%E7%AE%A1%E7%90%86%E5%91%98",
+      "error": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "requestfailed",
+      "url": "https://cravatar.cn/avatar/ca7ec92d4a365bd56439b053adea0f82?d=initials&name=%E8%99%9A%E6%9E%84%E5%AE%A1%E8%AE%A1%E8%AF%BB%E8%80%85",
+      "error": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "requestfailed",
+      "url": "https://cravatar.cn/avatar/266ef63041cdcfe4b19fe77278f3b4af?d=initials&name=%E8%99%9A%E6%9E%84%E7%AE%A1%E7%90%86%E5%91%98",
+      "error": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "requestfailed",
+      "url": "https://owo.imaegoo.com/owo.json",
+      "error": "net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    },
+    {
+      "type": "console",
+      "text": "Failed to load resource: net::ERR_BLOCKED_BY_CLIENT.Inspector"
+    }
+  ]
+}

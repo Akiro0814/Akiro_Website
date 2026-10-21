@@ -1,0 +1,15 @@
+
+> Akiro_Website@0.0.1 test:public-ui
+> node scripts/check-public-ui.mjs
+
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+page.evaluate: Execution context was destroyed, most likely because of a navigation
+    at C:\Users\LJB11\AppData\Local\Temp\blog-audit-2026-10-20_212951\scripts\check-public-ui.mjs:101:14 {
+  log: [],
+  name: 'Error'
+}
+
+Node.js v24.19.0

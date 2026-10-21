@@ -1,0 +1,54 @@
+
+> Akiro_Website@0.0.1 build
+> astro build
+
+21:39:12 [content] Syncing content
+21:39:12 [WARN] [glob-loader] No files found matching "**/*.md" in directory "src\content\posts"
+21:39:12 [WARN] [glob-loader] No files found matching "**/*.md" in directory "src\content\notes"
+21:39:12 [content] Synced content
+21:39:12 [types] Generated 553ms
+21:39:12 [build] output: "static"
+21:39:12 [build] mode: "static"
+21:39:12 [build] directory: C:\Users\LJB11\AppData\Local\Temp\blog-audit-2026-10-20_212951-flows\dist\
+21:39:12 [build] Collecting build info...
+21:39:12 [build] ✓ Completed in 594ms.
+21:39:12 [build] Building static entrypoints...
+21:39:12 [vite] ✓ built in 327ms
+21:39:12 [vite] ✓ built in 92ms
+21:39:12 [build] Rearranging server assets...
+
+ generating static routes 
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+21:39:12   ├─ /404.html (+16ms) 
+21:39:12   ├─ /about/index.htmlThe collection "posts" does not exist or is empty. Please check your content config file for errors.
+ (+9ms) 
+21:39:12   ├─ /archive/index.htmlThe collection "posts" does not exist or is empty. Please check your content config file for errors.
+ (+6ms) 
+21:39:12   ├─ /friends/index.html (+13ms) 
+21:39:12   ├─ /nav/index.html (+6ms) 
+21:39:12   ├─ /notes/index.htmlThe collection "notes" does not exist or is empty. Please check your content config file for errors.
+ (+5ms) 
+21:39:12   ├─ /projects/audit/index.html (+12ms) 
+21:39:12   ├─ /projects/index.html (+5ms) 
+21:39:12   ├─ /robots.txt (+3ms) 
+21:39:12   ├─ /rss.xmlThe collection "posts" does not exist or is empty. Please check your content config file for errors.
+ (+3ms) 
+21:39:12   ├─ /search/index.html (+5ms) 
+21:39:12   ├─ /search.jsonThe collection "posts" does not exist or is empty. Please check your content config file for errors.
+ (+2ms) 
+21:39:12   ├─ /sitemap.xmlThe collection "posts" does not exist or is empty. Please check your content config file for errors.
+ (+3ms) 
+21:39:12   ├─ /index.htmlThe collection "posts" does not exist or is empty. Please check your content config file for errors.
+The collection "posts" does not exist or is empty. Please check your content config file for errors.
+ (+8ms) 
+21:39:13 ✓ Completed in 133ms.
+
+21:39:13 [build] ✓ Completed in 615ms.
+21:39:13 [build] 10 page(s) built in 1.21s
+21:39:13 [build] Complete!
+
+
+—— 数据备份 ——
+备份未启用（BACKUP_ENABLED=false），已跳过。

@@ -1,0 +1,7 @@
+
+> Akiro_Website@0.0.1 test:alignment-ui
+> node scripts/check-alignment-ui.mjs
+
+✓ 后台真实保存配置、开关与背景模式，文案预览和保存状态正确
+✓ 页面真实进场动效会完成，刷新后配置仍保留
+✓ 减少动态效果保持可见，390px 设置页无横向溢出，无浏览器脚本异常

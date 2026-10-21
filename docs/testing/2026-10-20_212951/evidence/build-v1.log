@@ -1,0 +1,45 @@
+
+> Akiro_Website@0.0.1 build
+> astro build
+
+21:38:29 [content] Syncing content
+21:38:30 [content] Synced content
+21:38:30 [types] Generated 544ms
+21:38:30 [build] output: "static"
+21:38:30 [build] mode: "static"
+21:38:30 [build] directory: C:\Users\LJB11\AppData\Local\Temp\blog-audit-2026-10-20_212951-flows\dist\
+21:38:30 [build] Collecting build info...
+21:38:30 [build] ✓ Completed in 580ms.
+21:38:30 [build] Building static entrypoints...
+21:38:30 [vite] ✓ built in 319ms
+21:38:30 [vite] ✓ built in 85ms
+21:38:30 [build] Rearranging server assets...
+
+ generating static routes 
+21:38:30   ├─ /404.html (+16ms) 
+21:38:30   ├─ /about/index.html (+9ms) 
+21:38:30   ├─ /archive/index.html (+7ms) 
+21:38:30   ├─ /categories/审计分类/index.html (+5ms) 
+21:38:30   ├─ /friends/index.html (+5ms) 
+21:38:30   ├─ /nav/index.html (+6ms) 
+21:38:30   ├─ /notes/index.html (+6ms) 
+21:38:30   ├─ /posts/审计文章/index.html (+5ms) 
+21:38:30   ├─ /projects/audit/index.html (+12ms) 
+21:38:30   ├─ /projects/index.html (+6ms) 
+21:38:30   ├─ /robots.txt (+2ms) 
+21:38:30   ├─ /rss.xml (+3ms) 
+21:38:30   ├─ /search/index.html (+4ms) 
+21:38:30   ├─ /search.json (+2ms) 
+21:38:30   ├─ /sitemap.xml (+3ms) 
+21:38:30   ├─ /tags/审计标签/index.html (+4ms) 
+21:38:30   ├─ /tags/中文/index.html (+4ms) 
+21:38:30   ├─ /index.html (+8ms) 
+21:38:30 ✓ Completed in 146ms.
+
+21:38:30 [build] ✓ Completed in 611ms.
+21:38:30 [build] 14 page(s) built in 1.21s
+21:38:30 [build] Complete!
+
+
+—— 数据备份 ——
+备份未启用（BACKUP_ENABLED=false），已跳过。

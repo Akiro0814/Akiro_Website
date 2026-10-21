@@ -1,0 +1,69 @@
+AUTH-01 通过 匿名管理接口及页面保护
+EMPTY-01 通过 空博客 API 与已有构建索引均为空
+empty-1440-%2F 通过 empty 1440 / HTTP/布局/页面脚本
+empty-1440-%2Farchive%2F 通过 empty 1440 /archive/ HTTP/布局/页面脚本
+empty-1440-%2Fnotes%2F 通过 empty 1440 /notes/ HTTP/布局/页面脚本
+empty-1440-%2Fprojects%2F 通过 empty 1440 /projects/ HTTP/布局/页面脚本
+empty-1440-%2Fnav%2F 通过 empty 1440 /nav/ HTTP/布局/页面脚本
+empty-1440-%2Ffriends%2F 通过 empty 1440 /friends/ HTTP/布局/页面脚本
+empty-1440-%2Fabout%2F 通过 empty 1440 /about/ HTTP/布局/页面脚本
+empty-1440-%2Fsearch%2F 通过 empty 1440 /search/ HTTP/布局/页面脚本
+empty-1440-%2Fdoes-not-exist%2F 通过 empty 1440 /does-not-exist/ HTTP/布局/页面脚本
+empty-390-%2F 通过 empty 390 / HTTP/布局/页面脚本
+empty-390-%2Farchive%2F 通过 empty 390 /archive/ HTTP/布局/页面脚本
+empty-390-%2Fnotes%2F 通过 empty 390 /notes/ HTTP/布局/页面脚本
+empty-390-%2Fprojects%2F 通过 empty 390 /projects/ HTTP/布局/页面脚本
+empty-390-%2Fnav%2F 通过 empty 390 /nav/ HTTP/布局/页面脚本
+empty-390-%2Ffriends%2F 通过 empty 390 /friends/ HTTP/布局/页面脚本
+empty-390-%2Fabout%2F 通过 empty 390 /about/ HTTP/布局/页面脚本
+empty-390-%2Fsearch%2F 通过 empty 390 /search/ HTTP/布局/页面脚本
+empty-390-%2Fdoes-not-exist%2F 通过 empty 390 /does-not-exist/ HTTP/布局/页面脚本
+AUTH-02 通过 错误凭据拒绝、正确凭据浏览器登录、Cookie 属性
+AUTH-03 通过 登录后写入缺少或错误 CSRF 均拒绝
+VAL-01 通过 文章必填标题、非法日期、未知集合、无效 ID
+UPLOAD-01 通过 拒绝伪图片、不支持类型、空文件及超 10MB
+UPLOAD-02 通过 图片上传、去重、SVG 净化并核实落盘
+DATA-01 通过 保存公开文章和草稿，落盘成功、发布前静态页面不变
+DATA-02 通过 重复创建同一路径应拒绝覆盖，已有文件保留
+MEDIA-03 通过 被文章引用的图片禁止删除
+DYN-01 通过 项目创建与更新、必填校验、重复 slug 拒绝
+DYN-02 通过 友链申请去重、待审隐藏、审核后即时公开及落盘
+DYN-03 通过 导航/公告/个人资料/日期设置保存及公开 API 对照
+DYN-04 通过 并发 8 次公告独立新增与重复 ID 幂等
+COMMENT-01 通过 真实本地 Twikoo 提交/隐藏/回复/公开计数一致
+PUB-01 通过 完整真实构建发布、静态前台与草稿过滤
+normal-1440-%2F 通过 normal 1440 / HTTP/布局/页面脚本
+normal-1440-%2Farchive%2F 通过 normal 1440 /archive/ HTTP/布局/页面脚本
+normal-1440-%2Fposts%2F%E5%AE%A1%E8%AE%A1%E6%96%87%E7%AB%A0%2F 通过 normal 1440 /posts/审计文章/ HTTP/布局/页面脚本
+normal-1440-%2Fcategories%2F%E5%AE%A1%E8%AE%A1%E5%88%86%E7%B1%BB%2F 通过 normal 1440 /categories/审计分类/ HTTP/布局/页面脚本
+normal-1440-%2Ftags%2F%E5%AE%A1%E8%AE%A1%E6%A0%87%E7%AD%BE%2F 通过 normal 1440 /tags/审计标签/ HTTP/布局/页面脚本
+normal-1440-%2Fnotes%2F 通过 normal 1440 /notes/ HTTP/布局/页面脚本
+normal-1440-%2Fprojects%2F 通过 normal 1440 /projects/ HTTP/布局/页面脚本
+normal-1440-%2Fprojects%2Faudit%2F 通过 normal 1440 /projects/audit/ HTTP/布局/页面脚本
+normal-1440-%2Fnav%2F 通过 normal 1440 /nav/ HTTP/布局/页面脚本
+normal-1440-%2Ffriends%2F 通过 normal 1440 /friends/ HTTP/布局/页面脚本
+normal-1440-%2Fabout%2F 通过 normal 1440 /about/ HTTP/布局/页面脚本
+normal-1440-%2Fsearch%2F 通过 normal 1440 /search/ HTTP/布局/页面脚本
+normal-390-%2F 通过 normal 390 / HTTP/布局/页面脚本
+normal-390-%2Farchive%2F 通过 normal 390 /archive/ HTTP/布局/页面脚本
+normal-390-%2Fposts%2F%E5%AE%A1%E8%AE%A1%E6%96%87%E7%AB%A0%2F 通过 normal 390 /posts/审计文章/ HTTP/布局/页面脚本
+normal-390-%2Fcategories%2F%E5%AE%A1%E8%AE%A1%E5%88%86%E7%B1%BB%2F 通过 normal 390 /categories/审计分类/ HTTP/布局/页面脚本
+normal-390-%2Ftags%2F%E5%AE%A1%E8%AE%A1%E6%A0%87%E7%AD%BE%2F 通过 normal 390 /tags/审计标签/ HTTP/布局/页面脚本
+normal-390-%2Fnotes%2F 通过 normal 390 /notes/ HTTP/布局/页面脚本
+normal-390-%2Fprojects%2F 通过 normal 390 /projects/ HTTP/布局/页面脚本
+normal-390-%2Fprojects%2Faudit%2F 通过 normal 390 /projects/audit/ HTTP/布局/页面脚本
+normal-390-%2Fnav%2F 通过 normal 390 /nav/ HTTP/布局/页面脚本
+normal-390-%2Ffriends%2F 通过 normal 390 /friends/ HTTP/布局/页面脚本
+normal-390-%2Fabout%2F 通过 normal 390 /about/ HTTP/布局/页面脚本
+normal-390-%2Fsearch%2F 通过 normal 390 /search/ HTTP/布局/页面脚本
+UI-01 通过 前台搜索标题中文命中、空结果、主题切换刷新持久化及键盘焦点
+UI-02 通过 减少动画偏好、表单标签和动态模块真实 UI
+DATA-03 通过 修改标题正文分类标签封面，发布后旧索引值替换
+DATA-04 通过 服务重启/浏览器刷新后内容、动态数据、评论仍一致
+DATA-05 失败 撤回为草稿后发布，页面/搜索/RSS/sitemap 均移除
+DATA-06 通过 删除进回收站、恢复、重新发布并核对底层文件
+PUB-02 通过 人为无效 frontmatter 导致构建失败，当前可访问版本保持原样
+PUB-03 失败 回滚静态快照后公开统计与发布内容保持一致
+DATA-07 失败 清空全部内容、发布清理 Astro 缓存与旧产物，重启不复活
+COMMENT-02 通过 评论删除联动回复计数，重启后不恢复
+AUTH-04 通过 退出后旧会话、错误 Cookie、管理接口均失效

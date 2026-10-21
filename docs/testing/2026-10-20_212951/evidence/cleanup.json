@@ -1,0 +1,21 @@
+{
+  "time": "2026-10-20T21:42:37.737741+08:00",
+  "directories": [
+    {
+      "path": "C:\\Users\\LJB11\\AppData\\Local\\Temp\\blog-audit-2026-10-20_212951",
+      "removed": true,
+      "unlinkedBeforeDelete": [
+        "node_modules"
+      ]
+    },
+    {
+      "path": "C:\\Users\\LJB11\\AppData\\Local\\Temp\\blog-audit-2026-10-20_212951-flows",
+      "removed": true,
+      "unlinkedBeforeDelete": [
+        "current",
+        "node_modules"
+      ]
+    }
+  ],
+  "testScriptSyntax": "all parse successfully"
+}

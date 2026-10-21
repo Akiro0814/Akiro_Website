@@ -1,0 +1,44 @@
+
+> Akiro_Website@0.0.1 build
+> astro build
+
+21:39:00 [content] Syncing content
+21:39:00 [content] Synced content
+21:39:00 [types] Generated 498ms
+21:39:00 [build] output: "static"
+21:39:00 [build] mode: "static"
+21:39:00 [build] directory: C:\Users\LJB11\AppData\Local\Temp\blog-audit-2026-10-20_212951-flows\dist\
+21:39:00 [build] Collecting build info...
+21:39:00 [build] ✓ Completed in 535ms.
+21:39:00 [build] Building static entrypoints...
+21:39:00 [vite] ✓ built in 317ms
+21:39:01 [vite] ✓ built in 85ms
+21:39:01 [build] Rearranging server assets...
+
+ generating static routes 
+21:39:01   ├─ /404.html (+16ms) 
+21:39:01   ├─ /about/index.html (+9ms) 
+21:39:01   ├─ /archive/index.html (+7ms) 
+21:39:01   ├─ /categories/新分类/index.html (+5ms) 
+21:39:01   ├─ /friends/index.html (+5ms) 
+21:39:01   ├─ /nav/index.html (+6ms) 
+21:39:01   ├─ /notes/index.html (+6ms) 
+21:39:01   ├─ /posts/审计文章/index.html (+5ms) 
+21:39:01   ├─ /projects/audit/index.html (+12ms) 
+21:39:01   ├─ /projects/index.html (+5ms) 
+21:39:01   ├─ /robots.txt (+2ms) 
+21:39:01   ├─ /rss.xml (+2ms) 
+21:39:01   ├─ /search/index.html (+5ms) 
+21:39:01   ├─ /search.json (+2ms) 
+21:39:01   ├─ /sitemap.xml (+3ms) 
+21:39:01   ├─ /tags/新标签/index.html (+4ms) 
+21:39:01   ├─ /index.html (+8ms) 
+21:39:01 ✓ Completed in 140ms.
+
+21:39:01 [build] ✓ Completed in 603ms.
+21:39:01 [build] 13 page(s) built in 1.14s
+21:39:01 [build] Complete!
+
+
+—— 数据备份 ——
+备份未启用（BACKUP_ENABLED=false），已跳过。

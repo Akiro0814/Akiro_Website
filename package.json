@@ -19,6 +19,7 @@
     "test:admin-ui": "node scripts/check-admin-ui.mjs",
     "test:admin-segments": "node scripts/check-admin-segments.mjs",
     "test:public-ui": "node scripts/check-public-ui.mjs",
+    "test:empty-ui": "node scripts/check-empty-ui.mjs",
     "test:ui-polish": "node scripts/check-ui-polish.mjs",
     "test:alignment-ui": "node scripts/check-alignment-ui.mjs",
     "test:managed-player": "node scripts/check-managed-player.mjs",

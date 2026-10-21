@@ -57,7 +57,7 @@ const UI_ASSETS = `<link rel="stylesheet" href="/admin-assets/pearl.css?v=${ASSE
   <script src="/admin-assets/vendor/gsap.js?v=${ASSET_V}" defer></script>
   <script src="/admin-assets/vendor/flip.js?v=${ASSET_V}" defer></script>`;
 
-function renderField(name, value) {
+function renderField(name, value, { required = false } = {}) {
   const meta = FIELD_META[name];
   if (!meta) return '';
   const val = value ?? '';
@@ -66,9 +66,9 @@ function renderField(name, value) {
       return `<label class="field"><span class="field__label">${esc(meta.label)}</span><textarea class="input" data-field="${esc(name)}" rows="2" placeholder="${esc(meta.placeholder || '')}">${esc(val)}</textarea></label>`;
     case 'date':
       // 自定义日期时间选择器（picker.js）：日历 + 时分步进，替代原生日期控件。
-      return `<label class="field"><span class="field__label">${esc(meta.label)}</span>
+      return `<label class="field"><span class="field__label">${esc(meta.label)}${required ? '（必填）' : ''}</span>
         <div class="picker-wrap">
-          <input class="input picker-input" type="text" data-field="${esc(name)}" data-picker="datetime" aria-label="${esc(meta.label)}" value="${esc(val)}" placeholder="选择日期与时间" readonly />
+          <input class="input picker-input" type="text" data-field="${esc(name)}" data-picker="datetime" aria-label="${esc(meta.label)}" aria-required="${required}" value="${esc(val)}" placeholder="选择日期与时间" readonly />
           <span class="picker-wrap__icon" aria-hidden="true">${navIcon('calendar')}</span>
         </div>
       </label>`;
@@ -472,7 +472,8 @@ export function editorPage({ user, boot, collection, entry, isNew }) {
   const pageTitle = isNew ? `新建${col.label}` : `编辑${col.label}`;
   const place = FIELD_PLACEMENT[collection];
 
-  const metaFields = place.meta.map((name) => renderField(name, data[name])).join('\n');
+  // 日期选择器为只读文本框，原生 required 不负责拦截；声明语义并由保存 API 强制校验。
+  const metaFields = place.meta.map((name) => renderField(name, data[name], { required: name === 'date' && col.requireDate })).join('\n');
   const settingsFields = place.settings.map((name) => renderField(name, data[name])).join('\n');
 
   const content = `

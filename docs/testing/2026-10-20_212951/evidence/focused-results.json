@@ -1,0 +1,129 @@
+{
+  "results": [
+    {
+      "id": "ROLLBACK-02",
+      "label": "回滚后从浏览器归档页与公开 API 再次对照文章量",
+      "status": "失败",
+      "actual": "{\"release\":\"2026-10-20T13-39-08-029Z\",\"publishedArticles\":1,\"runtimeArticles\":0,\"markdownCount\":0}\n\n0 !== 1\n",
+      "ms": 1112
+    },
+    {
+      "id": "API-02",
+      "label": "非法内容路径返回可诊断的客户端错误且不泄露文件",
+      "status": "失败",
+      "actual": "{\"status\":500,\"body\":{\"error\":\"服务器内部错误\"}}\n\n500 !== 400\n",
+      "ms": 6
+    },
+    {
+      "id": "API-03",
+      "label": "公开管理事件与无效评论状态分别拒绝",
+      "status": "通过",
+      "ms": 10
+    },
+    {
+      "id": "MEDIA-04",
+      "label": "解除引用后的媒体可以删除并核实文件消失",
+      "status": "通过",
+      "actual": {
+        "removed": 2
+      },
+      "ms": 24
+    }
+  ],
+  "api": [
+    {
+      "url": "/api/build/rollback",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "release": "2026-10-20T13-39-08-029Z",
+        "message": "已回滚到 2026-10-20T13-39-08-029Z"
+      }
+    },
+    {
+      "url": "/search.json",
+      "status": 200,
+      "body": [
+        {
+          "title": "审计恢复标题",
+          "description": "",
+          "url": "/posts/审计文章/",
+          "date": "2026年10月20日",
+          "category": "审计分类",
+          "tags": [
+            "审计标签",
+            "中文"
+          ],
+          "keywords": [],
+          "text": "审计恢复标题 审计分类 审计标签 中文"
+        }
+      ]
+    },
+    {
+      "url": "/api/public/site-stats",
+      "status": 200,
+      "body": {
+        "since": "2026-01-01",
+        "posts": 0,
+        "comments": 0,
+        "totalViews": 54,
+        "todayViews": 54
+      }
+    },
+    {
+      "url": "/api/entry/posts?path=..%2F..%2F.env",
+      "status": 500,
+      "body": {
+        "error": "服务器内部错误"
+      }
+    },
+    {
+      "url": "/api/public/twikoo",
+      "status": 403,
+      "body": {
+        "code": 1000,
+        "message": "此操作请登录博客后台后执行。"
+      }
+    },
+    {
+      "url": "/api/manage/comments/status",
+      "status": 400,
+      "body": {
+        "error": "状态无效"
+      }
+    },
+    {
+      "url": "/api/media",
+      "status": 200,
+      "body": {
+        "items": [
+          {
+            "name": "1792503506895-audit.svg",
+            "url": "/uploads/1792503506895-audit.svg"
+          },
+          {
+            "name": "1792503506878-audit.png",
+            "url": "/uploads/1792503506878-audit.png"
+          }
+        ]
+      }
+    },
+    {
+      "url": "/api/media/delete",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "message": "已删除。"
+      }
+    },
+    {
+      "url": "/api/media/delete",
+      "status": 200,
+      "body": {
+        "ok": true,
+        "message": "已删除。"
+      }
+    }
+  ],
+  "events": []
+}
