@@ -103,6 +103,7 @@ export async function dashboardData({ fast = false } = {}) {
       status: status?.status || '尚未构建',
       finishedAt: status?.finishedAt || 0,
       release: build.currentRelease() || '',
+      label: build.releasesInfo().find((r) => r.current)?.label || '',
       building: build.isBuilding(),
     },
   };

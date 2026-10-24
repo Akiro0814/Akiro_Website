@@ -1,5 +1,5 @@
 ---
-// 底部评论框 —— 官方 Twikoo SDK，样式由博客主题适配。
+// 本站独立评论，按需初始化并支持划词引用。
 interface Props {
   title?: string;
 }
@@ -11,15 +11,13 @@ const { title = '评论' } = Astro.props;
     <h2 class="cbox__title">{title}</h2>
     <span class="cbox__count" data-c-count></span>
   </div>
-  <p class="comment-service-status">评论提交后，等待站长构建发布后展示。点赞数量也在发布后更新。</p>
+  <p class="comment-service-status">评论提交后立即显示，站长会随后审核和管理。</p>
   <div data-c-mount></div>
 </section>
 
 <script>
-  import { mountComments, commentsBackendId } from '../lib/comments.js';
+  import { mountComments } from '../lib/comments.js';
 
-  // 始终从本站入口访问；是否转发外部环境由后台决定，确保前后台管理同一份评论。
-  const ENV_ID = commentsBackendId();
   let activeRoot: HTMLElement | null = null;
   let cleanup = () => {};
 
@@ -42,7 +40,6 @@ const { title = '评论' } = Astro.props;
       if (started) return api;
       started = true;
       api = mountComments(mountEl, {
-        envId: ENV_ID,
         url: location.pathname,
         onCount: (n: number) => {
           countEl.textContent = n ? `· ${n}` : '';

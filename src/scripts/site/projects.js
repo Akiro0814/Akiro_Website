@@ -1,5 +1,5 @@
 import { gatewayUrl } from '../../lib/gateway.js';
-import { projectUrl } from '../../lib/project-catalog.js';
+import { projectUrl, projectCatalogSignature } from '../../lib/project-catalog.js';
 
 const TTL=300_000;
 let snapshot, until=0, pending;
@@ -10,15 +10,17 @@ export function initProjects(signal) {
   const cardTemplate=root.querySelector('[data-project-card-template]');
   const sectionTemplate=root.querySelector('[data-project-section-template]');
   const icons=new Map([...root.querySelectorAll('[data-project-icon-template]')].map((node)=>[node.dataset.projectIconTemplate,node]));
-  let rendered='';
+  let rendered=root.dataset.projectSignature || '';
   const link=(node,value)=>{const href=projectUrl(value);node.hidden=!href;if(!href){node.removeAttribute('href');return;}node.setAttribute('href',href);if(href.startsWith('http')){node.target='_blank';node.rel='noopener noreferrer';}else{node.removeAttribute('target');node.removeAttribute('rel');}};
   const render=(catalog)=>{
     if(signal.aborted||!root.isConnected) return;
     // 数据没变化时保留现有 DOM，避免切回标签页就重播进场、打断卡片悬停或键盘焦点。
-    const signature=JSON.stringify(catalog);
+    const signature=projectCatalogSignature(catalog);
     if(signature===rendered) return;
     const fragment=document.createDocumentFragment();
     for(const group of catalog.groups) {
+      // 同步接口的空组同样不生成标题和分隔线，与构建阶段保持一致。
+      if (!group.items.length) continue;
       const section=sectionTemplate.content.firstElementChild.cloneNode(true);
       section.dataset.projectGroup=group.id;
       const heading=section.querySelector('h2');heading.id=`project-${group.id}`;heading.textContent=String(group.title||'');section.setAttribute('aria-labelledby',heading.id);

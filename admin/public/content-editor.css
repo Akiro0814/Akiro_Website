@@ -1,0 +1,26 @@
+/* 文案按所属页面组织，顶部选择始终可见；窄屏自然换行，不增加抽屉入口。 */
+.content-tabs { display:flex; flex-wrap:wrap; gap:8px; position:sticky; top:calc(var(--topbar-h,68px) + 12px); z-index:8; padding:12px; border:1px solid var(--border); border-radius:16px; background:var(--surface); margin:0 0 22px; }
+.content-tabs [aria-pressed="true"] { color:var(--text); border-color:var(--rose); box-shadow:inset 0 -2px var(--rose); }
+[data-content-group][hidden] { display:none!important; }
+.content-section-heading { padding:24px 25px 16px; }
+.content-section-heading h2 { margin:0 0 6px; font-size:20px; }
+.content-section-heading p { margin:0; color:var(--text-muted); font-size:13px; }
+.content-region { margin:12px 0 22px; border:0; border-top:1px solid var(--border); padding:18px 0 0; min-width:0; }
+.content-region legend { padding:0 25px; font-size:14px; color:var(--rose); font-weight:600; }
+.content-region { scroll-margin-top:calc(var(--topbar-h,68px) + 150px); }
+.content-location-hint { padding:0 25px; margin:0 0 24px; color:var(--text-muted); font-size:13px; line-height:1.8; }
+.content-legacy-fields { padding:0 25px 18px; }
+.content-map { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; padding:0 25px 24px; }
+.content-map a { display:flex; gap:14px; align-items:center; border:1px solid var(--border); border-radius:12px; padding:16px; background:var(--surface-muted); color:var(--text); text-decoration:none; }
+.content-map a:first-child,.content-map a:nth-child(2) { grid-column:1 / -1; }
+.content-map a:hover,.content-map a:focus-visible { border-color:var(--rose); background:var(--rose-soft); }
+.content-map span { font-size:12px; color:var(--rose); }
+.content-map strong { font-size:13px; font-weight:550; }
+.content-map p { grid-column:1 / -1; margin:0; color:var(--text-muted); font-size:12px; }
+.content-legacy-fields input:disabled { opacity:.6; cursor:not-allowed; }
+@media(max-width:600px) { .content-map { grid-template-columns:1fr; padding-inline:16px; } .content-location-hint,.content-legacy-fields { padding-inline:16px; } }
+.project-ai { margin:14px 0 24px; padding:16px 20px; border:1px solid var(--border); border-radius:14px; }
+.project-ai summary { cursor:pointer; font-weight:600; }
+.project-ai .field__row { flex-wrap:wrap; align-items:end; }
+.project-ai .field__row .field { flex:1 1 240px; }
+@media(max-width:600px) { .content-tabs { top:calc(var(--topbar-h,68px) + 4px); gap:6px; padding:8px; } .content-tabs .btn { flex:1 1 40%; } .content-region .presentation-fields { grid-template-columns:1fr; padding-inline:16px; } }

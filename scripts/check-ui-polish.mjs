@@ -36,7 +36,7 @@ async function verifyPortFree() {
 }
 async function check(label, fn) {
   try { await fn(); checks++; console.log(`✓ ${label}`); }
-  catch (error) { failures.push(label); console.log(`✗ ${label}: ${error.message.split('\n')[0]}`); }
+  catch (error) { failures.push(label); console.log(`✗ ${label}: ${error.stack || error.message}`); }
 }
 async function appearance(page, style) {
   await page.locator('[data-style-toggle]').click();
@@ -53,45 +53,7 @@ async function theme(page, value) {
   }
   await page.waitForTimeout(650);
 }
-async function cursorOnTop(page, dialogId, screenshot) {
-  await page.locator(`[aria-controls="${dialogId}"]`).click();
-  const dialog = page.locator(`#${dialogId}`);
-  await dialog.waitFor({ state: 'visible' });
-  const box = await dialog.boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await page.waitForTimeout(650);
-  const result = await page.evaluate(() => {
-    const cursor = document.querySelector('#smooth-cursor');
-    const image = cursor.querySelector('img');
-    const rect = image.getBoundingClientRect();
-    const previous = cursor.style.pointerEvents;
-    cursor.style.pointerEvents = 'auto';
-    const hit = document.elementFromPoint(rect.left + rect.width * .55, rect.top + rect.height * .55);
-    cursor.style.pointerEvents = previous;
-    return { aboveDialog: Boolean(hit && cursor.contains(hit)), opacity: Number(getComputedStyle(cursor).opacity),
-      popover: cursor.matches(':popover-open'), inDialog: Boolean(cursor.closest('dialog[open]')) };
-  });
-  await page.screenshot({ path: path.join(out, screenshot) });
-  // A popover outside a modal is painted in the top layer but remains inert,
-  // so hit-testing alone cannot determine whether the custom cursor is visible.
-  // Compare the same opaque dialog region with/without the cursor's paint.
-  const imageBox = await page.locator('#smooth-cursor img').boundingBox();
-  const clip = { x: Math.floor(imageBox.x), y: Math.floor(imageBox.y),
-    width: Math.ceil(imageBox.width), height: Math.ceil(imageBox.height) };
-  const visible = await page.screenshot({ clip, animations: 'disabled' });
-  const previousVisibility = await page.locator('#smooth-cursor').evaluate((el) => {
-    const previous = el.style.visibility;
-    el.style.visibility = 'hidden';
-    return previous;
-  });
-  const hidden = await page.screenshot({ clip, animations: 'disabled' });
-  await page.locator('#smooth-cursor').evaluate((el, previous) => { el.style.visibility = previous; }, previousVisibility);
-  result.painted = !visible.equals(hidden);
-  await page.keyboard.press('Escape');
-  await dialog.waitFor({ state: 'hidden' });
-  assert.ok(result.painted && result.opacity > .99 && (result.popover || result.inDialog || result.aboveDialog),
-    `cursor must paint above the dialog: ${JSON.stringify(result)}`);
-}
+
 try {
   await new Promise((resolve, reject) => {
     const probe = net.createServer();
@@ -151,172 +113,16 @@ try {
     assert.equal(evidence.documentNavigations, 0, 'Hover initiated a top-frame navigation');
     assert.equal(evidence.sourceCacheWritten, false, 'Rendering about rewrote a watched source file');
   });
-  await check('Explore dialog keeps the custom cursor above the top layer', () => cursorOnTop(page, 'site-menu', 'polish-explore-cursor.png'));
-  await check('Appearance dialog keeps the custom cursor above the top layer', () => cursorOnTop(page, 'style-console', 'polish-appearance-cursor.png'));
-  await check('Cursor smoothly settles with bounded lag, snaps on click and respects reduced motion', async () => {
-    // 默认关闭平滑跟随；本组先通过真实设置菜单主动开启，再验证跟随算法。
+  await check('System pointer and appearance dialog work without custom cursor', async () => {
+    await page.goto(base);
+    assert.equal(await page.locator('#smooth-cursor,[data-cursor-setting],#cursor-tab').count(), 0);
+    assert.notEqual(await page.locator('body').evaluate((el) => getComputedStyle(el).cursor), 'none');
     await page.locator('[data-style-toggle]').click();
-    await page.locator('[data-console-tab="cursor"]').click();
-    await page.locator('[data-cursor-setting="smooth"]').check();
+    await page.locator('#style-console').waitFor({ state: 'visible' });
+    await page.locator('[data-style-choice="glass"]').click();
     await page.keyboard.press('Escape');
-    await page.mouse.move(700, 450);
-    await page.waitForTimeout(250);
-    const samples = await page.evaluate(async () => {
-      // 连续采样真实组件的逐帧位置；坐标变化超过允许滞后，检查限幅和收敛。
-      const samples = [];
-      window.dispatchEvent(new MouseEvent('mousemove', { clientX: 820, clientY: 450 }));
-      for (let i = 0; i < 50; i++) {
-        await new Promise(requestAnimationFrame);
-        const matrix = new DOMMatrixReadOnly(document.getElementById('sc-pos').style.transform);
-        samples.push(Math.hypot(820 - matrix.m41, 450 - matrix.m42));
-      }
-      return samples;
-    });
-    assert.ok(samples[0] > .1 && samples[0] < 60, `expected responsive adaptive smoothing, got ${samples}`);
-    assert.ok(samples.at(-1) < .4, `cursor did not settle: ${samples}`);
-    assert.ok(samples.every((distance, i) => !i || distance <= samples[i - 1] + .05), 'cursor overshot or bounced');
-    const snapped = await page.evaluate(() => {
-      window.dispatchEvent(new MouseEvent('mousemove', { clientX: 760, clientY: 400 }));
-      window.dispatchEvent(new MouseEvent('mousedown', { clientX: 760, clientY: 400 }));
-      const matrix = new DOMMatrixReadOnly(document.getElementById('sc-pos').style.transform);
-      window.dispatchEvent(new MouseEvent('mouseup', { clientX: 760, clientY: 400 }));
-      return { x: matrix.m41, y: matrix.m42 };
-    });
-    assert.deepEqual(snapped, { x: 760, y: 400 });
-    await page.emulateMedia({ reducedMotion: 'reduce' });
-    try {
-      await page.mouse.move(710, 440);
-      await page.waitForTimeout(40);
-      const reduced = await page.locator('#sc-pos').evaluate((el) => {
-        const matrix = new DOMMatrixReadOnly(el.style.transform);
-        return { x: matrix.m41, y: matrix.m42, transition: getComputedStyle(el.querySelector('.sc-face')).transitionDuration };
-      });
-      assert.deepEqual(reduced, { x: 710, y: 440, transition: '0s' });
-    } finally { await page.emulateMedia({ reducedMotion: 'no-preference' }); }
-  });
-  await check('Minimal cursor keeps its hotspot fixed during hover and press and persists across pages', async () => {
-    const image = page.locator('#smooth-cursor img');
-    assert.match(await image.getAttribute('src'), /akiro-minimal-ink\.svg$/);
-    assert.equal(await image.evaluate((el) => el.complete && el.naturalWidth > 0), true);
-    assert.equal(await image.evaluate((el) => getComputedStyle(el).width), '24px');
-    const tipAt = async (x, y) => {
-      const tip = await image.evaluate((el) => {
-        const rect = el.getBoundingClientRect();
-        // SVG 的尖端 (6.75, 4.75)，按完整 viewBox 比例投影，缩放后仍须贴合热点。
-        return { x: rect.left + rect.width * 6.75 / 32, y: rect.top + rect.height * 4.75 / 40 };
-      });
-      assert.ok(Math.abs(tip.x - x) < .4 && Math.abs(tip.y - y) < .4,
-        `pointer tip moved away from hotspot: ${JSON.stringify({ tip, x, y })}`);
-    };
-    await page.mouse.move(700, 450);
-    await page.waitForTimeout(800);
-    await tipAt(700, 450);
-    const button = await page.locator('.atlas-hero .atlas-button').first().boundingBox();
-    // Chromium 的鼠标事件坐标按整数像素报告，避免把注入坐标的小数误判成偏移。
-    const x = Math.round(button.x + button.width / 2);
-    const y = Math.round(button.y + button.height / 2);
-    await page.mouse.move(x, y);
-    await page.waitForTimeout(800);
-    assert.equal(await page.locator('#smooth-cursor').evaluate((el) => el.classList.contains('sc-hover')), true);
-    await tipAt(x, y);
-    await page.mouse.down();
-    await page.waitForTimeout(180);
-    await tipAt(x, y);
-    // 移到非链接区域后松开，验证按下状态而不触发页面导航。
-    await page.mouse.move(700, 450);
-    await page.mouse.up();
-    await page.waitForTimeout(300);
-    await page.screenshot({ path: path.join(out, 'minimal-cursor-home.png') });
-    await page.locator('#smooth-cursor').evaluate((el) => { el.dataset.qaPersistent = 'minimal'; });
-    await page.locator('.atlas-nav__links a[href="/about/"]').click();
-    await page.waitForURL('**/about/');
-    assert.equal(await page.locator('#smooth-cursor').getAttribute('data-qa-persistent'), 'minimal');
-    await page.goto(base);
-  });
-  await check('Cursor settings preview, toggles, keyboard, persistence and independent reset work', async () => {
-    const openSettings = async () => {
-      await page.locator('[data-style-toggle]').click();
-      await page.locator('[data-console-tab="cursor"]').click();
-    };
-    const setting = (key) => page.locator(`[data-cursor-setting="${key}"]`);
-    await openSettings();
-    assert.equal(await setting('duration').inputValue(), '70');
-    assert.equal(await setting('maxLag').inputValue(), '24');
-    // 原生范围控件接受键盘调整，输出和实际运行状态必须同时变化。
-    await setting('duration').focus();
-    await page.keyboard.press('End');
-    assert.equal(await setting('duration').inputValue(), '220');
-    assert.equal(await page.locator('[data-cursor-output="duration"]').innerText(), '220ms');
-    for (const [key, value] of Object.entries({ size: 36, maxLag: 80, hoverScale: 1.2, pressScale: .8, transition: 300 })) {
-      await setting(key).evaluate((el, value) => { el.value = value; el.dispatchEvent(new Event('input', { bubbles: true })); }, value);
-    }
-    assert.equal(await page.locator('#smooth-cursor img').evaluate((el) => getComputedStyle(el).width), '36px');
-    await setting('smooth').uncheck();
-    assert.equal(await setting('duration').isDisabled(), true);
-    const direct = await page.evaluate(() => {
-      window.dispatchEvent(new MouseEvent('mousemove', { clientX: 600, clientY: 400 }));
-      const matrix = new DOMMatrixReadOnly(document.getElementById('sc-pos').style.transform);
-      const rect = document.querySelector('#smooth-cursor img').getBoundingClientRect();
-      return { x: matrix.m41, y: matrix.m42, tipX: rect.left + rect.width * 6.75 / 32, tipY: rect.top + rect.height * 4.75 / 40 };
-    });
-    assert.equal(direct.x, 600); assert.equal(direct.y, 400);
-    assert.ok(Math.abs(direct.tipX - 600) < .4 && Math.abs(direct.tipY - 400) < .4, 'Resizing the pointer displaced its tip');
-    await setting('enabled').uncheck();
-    assert.equal(await page.locator('html').evaluate((el) => el.classList.contains('sc-on')), false);
-    assert.equal(await page.locator('#smooth-cursor').evaluate((el) => getComputedStyle(el).opacity), '0');
-    await page.reload();
-    await openSettings();
-    assert.equal(await setting('enabled').isChecked(), false);
-    assert.equal(await setting('size').inputValue(), '36');
-    assert.equal(await setting('size').isDisabled(), true);
-    await setting('enabled').check();
-    await setting('smooth').check();
-    assert.equal(await setting('duration').inputValue(), '220');
-    // 页签支持方向键，切换后焦点和可见内容一致。
-    await page.locator('#cursor-tab').focus();
-    await page.keyboard.press('ArrowLeft');
-    assert.equal(await page.locator('#appearance-panel').isVisible(), true);
-    await page.keyboard.press('ArrowRight');
-    assert.equal(await page.locator('#cursor-panel').isVisible(), true);
-    await page.screenshot({ path: path.join(out, 'cursor-settings-desktop.png') });
-    await page.keyboard.press('Escape');
-    await page.locator('.atlas-nav__links a[href="/about/"]').click();
-    await page.waitForURL('**/about/');
-    await openSettings();
-    assert.equal(await setting('size').inputValue(), '36');
-    assert.equal(await page.locator('#smooth-cursor img').evaluate((el) => getComputedStyle(el).width), '36px');
-    const appearanceBefore = await page.evaluate(() => localStorage.getItem('akiro-appearance'));
-    await page.locator('[data-cursor-reset]').click();
-    assert.equal(await setting('size').inputValue(), '24');
-    assert.equal(await setting('duration').inputValue(), '70');
-    assert.equal(await setting('smooth').isChecked(), false);
-    assert.equal(await page.evaluate(() => localStorage.getItem('akiro-cursor')), null);
-    assert.equal(await page.evaluate(() => localStorage.getItem('akiro-appearance')), appearanceBefore);
-    await page.keyboard.press('Escape');
-    await page.goto(base);
-  });
-  await check('Text inputs retain a system text pointer and touch devices keep the custom cursor hidden', async () => {
-    await page.goto(`${base}/friends/`);
-    await page.locator('.friend-form input').first().hover();
-    await page.waitForTimeout(200);
+    await page.goto(base + '/friends/');
     assert.equal(await page.locator('.friend-form input').first().evaluate((el) => getComputedStyle(el).cursor), 'text');
-    assert.equal(await page.locator('#smooth-cursor').evaluate((el) => getComputedStyle(el).opacity), '0');
-    const touch = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    try {
-      await touch.addInitScript(() => sessionStorage.setItem('blog-api-down-at', String(Date.now())));
-      await touch.route('**/api/**', (route) => route.fulfill({ status: 503, body: 'QA: API disabled' }));
-      const mobile = await touch.newPage();
-      await mobile.goto(base);
-      assert.equal(await mobile.locator('html').evaluate((el) => el.classList.contains('sc-on')), false);
-      assert.equal(await mobile.locator('#smooth-cursor').evaluate((el) => getComputedStyle(el).opacity), '0');
-      await mobile.locator('[data-style-toggle]').click();
-      await mobile.locator('#cursor-tab').click();
-      assert.match(await mobile.locator('[data-cursor-status]').innerText(), /触屏/);
-      assert.equal(await mobile.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
-      const fits = await mobile.locator('#cursor-panel').evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
-      assert.equal(fits, true);
-      await mobile.screenshot({ path: path.join(out, 'cursor-settings-mobile.png') });
-    } finally { await touch.close(); }
     await page.goto(base);
   });
   await check('Navbar avatar uses the same image as favicon', async () => {
@@ -368,12 +174,12 @@ try {
     // About may deliberately have no comment thread; use the existing notes page.
     if (!await comment.count()) await page.goto(`${base}/notes/`);
     await page.locator('[data-cbox]').scrollIntoViewIfNeeded();
-    await page.locator('.tk-textarea__inner').waitFor();
-    await page.locator('.tk-textarea__inner').fill('UI QA preview only');
-    await page.locator('.tk-submit .tk-button--primary').waitFor({ state: 'visible' });
+    await page.locator('.ac-form textarea').waitFor();
+    await page.locator('.ac-form textarea').fill('UI QA preview only');
+    await page.locator('.ac-form [type="submit"]').waitFor({ state: 'visible' });
     const styles = await page.evaluate(() => {
-      const text = document.querySelector('.tk-textarea__inner');
-      const send = document.querySelector('.tk-submit .tk-button--primary');
+      const text = document.querySelector('.ac-form textarea');
+      const send = document.querySelector('.ac-form [type="submit"]');
       const probe = document.createElement('span'); probe.style.color = 'var(--text)'; document.body.append(probe);
       const expectedText = getComputedStyle(probe).color; probe.remove();
       return { color: getComputedStyle(text).color, expectedText, font: getComputedStyle(text).fontFamily,
@@ -389,7 +195,7 @@ try {
       const backgrounds = [];
       for (const mode of ['light', 'dark']) {
         await theme(page, mode);
-        const sample = await page.locator('.tk-textarea__inner').evaluate((el) => ({
+        const sample = await page.locator('.ac-form textarea').evaluate((el) => ({
           background: getComputedStyle(el).backgroundColor, font: getComputedStyle(el).fontFamily,
           fits: el.getBoundingClientRect().right <= document.documentElement.clientWidth + 1 }));
         assert.match(sample.font, /^['"]?Smiley Sans/);
@@ -418,6 +224,54 @@ try {
     assert.equal(value.appearanceSaved, null);
     assert.equal(value.themeSaved, null);
     await page.keyboard.press('Escape');
+  });
+  await check('Announcement floats without shifting the hero, avoids the player and remembers dismissal', async () => {
+    // 独立浏览器上下文绕过上面故意关闭 API 的场景，所有接口仍由本地夹具响应。
+    const announcements = await browser.newContext({ viewport: { width: 1440, height: 960 } });
+    try {
+      await announcements.route('**/api/**', (route) => {
+        const url = new URL(route.request().url());
+        const target = url.searchParams.has('r') ? decodeURIComponent(Buffer.from(url.searchParams.get('r'), 'base64').toString()) : url.pathname;
+        const payload = target === '/api/public/announcements'
+          ? { items: [{ id: 'qa-announcement', title: '欢迎来到 Akiro', content: '这是公告浮层验收。\n长文本会正常换行，首页的风景仍然完整。', link: 'https://example.com/news' }] }
+          : target === '/api/public/playlist'
+            ? { tracks: [{ id: 'qa-song', source: 'netease', neteaseId: '1', title: '测试曲目', artist: 'Akiro' }] }
+            : { ok: true, items: [], total: 0, today: 0 };
+        return route.fulfill({ status: 200, json: payload });
+      });
+      const news = await announcements.newPage();
+      news.on('pageerror', (error) => runtimeErrors.push(error.message));
+      await news.goto(base);
+      await news.locator('[data-announce]').waitFor({ state: 'visible' });
+      await news.waitForTimeout(700);
+      assert.equal(await news.locator('[data-announce]').evaluate((el) => getComputedStyle(el).position), 'fixed');
+      const hero = await news.locator('.atlas-hero').evaluate((el) => {
+        const before = el.getBoundingClientRect().top;
+        const bar = document.querySelector('[data-announce]');
+        bar.hidden = true;
+        const after = el.getBoundingClientRect().top;
+        bar.hidden = false;
+        return { before, after };
+      });
+      assert.equal(hero.before, hero.after);
+      await news.waitForTimeout(350);
+      await news.screenshot({ path: path.join(out, 'announcement-desktop.png') });
+      await news.locator('[data-music-toggle]').click();
+      const bounds = await news.locator('[data-announce]').boundingBox();
+      const panel = await news.locator('[data-music-panel]').boundingBox();
+      assert.ok(bounds.x + bounds.width <= panel.x, '公告应避让已展开的播放器');
+      await news.locator('[data-music-close]').click();
+      await news.setViewportSize({ width: 390, height: 844 });
+      await news.waitForTimeout(400);
+      const mobileBounds = await news.locator('[data-announce]').boundingBox();
+      assert.ok(mobileBounds.x >= 0 && mobileBounds.x + mobileBounds.width <= 390);
+      await news.screenshot({ path: path.join(out, 'announcement-mobile.png') });
+      await news.locator('[data-announce-close]').click();
+      await news.locator('[data-announce]').waitFor({ state: 'hidden' });
+      await news.reload();
+      await news.waitForTimeout(500);
+      assert.equal(await news.locator('[data-announce]').isVisible(), false);
+    } finally { await announcements.close(); }
   });
   await check('No first-party JavaScript runtime exceptions', async () => assert.deepEqual(runtimeErrors, []));
   console.log(`UI polish: ${checks} checks passed, ${failures.length} failed`);

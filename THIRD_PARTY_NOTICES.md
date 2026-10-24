@@ -1,12 +1,12 @@
 # Third-party notices
 
-## Twikoo
+## Comment system dependencies
 
-The official [Twikoo](https://github.com/twikoojs/twikoo) client, tkserver adapter
-and @twikoojs/common runtime are pinned to 2.0.15 and distributed under MIT.
-Copyright (c) 2020-present iMaeGoo. Original package licenses are preserved;
-the build copies the unmodified SDK and its complete license to
-`vendor/twikoo-2.0.15.js` and `vendor/twikoo-2.0.15.LICENSE.txt` in the site output.
+The comment UI, persistence, moderation and migration are implemented in this project.
+Server-side HTML sanitization uses [sanitize-html](https://github.com/apostrophecms/sanitize-html) (MIT).
+Device labels use [UAParser.js v1](https://github.com/faisalman/ua-parser-js/tree/1.0.41) (MIT), pinned to the v1 major line.
+Optional SMTP notifications use [Nodemailer](https://nodemailer.com/) (MIT-0).
+Original licenses are retained in their npm packages. Twikoo is no longer a runtime dependency.
 
 ## 得意黑 Smiley Sans
 
@@ -66,11 +66,15 @@ SOFTWARE.
 
 Navigation refraction and restrained light/press feedback are adapted from
 [xiaofangstudio/liquid-glass-web](https://github.com/xiaofangstudio/liquid-glass-web),
-commit `0483d4de5d2d8ada6369849de70287b7c6473db6`, which identifies its code as MIT.
+commit `3094add905e60ee5aeb45e806751beb94425dd73`, which identifies its code as MIT
+(reference rechecked on 2026-10-24).
 Its refraction engine credits [shuding/liquid-glass](https://github.com/shuding/liquid-glass).
-The blog adapts the inset rounded-rectangle SDF to CSS-pixel geometry, consistent
-displacement encoding, resize-only texture generation and Astro lifecycle cleanup.
-Reference images, floating demos and drag physics are excluded.
+The navigation uses the reference fragment and normalization constants, filter chain,
+independent button surfaces, press/stretch feedback, 500ms spring return, 1400ms
+volumetric light and neighboring illumination. Texture caching and persistent Astro
+navigation preserve the material across page changes. The existing CSS-pixel capsule
+variant remains available for other components. Reference photos and freely draggable
+floating lenses are not bundled.
 
 MIT License
 

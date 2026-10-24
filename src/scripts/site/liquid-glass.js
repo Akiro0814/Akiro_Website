@@ -1,4 +1,6 @@
-import { createGlassMap, glassSpring } from '../../lib/liquid-glass.js';
+import { glassSpring } from '../../lib/liquid-glass.js';
+import { applyGlassTexture } from './glass-textures.js';
+import { initGlassButtons } from './glass-buttons.js';
 
 export function initLiquidGlass(signal) {
   const nav = document.querySelector('[data-site-header]');
@@ -9,9 +11,7 @@ export function initLiquidGlass(signal) {
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   const opaque = matchMedia('(prefers-reduced-transparency: reduce)');
   const fine = matchMedia('(hover:hover) and (pointer:fine)');
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
-  const supported = context && CSS.supports('backdrop-filter', 'url("#akiro-nav-refraction") blur(1px)');
+  const supported = CSS.supports('backdrop-filter', 'url("#akiro-nav-refraction") blur(1px)');
   let frame = 0, lightFrame = 0, animation, signature = '';
   let light = { x: 50, y: 0 };
   const release = () => {
@@ -40,16 +40,7 @@ export function initLiquidGlass(signal) {
     const next = `${width}/${height}/${radius}`;
     if (next !== signature) {
       try {
-        const map = createGlassMap(width, height, { radius });
-        canvas.width = map.width; canvas.height = map.height;
-        context.putImageData(new ImageData(map.data, map.width, map.height), 0, 0);
-        for (const el of [filter, image]) {
-          el.setAttribute('width', String(width)); el.setAttribute('height', String(height));
-        }
-        image.setAttribute('href', canvas.toDataURL());
-        filter.querySelectorAll('feDisplacementMap').forEach((el) => {
-          el.setAttribute('scale', String(map.scale * Number(el.getAttribute('data-dispersion'))));
-        });
+        applyGlassTexture(filter, width, height);
         signature = next;
       } catch {
         // Canvas 被隐私策略禁用时保留毛玻璃，不让材质失败影响导航。
@@ -93,4 +84,5 @@ export function initLiquidGlass(signal) {
     nav.classList.remove('is-glass-pressed');
   }, { once: true });
   update();
+  initGlassButtons(nav, filter, signal);
 }

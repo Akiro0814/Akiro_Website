@@ -7,7 +7,7 @@
 | 部署服务器、升级、发布、回滚、备份恢复 | [部署与备份](DEPLOYMENT.md) |
 | 理解源码、内容字段、数据流和测试方法 | [开发与测试](DEVELOPMENT.md) |
 | 对接公开或管理接口 | [API 参考](API.md) |
-| 管理评论、迁移数据库、恢复 Twikoo | [Twikoo 集成](TWIKOO.md) |
+| 管理评论、展示设备信息、迁移与恢复 | [独立评论系统](COMMENTS.md) |
 | 查阅全部版本变化 | [完整更新日志](../CHANGELOG.md) |
 | 确认开源与资源许可 | [许可证](../LICENSE)、[第三方声明](../THIRD_PARTY_NOTICES.md) |
 

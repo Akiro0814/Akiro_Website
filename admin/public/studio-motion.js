@@ -1,4 +1,4 @@
-import { motionOff, tween } from './motion.js?v=20261020-align-2';
+import { motionOff, tween } from './motion.js?v=20261024-notifications-1';
 
 // 页面级互动均持有当前页面 signal：切页后不再观察旧表格、改写旧状态或累积监听。
 export function enhanceStudio(root, signal) {

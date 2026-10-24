@@ -133,7 +133,8 @@ export function startPreview({ port = 4413, quiet = false } = {}) {
     stdio: quiet ? 'ignore' : 'inherit',
     windowsHide: true,
     env: {
-      ...process.env,
+      // 隔离预览不能继承宿主的真实通知账号，避免虚构评论触发外部投递。
+      ...Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('COMMENTS_'))),
       ADMIN_PORT: String(port),
       ADMIN_USER: 'preview',
       ADMIN_PASSWORD_HASH: `${salt}:${hash}`,

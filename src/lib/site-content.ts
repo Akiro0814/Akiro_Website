@@ -244,12 +244,12 @@ export function getSiteStatsSnapshot(): SiteStatsSnapshot {
     { total: 0, days: {} },
   );
   const comments = readDataJson<unknown[]>(path.join(dataDir(), 'comments.json'), []);
-  const twikoo = readDataJson<{ visible?: number }>(path.join(dataDir(), 'twikoo-summary.json'), {});
+  const live = readDataJson<{ items?: { isSpam?: boolean; pid?: string; _id: string }[] }>(path.join(dataDir(), 'comments-store.json'), {});
   const todayKey = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const today = stats.days?.[todayKey];
   return {
     since,
-    comments: Number.isFinite(twikoo.visible) ? Number(twikoo.visible) : Array.isArray(comments) ? comments.length : 0,
+    comments: Array.isArray(live.items) ? live.items.filter(c => !c.isSpam).length : Array.isArray(comments) ? comments.length : 0,
     totalViews: Number(stats.total) || 0,
     todayViews: Number(typeof today === 'number' ? today : today?.pv ?? today?.count) || 0,
   };

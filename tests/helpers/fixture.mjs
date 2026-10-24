@@ -10,13 +10,15 @@ delete process.env.BLOG_DATA_DIR;
 // 发布测试会采集官方评论服务；显式清除宿主的远程数据库和曲源配置，
 // 防止调用者的环境变量把临时夹具指向真实评论库或外部歌单。
 for (const key of ['TWIKOO_DATA', 'TWIKOO_ENV_ID', 'PUBLIC_TWIKOO_ENV_ID', 'TWIKOO_ADMIN_TOKEN', 'MONGODB_URI', 'MONGO_URL', 'PUBLIC_NETEASE_PLAYLIST_ID']) delete process.env[key];
+// 独立评论支持环境注入通知凭据；测试进程不能继承宿主的真实邮件/推送通道。
+for (const key of Object.keys(process.env)) if (key.startsWith('COMMENTS_')) delete process.env[key];
 
 export function createFixture(t) {
   const root = fs.mkdtempSync(path.join(PROJECT_ROOT, '.test-tmp-'));
   t.after(async () => {
     // 发布采集会初始化官方评论数据库，先排空并关闭，再清理独立夹具。
-    const module = await import(pathToFileURL(path.join(root, 'admin/lib/twikoo.mjs')).href);
-    await module.twikoo.close();
+    const module = await import(pathToFileURL(path.join(root, 'admin/lib/comment-service.mjs')).href);
+    await module.commentService.close();
     assert.equal(path.dirname(root), path.resolve(PROJECT_ROOT));
     assert.ok(path.basename(root).startsWith('.test-tmp-'));
     fs.rmSync(root, { recursive: true, force: true });

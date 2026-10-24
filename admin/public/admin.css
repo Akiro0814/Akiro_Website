@@ -686,13 +686,14 @@ img { max-width: 100%; }
 .preview .post-figure--w50 { width: 50%; }
 .preview .post-figure--w75 { width: 75%; }
 .preview .post-figure--w100 { width: 100%; }
-.preview .post-figure--left {
+/* 与默认 figure 选择器保持相同权重，使预览和前台都遵循插图对齐选项。 */
+.preview figure.post-figure--left {
   align-items: flex-start;
   margin-left: 0;
   margin-right: auto;
   text-align: left;
 }
-.preview .post-figure--right {
+.preview figure.post-figure--right {
   align-items: flex-end;
   margin-left: auto;
   margin-right: 0;

@@ -59,7 +59,7 @@ function scanMediaReferences(names, { includePublished = true, publishedOnly = f
   inspect(config, { scope: 'pending', module: '站点配置', title: '站点配置', href: '/admin/site-content' });
   const comments = publishedOnly ? readJSON('published-comments.json', { comments: [], config: {} }) : { comments: commentDocuments, config: commentConfig };
   for (const comment of comments.comments) inspect(comment, { scope: 'pending', module: '评论', title: String(comment.nick || '读者评论'), href: '/admin/comments' });
-  inspect(comments.config, { scope: 'pending', module: '评论配置', title: '评论配置', href: '/admin/twikoo' });
+  inspect(comments.config, { scope: 'pending', module: '评论配置', title: '评论配置', href: '/admin/comment-settings' });
   if (includePublished) {
     const published = readPublishedState()?.mediaReferences || {};
     for (const name of names) index[name].push(...(published[name] || []));

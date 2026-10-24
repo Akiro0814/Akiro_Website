@@ -1,6 +1,6 @@
 # Akiro_Website
 
-基于 Astro 与 Node.js 的个人博客，提供 Markdown 写作、后台管理、静态发布和 Twikoo 评论。前台保持静态托管，动态功能由 Express 服务提供。
+基于 Astro 与 Node.js 的个人博客，提供 Markdown 写作、后台管理、静态发布和独立评论系统。前台保持静态托管，动态功能由 Express 服务提供。
 
 ![Astro 7.2](https://img.shields.io/badge/Astro-7.2-BC52EE?logo=astro&logoColor=white)
 ![Node.js 22.12+](https://img.shields.io/badge/Node.js-22.12%2B-339933?logo=nodedotjs&logoColor=white)
@@ -29,7 +29,7 @@
 | 阅读 | 归档、客户端搜索、目录、相关文章、划词引用、RSS 与 sitemap |
 | 外观 | 五种风格、明暗主题、访客光标设置、本地随机壁纸、移动端与减少动画适配 |
 | 管理 | 单管理员登录、媒体库、页面文案、项目、导航、友链、公告及访问统计 |
-| 互动 | 官方 Twikoo 评论、审核与回复，后台管理的本地音频和可选网易云曲源 |
+| 互动 | 独立评论、系统与浏览器展示、审核与回复，后台管理的本地音频和可选网易云曲源 |
 | 发布 | 构建日志、静态版本切换、回滚，以及可选私人仓库备份 |
 
 ## 快速开始
@@ -75,11 +75,17 @@ npm run dev
 | [部署与备份](docs/DEPLOYMENT.md) | Linux nginx/systemd、发布、搬迁和恢复 |
 | [开发与测试](docs/DEVELOPMENT.md) | 架构、数据目录、内容字段、测试入口和隔离要求 |
 | [API 参考](docs/API.md) | 公开接口、认证、管理接口及错误状态 |
-| [Twikoo 集成](docs/TWIKOO.md) | 评论管理、数据库迁移、配置和恢复 |
+| [独立评论系统](docs/COMMENTS.md) | 评论管理、数据库迁移、配置和恢复 |
 
 文章与媒体属于个人数据：`src/content/`、`public/uploads/`、运行时 `data/` 不应公开提交。仓库仅保留基础页面配置；自定义头像和壁纸的备份范围请按部署指南核对。
 
 ## 最近更新
+
+### 未发布
+
+- 新增：独立评论、系统/浏览器标签、中文地址与后台 SMTP/站长推送配置。
+- 优化：后台编辑、Markdown 导入、项目 AI 辅助、音乐排序、发布版本名称及液态玻璃导航。
+- 修复：公告重开、图片上传和回退、连续换页及手机布局，补齐隔离回归。
 
 ### V2.4.0
 

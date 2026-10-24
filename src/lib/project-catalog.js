@@ -16,6 +16,15 @@ export function projectKey(value) {
 }
 const tags=(values)=>[...new Set((Array.isArray(values)?values:[]).map((tag)=>clean(tag,60)).filter(Boolean))].slice(0,6);
 
+// 用紧凑的内容标记识别服务端已渲染的目录，避免首次客户端同步再销毁整组卡片。
+// 该标记仅做 UI 变化判断，不用于鉴权或完整性校验。
+export function projectCatalogSignature(catalog) {
+  const source=JSON.stringify(catalog);
+  let hash=2166136261,second=5381;
+  for(let i=0;i<source.length;i++) { const code=source.charCodeAt(i);hash=Math.imul(hash^code,16777619);second=Math.imul(second,33)^code; }
+  return `${source.length}:${hash>>>0}:${second>>>0}`;
+}
+
 /** @param {{config?: any, repos?: any[], managed?: any[]}} [options] 构建期与后台接受同一份项目数据契约。 */
 export function buildProjectCatalog({ config={}, repos=[], managed=[] }={}) {
   const allManaged=Array.isArray(managed)?managed:[];
@@ -39,9 +48,7 @@ export function buildProjectCatalog({ config={}, repos=[], managed=[] }={}) {
       detailHref:local?.slug?`/projects/${encodeURIComponent(local.slug)}/`:'', noteHref:projectUrl(override.article),
     });
   }
-  open.sort((a,b)=>b.stars-a.stars||a.id.localeCompare(b.id));
   const groups=[];
-  if(open.length) groups.push({id:'open-source',title:'开源项目',description:'GitHub 星标自动同步，欢迎 Star 和提建议。',items:open});
   const others=[];
   for(const local of allManaged) {
     if(linked.has(local)||!local?.slug||!local.title) continue;
@@ -49,9 +56,14 @@ export function buildProjectCatalog({ config={}, repos=[], managed=[] }={}) {
     const id=(local.links||[]).map((link)=>projectKey(link.url)).find((key)=>key.startsWith('github:'))||projectKey(href)||`local:${local.slug}`;
     if(seen.has(id)) continue;
     seen.add(id);
-    others.push({id,title:clean(local.title,120),owner:clean(config.githubUser,80),description:clean(local.subtitle||local.description,2000),href,icon:'layers',cover:projectUrl(local.cover),stars:null,tags:tags(local.tech),detailHref:`/projects/${encodeURIComponent(local.slug)}/`,noteHref:''});
+    // 仓库类型由项目自身的链接确定：导入其他账号的仓库、同步暂不可用时，
+    // 也属于开源项目；未知星标保留 null，不能伪装成零星标。
+    const repository=id.startsWith('github:');
+    (repository?open:others).push({id,title:clean(local.title,120),owner:repository?clean(id.slice(7).split('/')[0],80):clean(config.githubUser,80),description:clean(local.subtitle||local.description,2000),href,icon:repository?'github':'layers',cover:projectUrl(local.cover),stars:null,tags:tags(local.tech),detailHref:`/projects/${encodeURIComponent(local.slug)}/`,noteHref:''});
   }
-  if(others.length) groups.push({id:'managed',title:'更多项目',description:'工具、应用与实验。',items:others});
+  open.sort((a,b)=>(b.stars??-1)-(a.stars??-1)||a.id.localeCompare(b.id));
+  if(open.length) groups.push({id:'open-source',title:'开源项目',description:'GitHub 项目与后台导入的仓库，欢迎 Star 和提建议。',items:open});
+  if(others.length) groups.push({id:'managed',title:'项目作品',description:'做过的工具、应用与实验。',items:others});
   for(const [i,group] of (Array.isArray(config.projectGroups)?config.projectGroups:[]).entries()) {
     const items=[];
     for(const item of Array.isArray(group.items)?group.items:[]) {

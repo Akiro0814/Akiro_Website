@@ -27,10 +27,11 @@ try {
   page.on('pageerror', (error) => errors.push(error.message));
   await page.goto(base); await page.waitForLoadState('networkidle');
   const article = await page.locator('.atlas-writing-card a').first().getAttribute('href');
-  await check('首次访问平滑跟随关闭，默认配色为 Claude 暖白', async () => {
+  await check('首次访问使用系统光标，外观面板与默认暖白配色正常', async () => {
     await page.locator('[data-style-toggle]').click();
-    await page.locator('[data-console-tab="cursor"]').click();
-    assert.equal(await page.locator('[data-cursor-setting="smooth"]').isChecked(), false);
+    // 自定义光标已从现有产品中移除，回归应验证当前入口和系统光标，而非点击旧标签。
+    assert.equal(await page.locator('[data-console-tab="cursor"],[data-cursor-setting]').count(), 0);
+    assert.notEqual(await page.locator('body').evaluate((el) => getComputedStyle(el).cursor), 'none');
     await page.keyboard.press('Escape');
     assert.equal(await page.locator('html').evaluate((el) => getComputedStyle(el).getPropertyValue('--bg').trim()), '#faf9f5');
   });
@@ -87,13 +88,14 @@ try {
     });
     await rail.screenshot({path:path.join(out,'reading-progressive-blur-both.png')});
   });
-  await check('壁纸上的次级按钮在悬停后仍保持高对比浅色文字，品牌文字有独立底色', async () => {
+  await check('壁纸按钮维持对比度，作者透明背景通过字边阴影保持可读', async () => {
     await page.goto(base);
     await page.locator('.atlas-button--ghost').hover();
     await page.waitForFunction(() => [...document.querySelectorAll('[data-hero-reveal]')].every((el) => Number(getComputedStyle(el).opacity) > .99));
     assert.equal(await page.locator('.atlas-button--ghost').evaluate((el) => getComputedStyle(el).color), 'rgb(250, 249, 245)');
     const brand = await page.locator('.atlas-brand').evaluate((el) => getComputedStyle(el).backgroundColor);
-    assert.notEqual(brand,'rgba(0, 0, 0, 0)');
+    assert.equal(brand,'rgba(0, 0, 0, 0)');
+    assert.notEqual(await page.locator('.atlas-brand span').evaluate((el) => getComputedStyle(el).textShadow), 'none');
     const ratios = await page.evaluate(async () => {
       // Canvas 将 CSS Color 4 与 rgba 统一为像素，再分别合成在纯黑/纯白壁纸上。
       const canvas=document.createElement('canvas'); canvas.width=canvas.height=1;
@@ -106,7 +108,8 @@ try {
         await new Promise((resolve)=>setTimeout(resolve,400));
         for (const selector of ['.atlas-brand','.atlas-brand small','.atlas-button--ghost']) {
           const el=document.querySelector(selector), style=getComputedStyle(el);
-          const bg=rgba(getComputedStyle(selector.endsWith('small') ? el.closest('.atlas-brand') : el).backgroundColor);
+          // 作者不再有矩形底色；对比度以紧贴字形的实色阴影边缘核对。
+          const bg=rgba(selector.startsWith('.atlas-brand') ? getComputedStyle(document.documentElement).getPropertyValue('--bg') : style.backgroundColor);
           const foreground=luminance(rgba(style.color).slice(0,3));
           for (const wall of [0,255]) {
             const background=luminance(bg.slice(0,3).map((channel)=>channel*bg[3]/255+wall*(1-bg[3]/255)));
@@ -120,13 +123,12 @@ try {
     assert.ok(ratios.every((value)=>value.ratio>=4.5),JSON.stringify(ratios));
     await page.screenshot({path:path.join(out,'reading-contrast-home.png')});
   });
-  await check('官方评论身份输入框共用一个轮廓，手机无溢出', async () => {
+  await check('独立评论输入框轮廓清晰，手机无溢出', async () => {
     await page.goto(`${base}/notes/`);
     await page.locator('[data-cbox]').scrollIntoViewIfNeeded();
-    await page.locator('.tk-meta-input input').first().waitFor();
-    assert.equal(await page.locator('.tk-meta-input .tk-input').first().evaluate((el) => getComputedStyle(el).borderTopWidth), '1px');
-    assert.equal(await page.locator('.tk-meta-input input').first().evaluate((el) => getComputedStyle(el).borderTopWidth), '0px');
-    assert.equal(await page.locator('.tk-submit .tk-row > .tk-avatar').first().evaluate((el) => getComputedStyle(el).display), 'none');
+    await page.locator('.ac-fields input').first().waitFor();
+    assert.equal(await page.locator('.ac-fields input').first().evaluate(el => getComputedStyle(el).borderTopWidth), '1px');
+    assert.equal(await page.locator('.ac-form').count(), 1);
     await page.locator('[data-cbox]').screenshot({path:path.join(out,'reading-comments.png')});
     await page.setViewportSize({width:390,height:844}); await page.waitForTimeout(150);
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= 391),true);

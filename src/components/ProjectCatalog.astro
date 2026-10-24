@@ -2,11 +2,12 @@
 import ProjectCard from './ProjectCard.astro';
 import Icon from './Icon.astro';
 import { getProjectCatalog } from '../lib/project-catalog.server';
+import { projectCatalogSignature } from '../lib/project-catalog.js';
 const catalog=await getProjectCatalog();
 const icons=[...new Set(['github','layers',...catalog.groups.flatMap((group)=>group.items.map((item)=>item.icon))])];
 const placeholder={id:'',title:'',owner:'',description:'',href:'',icon:'github',cover:'',stars:null,tags:[],detailHref:'',noteHref:''};
 ---
-<div data-project-catalog>
+<div data-project-catalog data-project-signature={projectCatalogSignature(catalog)}>
   <p class="empty-hint" data-project-empty hidden={catalog.total>0}>项目整理中，敬请期待。</p>
   <div data-project-groups>{catalog.groups.map((group)=><section class="proj-section" data-project-group={group.id} aria-labelledby={`project-${group.id}`}><div class="proj-section__head"><h2 class="proj-section__label" id={`project-${group.id}`}>{group.title}</h2><p class="proj-section__desc">{group.description}</p></div><div class="proj-grid">{group.items.map((item)=><ProjectCard item={item}/>)}</div></section>)}</div>
   <template data-project-card-template><ProjectCard item={placeholder}/></template>

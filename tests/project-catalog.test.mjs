@@ -2,6 +2,20 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildProjectCatalog } from '../src/lib/project-catalog.js';
 
+test('手动导入的 GitHub 项目不依赖账号同步结果，也进入开源项目', () => {
+  const catalog=buildProjectCatalog({managed:[{slug:'imported',title:'导入项目',links:[{url:'https://github.com/another/project'}]}]});
+  assert.equal(catalog.groups[0].id,'open-source');
+  assert.equal(catalog.groups[0].items[0].owner,'another');
+  assert.equal(catalog.groups[0].items[0].stars,null);
+  assert.equal(catalog.groups[0].items[0].detailHref,'/projects/imported/');
+});
+
+test('无仓库的后台作品使用明确标题且空分类不输出', () => {
+  const catalog=buildProjectCatalog({managed:[{slug:'local',title:'本地作品'}],config:{projectGroups:[{title:'空分组',items:[]}]}});
+  assert.equal(catalog.groups.length,1);
+  assert.equal(catalog.groups[0].title,'项目作品');
+});
+
 test('managed duplicates are identified by repository even with different primary links', () => {
   const managed=[{slug:'first',title:'First',links:[{url:'https://example.com/first'},{url:'https://github.com/owner/Repo'}]},
     {slug:'second',title:'Second',links:[{url:'https://example.com/second'},{url:'https://github.com/OWNER/repo.git'}]}];

@@ -1,5 +1,4 @@
 ---
-import CursorSettings from './CursorSettings.astro';
 const styles = [
   { id: 'life', label: '生活', en: 'Life', color: '#d97757' },
   { id: 'swiss', label: '瑞士', en: 'Swiss', color: '#e43d30' },
@@ -12,11 +11,7 @@ const styles = [
 <dialog id="style-console" class="atlas-console" aria-labelledby="style-title" data-lenis-prevent>
   <div class="atlas-menu__head"><div><small>MAKE YOURSELF AT HOME</small><h2 id="style-title">换一种心情</h2></div><button type="button" class="atlas-icon" data-dialog-close aria-label="关闭外观设置">✕</button></div>
   <p class="atlas-console__description">同一份记录，不一样的观看方式。</p>
-  <div class="console-tabs" role="tablist" aria-label="设置类别">
-    <button type="button" id="appearance-tab" role="tab" data-console-tab="appearance" aria-controls="appearance-panel" aria-selected="true">页面外观</button>
-    <button type="button" id="cursor-tab" role="tab" data-console-tab="cursor" aria-controls="cursor-panel" aria-selected="false" tabindex="-1">光标设置</button>
-  </div>
-  <section id="appearance-panel" role="tabpanel" aria-labelledby="appearance-tab">
+  <section id="appearance-panel" aria-label="页面外观">
   <div class="atlas-style-grid" role="group" aria-label="视觉风格">
     {styles.map((style) => <button type="button" data-style-choice={style.id} aria-pressed={style.id === 'life'} style={`--swatch:${style.color}`}><span class={`atlas-style-preview atlas-style-preview--${style.id}`} aria-hidden="true"><i></i><b>Aa</b><em></em></span><strong>{style.label}</strong><small>{style.en}</small></button>)}
   </div>
@@ -24,12 +19,4 @@ const styles = [
   <p class="atlas-console__hint" data-style-hint aria-live="polite">偏好保存在当前浏览器。</p>
   <button type="button" class="atlas-style-reset" data-style-reset>恢复站点默认</button>
   </section>
-  <section id="cursor-panel" role="tabpanel" aria-labelledby="cursor-tab" hidden><CursorSettings /></section>
 </dialog>
-
-<style>
-  .console-tabs { display:flex; gap:4px; padding:4px; border-radius:var(--radius-sm); background:var(--bg-tint); margin-bottom:18px; }
-  .console-tabs button { flex:1; min-height:40px; border:0; border-radius:calc(var(--radius-sm) - 4px); color:var(--text-muted); background:transparent; font:inherit; font-size:12px; cursor:pointer; }
-  .console-tabs [aria-selected='true'] { color:var(--text); background:var(--surface); box-shadow:var(--shadow); }
-  [role='tabpanel'][hidden] { display:none; }
-</style>

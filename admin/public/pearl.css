@@ -1,5 +1,7 @@
 /* Warm pearl surfaces, adapted from scaffold-master's material vocabulary. */
 :root {
+  /* 使用本地正体优先，未安装苹方时直接回退系统字体，避免远程字体加载和倾斜字形。 */
+  --font: 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   color-scheme: light;
   --bg: #f8f7f4;
   --bg-tint: #f1eeea;
@@ -591,35 +593,6 @@ kbd {
   float: left;
   margin: 0 14px 0 0;
 }
-.pearl-settings-drawer {
-  position: fixed !important;
-  inset: 0 0 0 auto;
-  width: min(420px, 92vw) !important;
-  height: 100dvh;
-  overflow: auto;
-  z-index: 70;
-  padding: 28px;
-  background: var(--glass);
-  backdrop-filter: blur(22px);
-  border-left: 1px solid var(--border);
-  box-shadow: var(--shadow-float);
-  border-radius: 22px 0 0 22px;
-}
-.pearl-settings-scrim {
-  position: fixed;
-  inset: 0;
-  background: #2c1f1940;
-  backdrop-filter: blur(4px);
-  z-index: 69;
-}
-.pearl-settings-close {
-  position: absolute;
-  right: 18px;
-  top: 18px;
-}
-.editor:has(.pearl-settings-drawer) {
-  grid-template-columns: minmax(0, 1fr);
-}
 .pearl-sample-collapsed {
   background: var(--glass);
 }
@@ -954,18 +927,6 @@ input[type='checkbox'] {
 }
 .editor__title {
   color: var(--text);
-}
-.editor__drawer {
-  background: var(--glass);
-  backdrop-filter: blur(22px);
-  border-left: 1px solid var(--border);
-  box-shadow: var(--shadow-float);
-  z-index: 60;
-}
-.editor__scrim {
-  z-index: 59;
-  background: #2c1f193b;
-  backdrop-filter: blur(3px);
 }
 .modal__card {
   background: var(--surface);
@@ -1462,6 +1423,13 @@ input[type='checkbox'] {
   border-color: var(--rose);
   background: var(--rose-soft);
 }
+.pearl-step.is-complete {
+  border-color: color-mix(in srgb, var(--ok) 45%, var(--border));
+  background: color-mix(in srgb, var(--ok) 7%, var(--surface));
+}
+.pearl-step.is-complete strong { color: var(--ok); }
+.pearl-step.is-failed { border-color: var(--danger); }
+.pearl-step.is-failed small { color: var(--danger); }
 .pearl-step.is-active::before {
   content: '';
   height: 2px;
@@ -1624,7 +1592,8 @@ input[type='checkbox'] {
   position: relative;
   min-height: 100dvh;
   overflow: hidden;
-  background: radial-gradient(ellipse at 50% 45%, #76534c, #362a27 75%);
+  /* 登录延续博客的暖纸色与赭红品牌色，保留原有画布、流光和刻度。 */
+  background: radial-gradient(ellipse at 50% 38%, #824e3d, #272522 78%);
   color: #fff1e8;
   padding: 48px;
   display: flex;

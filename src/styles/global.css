@@ -2058,14 +2058,15 @@ html[data-theme-mode="auto"] .theme-toggle .theme-toggle__auto {
 .post-content .post-figure--w75 { width: 75%; }
 .post-content .post-figure--w100 { width: 100%; }
 
-.post-content .post-figure--left {
+/* 对齐规则与默认 figure 规则保持同等权重，避免默认居中覆盖编辑器选择。 */
+.post-content figure.post-figure--left {
   align-items: flex-start;
   margin-left: 0;
   margin-right: auto;
   text-align: left;
 }
 
-.post-content .post-figure--right {
+.post-content figure.post-figure--right {
   align-items: flex-end;
   margin-left: auto;
   margin-right: 0;

@@ -35,6 +35,7 @@ export function initMotion(signal) {
     clearTimeout(refreshTimer);
     timers.forEach(clearTimeout); timers.clear();
     cancelAnimationFrame(frame);
+    frame = 0;
     behaviors?.abort();
     observer?.disconnect(); observer = undefined;
     media?.revert(); media = undefined;
@@ -133,7 +134,21 @@ export function initMotion(signal) {
       }
     });
     animateCards(document);
-    observer = new MutationObserver((records) => { if(records.some((r)=>[...r.addedNodes].some((node)=>node.nodeType===1))) animateCards(document); });
+    // 动态项目卡片、正文等一次更新可能产生很多 mutation。合并到一帧后
+    // 只遍历新增子树；不再每次文字/节点更新都重新扫描整个页面。
+    const addedRoots = new Set();
+    observer = new MutationObserver((records) => {
+      for (const record of records) for (const node of record.addedNodes) {
+        if (node.nodeType === 1) addedRoots.add(node);
+      }
+      if (!addedRoots.size || frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        if (signal.aborted) return;
+        for (const node of addedRoots) if (node.isConnected) animateCards(node.parentElement || node);
+        addedRoots.clear();
+      });
+    });
     observer.observe(document.querySelector('main') || document.body,{childList:true,subtree:true});
     // 只有宽屏且允许动画时才固定横轨；触屏和小屏始终保留原生横向滚动。
     // 所有距离按实际内容测量，图片、字体和窗口变化后由 refresh 重新计算。
@@ -155,6 +170,11 @@ export function initMotion(signal) {
     refresh();
   };
   setup();
+  // 标签页隐藏期间不推进平滑滚动；重新可见时恢复同一实例，保留所有动效。
+  document.addEventListener('visibilitychange', () => {
+    gsap.ticker.remove(tick);
+    if (!document.hidden && lenis) { gsap.ticker.add(tick); refresh(); }
+  }, { signal });
   const heroMedia = document.querySelector('[data-hero-media]');
   if (heroMedia && !heroMedia.closest('[data-wallpaper-host]')) {
     heroMedia.addEventListener('error', () => { heroMedia.hidden = true; }, { signal });

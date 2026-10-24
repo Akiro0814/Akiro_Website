@@ -186,20 +186,23 @@ export function getNavLinks() {
 
 export function saveNavLinks(input) {
   return withFileLock(NAV_FILE, async () => {
-  const categories = (Array.isArray(input?.categories) ? input.categories : [])
-    .map((cat, ci) => ({
-      id: String(cat?.id || '').trim().slice(0, 40) || `cat-${ci + 1}`,
-      name: String(cat?.name || '').trim().slice(0, 40),
-      links: (Array.isArray(cat?.links) ? cat.links : [])
-        .map((l) => ({
+  // 兼容旧分类输入，保存时汇总为一个列表；顺序和手动图标保持不变。
+  const links = (Array.isArray(input?.categories) ? input.categories : [])
+    .flatMap((cat) => Array.isArray(cat?.links) ? cat.links : [])
+    .map((l) => ({
           name: String(l?.name || '').trim().slice(0, 60),
           url: String(l?.url || '').trim().slice(0, 300),
           desc: String(l?.desc || '').trim().slice(0, 120),
           icon: String(l?.icon || '').trim().slice(0, 300),
         }))
-        .filter((l) => l.name && l.url),
-    }))
-    .filter((cat) => cat.name && cat.links.length > 0);
+    .filter((l) => l.name && l.url);
+  for (const link of links) {
+    let url;
+    try { url = new URL(link.url); } catch { throw new Error('网址需以 http(s):// 开头'); }
+    if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) throw new Error('网址需以 http(s):// 开头，且不含登录凭据');
+    if (!link.icon) link.icon = `${url.origin}/favicon.ico`;
+  }
+  const categories = links.length ? [{ id: 'all', name: '全部网站', links }] : [];
   await writeJSONAsync(NAV_FILE, { categories });
   return { categories };
   });
@@ -275,14 +278,20 @@ export function saveFriend(input) {
   return withFileLock(FRIENDS_FILE, async () => {
   const data = getFriends();
   const id = String(input?.id || '');
-  const item = data.items.find((f) => f.id === id);
+  // 空 ID 明确表示管理员新增；传入不存在的 ID 仍报错，防止误编辑变成重复新增。
+  const item = id ? data.items.find((f) => f.id === id) : {
+    id: newId(), name: '', url: '', avatar: '', desc: '', email: '',
+    status: 'approved', createdAt: Date.now(), reviewedAt: Date.now(),
+  };
   if (!item) throw new Error('友链不存在');
   item.name = String(input?.name ?? item.name).trim().slice(0, 40) || item.name;
+  if (!item.name) throw new Error('请填写站点名称');
   item.url = String(input?.url ?? item.url).trim().slice(0, 300) || item.url;
   if (!/^https?:\/\//i.test(item.url)) throw new Error('站点链接需以 http(s):// 开头');
   item.avatar = String(input?.avatar ?? item.avatar).trim().slice(0, 300);
   item.desc = String(input?.desc ?? item.desc).trim().slice(0, 120);
   item.email = String(input?.email ?? item.email).trim().slice(0, 100);
+  if (!id) data.items.push(item);
   await writeJSONAsync(FRIENDS_FILE, data);
   return item;
   });

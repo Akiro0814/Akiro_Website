@@ -7,6 +7,23 @@ import { addRelease, createFixture } from './helpers/fixture.mjs';
 // 每个 fixture 都有自己的 ROOT；绝不构建或回滚真实博客。关闭所有远端备份。
 process.env.BACKUP_ENABLED = 'false';
 
+test('自定义版本名称随发布保存，同名发布保持独立并可回滚到正确名称', async (t) => {
+  const fixture = createFixture(t);
+  const build = await fixture.importModule('build.mjs');
+  const first = await build.buildAndPublish({ label: '秋日更新2026 V2.4' });
+  const second = await build.buildAndPublish({ label: '秋日更新2026 V2.4' });
+  assert.equal(first.ok, true);
+  assert.equal(second.ok, true);
+  assert.notEqual(first.release, second.release);
+  assert.equal(first.label, '秋日更新2026 V2.4');
+  assert.equal(build.releasesInfo().filter((r) => r.label === first.label).length, 2);
+  assert.equal(build.rollback(), first.release);
+  assert.equal(build.releasesInfo().find((r) => r.current).label, first.label);
+  await assert.rejects(build.buildAndPublish({ label: 'x'.repeat(65) }), /版本名称/);
+  assert.equal(build.isBuilding(), false);
+  assert.equal(build.currentRelease(), first.release);
+});
+
 test('超过十五分钟的构建锁若仍属于存活进程，不能被回滚清理', async (t) => {
   const fixture = createFixture(t);
   const lock = path.join(fixture.root, '.build-lock');

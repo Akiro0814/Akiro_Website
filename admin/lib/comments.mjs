@@ -1,55 +1,20 @@
-// 博客管理界面使用的 Twikoo 适配层：所有数据来自官方数据库/官方 API。
-// 保留现有页面接口，避免评论管理与站点统计继续读取旧 comments.json。
-import { marked } from 'marked';
+// 评论管理复用独立服务，状态变更即时生效。
 import { dayKeyOf } from './stats.mjs';
-import { twikoo, plainComment } from './twikoo.mjs';
-
-const toAdmin = (item) => ({
-  // 只下发页面真正需要的字段；官方 uid 可能是服务端桥接令牌，绝不能进入 boot JSON。
-  id: String(item._id || item.id), nick: String(item.nick || ''), mail: String(item.mail || ''),
-  url: String(item.url || ''), commentMd: item.commentMd || plainComment(item.comment),
-  master: Boolean(item.master), ua: String(item.ua || ''),
-  status: item.isSpam ? 'hidden' : 'visible', created: Number(item.created) || 0,
-  like: (Array.isArray(item.ups) ? item.ups.length : Number(item.ups) || 0) + (Array.isArray(item.like) ? item.like.length : Number(item.like) || 0),
-});
+import { commentService } from './comment-service.mjs';
+import { commentDevice } from './comment-device.mjs';
+import { displayCommentUrl } from './comment-url.mjs';
 export async function adminList({ status, keyword = '' } = {}) {
   const key = String(keyword).toLowerCase().trim();
-  return (await twikoo.documents()).map(toAdmin)
-    .filter((item) => (!['visible', 'hidden'].includes(status) || item.status === status)
-      && (!key || [item.nick, item.mail, item.url, item.commentMd].some((value) => String(value || '').toLowerCase().includes(key))))
+  return (await commentService.documents()).map(c => ({ id: c._id, nick: c.nick, mail: c.mail,
+    url: c.url, commentMd: c.commentMd, master: c.master, device: c.device || commentDevice(c.ua),
+    status: c.isSpam ? 'hidden' : 'visible', created: c.created, like: c.baseLikes + c.votes.length }))
+    .filter(c => (!['hidden', 'visible'].includes(status) || c.status === status) && (!key || [c.nick, c.mail, c.url, displayCommentUrl(c.url), c.commentMd].some(v => String(v).toLowerCase().includes(key))))
     .sort((a, b) => b.created - a.created);
 }
-export async function adminCount() {
-  const all = await adminList();
-  return { total: all.length, visible: all.filter((item) => item.status === 'visible').length, hidden: all.filter((item) => item.status === 'hidden').length };
-}
-const managed = async (body) => {
-  const result = await twikoo.adminCall(body);
-  if (result.status >= 400 || result.body.code !== 0) throw Error(result.body.message || 'Twikoo 操作失败。');
-  return { ok: true, ...result.body };
-};
-export async function adminSetStatus(id, status) {
-  if (!['visible', 'hidden'].includes(status)) throw Error('状态无效');
-  return managed({ event: 'COMMENT_SET_FOR_ADMIN', id, set: { isSpam: status === 'hidden' } });
-}
-export async function adminRemove(id) {
-  const all = await twikoo.documents();
-  if (!all.some((item) => String(item._id || item.id) === id)) throw Error('评论不存在');
-  // 删除主楼时一起删除回复，避免留下无法从前台找到的孤立评论。
-  for (const item of all.filter((item) => item.rid === id)) await managed({ event: 'COMMENT_DELETE_FOR_ADMIN', id: String(item._id || item.id) });
-  return managed({ event: 'COMMENT_DELETE_FOR_ADMIN', id });
-}
-export async function adminReply({ id, comment, nick }) {
-  const text = String(comment || '').trim();
-  if (!text || text.length > 5000) throw Error('请填写不超过 5000 字的回复。');
-  const parent = (await twikoo.documents()).find((item) => String(item._id || item.id) === id);
-  if (!parent) throw Error('评论不存在');
-  const config = await twikoo.adminCall({ event: 'GET_CONFIG_FOR_ADMIN' });
-  return managed({ event: 'COMMENT_SUBMIT', url: parent.url, href: parent.href || parent.url,
-    rid: parent.rid || id, pid: id, nick: nick || process.env.ADMIN_USER || 'Akiro',
-    mail: config.body.config?.BLOGGER_EMAIL || 'blogger@localhost.invalid',
-    comment: String(marked.parse(text, { async: false })), ua: 'Akiro admin' });
-}
+export async function adminCount() { const all = await adminList(); return { total: all.length, visible: all.filter(c => c.status === 'visible').length, hidden: all.filter(c => c.status === 'hidden').length }; }
+export const adminSetStatus = (id, status) => commentService.setStatus(id, status);
+export const adminRemove = id => commentService.remove(id);
+export const adminReply = body => commentService.reply(body);
 export async function adminTrend({ daysLimit = 30, monthsLimit = 12, recentLimit = 5 } = {}) {
   const all = await adminList();
   const byDay = {};

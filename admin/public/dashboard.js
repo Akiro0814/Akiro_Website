@@ -3,8 +3,8 @@
 // 或 /api/manage/dashboard（刷新），两处口径完全一致，渲染函数共用。
 // 由 admin.js 在页面初始化时调用 initDashboard / stopDashboard。
 
-import { animateNumber, animateCharts } from './motion.js?v=20261020-align-2';
-import { notify } from './interface.js?v=20261020-align-2';
+import { animateNumber, animateCharts } from './motion.js?v=20261024-notifications-1';
+import { notify } from './interface.js?v=20261024-notifications-1';
 
 const esc = (v) =>
   String(v ?? '').replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
@@ -82,14 +82,17 @@ function renderTrend(container, points) {
     container.innerHTML = '<p class="empty">暂无数据，有访问后这里会出现趋势曲线。</p>';
     return;
   }
-  const W = 720;
-  const H = 240;
+  const W = Math.max(300, Math.min(960, container.clientWidth || 720));
+  const H = 280;
   const padL = 44;
   const padR = 14;
   const padT = 18;
   const padB = 30;
   const hasUv = points.some((p) => p.uv != null);
-  const max = Math.max(1, ...points.map((p) => Math.max(p.value || 0, p.uv || 0)));
+  // 整数访问量使用四等分的合理上限，低流量时不会出现重复的 0、1 刻度。
+  const rawMax = Math.max(1, ...points.map((p) => Math.max(p.value || 0, p.uv || 0)));
+  const unit = Math.pow(10, Math.floor(Math.log10(rawMax / 4)));
+  const max = Math.max(4, Math.ceil(rawMax * 1.08 / 4 / unit) * unit * 4);
   const n = points.length;
   const xAt = (i) => (n === 1 ? (padL + W - padR) / 2 : padL + (i * (W - padL - padR)) / (n - 1));
   const yAt = (v) => padT + (H - padT - padB) * (1 - v / max);
@@ -100,7 +103,7 @@ function renderTrend(container, points) {
   // 精确求值（圆点永远贴着曲线滑）。控制点纵向钳制在绘图区内。
   const buildSpline = (values) => {
     const pts = values.map((y, i) => [xAt(i), y]);
-    if (pts.length < 2) return { path: '', segs: [] };
+    if (pts.length < 2) return { path: '', segs: [], point: pts[0] };
     const segs = [];
     let d = `M${pts[0][0].toFixed(1)},${pts[0][1].toFixed(1)}`;
     for (let i = 0; i < pts.length - 1; i++) {
@@ -108,8 +111,10 @@ function renderTrend(container, points) {
       const p1 = pts[i];
       const p2 = pts[i + 1];
       const p3 = pts[i + 2] || p2;
-      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, clampY(p1[1] + (p2[1] - p0[1]) / 6)];
-      const c2 = [p2[0] - (p3[0] - p1[0]) / 6, clampY(p2[1] - (p3[1] - p1[1]) / 6)];
+      // 每段控制点限制在两端数值之间，零值平台不会下穿基线，峰值不产生虚假超调。
+      const boundedY = (y) => clampY(Math.max(Math.min(p1[1], p2[1]), Math.min(Math.max(p1[1], p2[1]), y)));
+      const c1 = [p1[0] + (p2[0] - p0[0]) / 6, boundedY(p1[1] + (p2[1] - p0[1]) / 6)];
+      const c2 = [p2[0] - (p3[0] - p1[0]) / 6, boundedY(p2[1] - (p3[1] - p1[1]) / 6)];
       segs.push([p1, c1, c2, p2]);
       d += ` C${c1[0].toFixed(1)},${c1[1].toFixed(1)} ${c2[0].toFixed(1)},${c2[1].toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
     }
@@ -119,7 +124,7 @@ function renderTrend(container, points) {
   // 求样条上横坐标为 x 的点（贝塞尔按段求值）。
   const pointOn = (spline, x) => {
     const segs = spline.segs;
-    if (!segs.length) return [xAt(0), yAt(points[0]?.value || 0)];
+    if (!segs.length) return spline.point || [xAt(0), yAt(0)];
     const minX = segs[0][0][0];
     const maxX = segs[segs.length - 1][3][0];
     const mx = Math.min(Math.max(x, minX), maxX);
@@ -139,8 +144,8 @@ function renderTrend(container, points) {
 
   // 横向网格与刻度。
   let grid = '';
-  for (let g = 0; g <= 3; g++) {
-    const v = Math.round((max / 3) * g);
+  for (let g = 0; g <= 4; g++) {
+    const v = Math.round((max / 4) * g);
     const y = yAt(v);
     grid += `<line x1="${padL}" y1="${y.toFixed(1)}" x2="${W - padR}" y2="${y.toFixed(1)}" class="chart-grid" />
       <text x="${padL - 8}" y="${(y + 4).toFixed(1)}" class="chart-axis" text-anchor="end">${v}</text>`;
@@ -150,13 +155,14 @@ function renderTrend(container, points) {
   // 无访客序列时（如「近 12 月」视图）给空样条而不是 null，渲染与求值统一处理。
   const uvSpline = hasUv ? buildSpline(points.map((p) => yAt(p.uv || 0))) : { path: '', segs: [] };
   const pvArea = pvSpline.path ? `${pvSpline.path} L${xAt(n - 1).toFixed(1)},${yAt(0)} L${xAt(0).toFixed(1)},${yAt(0)} Z` : '';
+  const uvArea = uvSpline.path ? `${uvSpline.path} L${xAt(n - 1).toFixed(1)},${yAt(0)} L${xAt(0).toFixed(1)},${yAt(0)} Z` : '';
   const staticDots = [
     ...points.map((p, i) => `<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(p.value || 0).toFixed(1)}" r="2.6" class="chart-dot chart-dot--pv" />`),
     ...(hasUv ? points.map((p, i) => `<circle cx="${xAt(i).toFixed(1)}" cy="${yAt(p.uv || 0).toFixed(1)}" r="2" class="chart-dot chart-dot--uv" />`) : []),
   ].join('');
 
   // 横轴标签：最多 8 个，均匀抽样，避免挤成一团。
-  const step = Math.max(1, Math.ceil(n / 8));
+  const step = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(W / 90))));
   let xLabels = '';
   for (let i = 0; i < n; i += step) {
     xLabels += `<text x="${xAt(i).toFixed(1)}" y="${H - 8}" class="chart-axis" text-anchor="middle">${esc(points[i].label)}</text>`;
@@ -177,9 +183,10 @@ function renderTrend(container, points) {
         </defs>
         ${grid}
         ${pvArea ? `<path d="${pvArea}" class="chart-area" />` : ''}
+        ${uvArea ? `<path d="${uvArea}" class="chart-area chart-area--uv" />` : ''}
         ${uvSpline.path ? `<path d="${uvSpline.path}" class="chart-line chart-line--uv" />` : ''}
         ${pvSpline.path ? `<path d="${pvSpline.path}" class="chart-line chart-line--pv" />` : ''}
-        ${staticDots}
+        ${n === 1 ? staticDots.replaceAll('chart-dot ', 'chart-dot is-single ') : staticDots}
         ${xLabels}
         <g class="chart-cursor chart-cursor--pv"><circle r="11" class="chart-halo" /><circle r="4.4" class="chart-active-dot chart-active-dot--pv" /></g>
         ${hasUv ? '<g class="chart-cursor chart-cursor--uv"><circle r="3.8" class="chart-active-dot chart-active-dot--uv" /></g>' : ''}
@@ -289,7 +296,14 @@ function renderTrend(container, points) {
     }
   });
 
+  // 宽度变化后重算坐标和标签密度，移动端无需缩小到难以阅读的文字。
+  const measuredWidth = container.clientWidth;
+  const observer = new ResizeObserver(() => {
+    if (Math.abs(container.clientWidth - measuredWidth) > 2) renderTrend(container, points);
+  });
+  observer.observe(container);
   container._trendStop = () => {
+    observer.disconnect();
     running = false;
     started = false;
     if (raf) {
@@ -611,7 +625,7 @@ function renderBuild(data) {
   const release = document.getElementById('dash-build-release');
   if (state) state.textContent = data.build?.status || '尚未构建';
   if (time) time.textContent = data.build?.finishedAt ? new Date(data.build.finishedAt).toLocaleString('zh-CN') : '—';
-  if (release) release.textContent = data.build?.release || '—';
+  if (release) release.textContent = data.build?.label || data.build?.release || '—';
 }
 
 function renderDistribution(data) {
@@ -939,5 +953,7 @@ export function initDashboard() {
 export function stopDashboard() {
   stopAuto();
   hideTip();
+  // SPA 换页前释放宽度观察与悬停动画，不让已卸载的图表继续持有页面。
+  rootEl?.querySelector('#dash-trend')?._trendStop?.();
   rootEl = null;
 }

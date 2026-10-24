@@ -1,0 +1,63 @@
+/* 独立评论沿用站点暖白与陶土色，所有选择器限制在评论模块内。 */
+.cbox { margin-top: 2.5rem; padding: clamp(20px, 4vw, 38px); border: 1px solid var(--border, #e7dfd6); border-radius: 20px; background: var(--surface, #fffdf9); }
+.cbox__head { display: flex; align-items: baseline; gap: 10px; }
+.cbox__title { margin: 0; font-size: 1.5rem; }
+.cbox__count, .comment-service-status { color: var(--text-muted, #84786e); font-size: .85rem; }
+.cbox button, .cbox input, .cbox textarea, .cbox select { font: inherit; }
+.cbox button { padding: 8px 13px; border: 1px solid #e5dbd0; border-radius: 9px; background: #fffaf4; cursor: pointer; color: #675247; min-height: 40px; }
+.cbox button:hover { background: #f5eade; }
+.cbox button:disabled { cursor: default; opacity: .5; }
+.cbox :is(button, input, textarea, select):focus-visible { outline: 2px solid #b9795e; outline-offset: 3px; }
+.ac-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 24px 0 16px; }
+.ac-fields label, .ac-text-label { display: grid; gap: 8px; font-size: .85rem; color: #76665a; }
+.ac-fields label { display: block; }
+.ac-fields small { color: #998a7e; font-size: .75rem; }
+.ac-fields input, .cbox textarea { display: block; box-sizing: border-box; width: 100%; margin-top: 8px; padding: 12px 14px; color: #493c32; border: 1px solid #e3d9cd; border-radius: 10px; background: #fffcf8; }
+.cbox textarea { min-height: 140px; resize: vertical; line-height: 1.7; }
+.ac-honeypot { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+.ac-actions, .ac-toolbar, .ac-toolbar > div, .ac-reply, .ac-pages { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.ac-actions { margin-top: 12px; }
+.ac-hint { margin-right: auto; color: #938477; font-size: .75rem; }
+.cbox .ac-primary { background: #a96b51; color: white; border-color: #a96b51; }
+.cbox .ac-primary:hover { background: #915a44; }
+.ac-feedback { min-height: 1.5em; font-size: .85rem; color: #56774c; }
+.ac-feedback.is-error { color: #ad3c35; }
+.ac-toolbar { justify-content: space-between; padding: 18px 0; border-bottom: 1px solid #ebe2d8; font-size: .85rem; }
+.ac-toolbar select { max-width: 130px; padding: 7px; border: 1px solid #e5dbd0; border-radius: 8px; background: #fffcf8; color: #675247; }
+.ac-comment { display: flex; gap: 14px; padding: 23px 0; border-bottom: 1px solid #eee6dc; }
+.ac-avatar { display: grid; place-items: center; flex: 0 0 38px; height: 38px; border-radius: 50%; background: #eee3d7; color: #8e644d; font-weight: 600; }
+.ac-comment-body { min-width: 0; flex: 1; }
+.ac-comment header { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.ac-comment header strong { font-size: .94rem; }
+.ac-comment time { color: #a09387; font-size: .73rem; }
+.ac-master { padding: 1px 7px; border-radius: 5px; color: #9a5b42; background: #f1e4d6; font-size: .7rem; }
+.ac-device { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 7px; color: #908174; font-size: .7rem; }
+.ac-device span { background: #f3eee7; border-radius: 5px; padding: 2px 7px; }
+.ac-content { overflow-wrap: anywhere; font-size: .95rem; line-height: 1.8; }
+.ac-content img { max-width: 100%; height: auto; }
+.ac-content pre { max-width: 100%; overflow-x: auto; }
+.ac-comment footer { display: flex; gap: 14px; }
+.ac-comment footer button { border: none; padding: 3px 0; background: transparent; font-size: .76rem; color: #977a67; }
+.ac-replies { margin-top: 14px; padding-left: 14px; border-left: 2px solid #e9ddcf; }
+.ac-replies .ac-comment:last-child { border-bottom: none; padding-bottom: 0; }
+.ac-replies .ac-avatar { flex-basis: 28px; height: 28px; font-size: .8rem; }
+.ac-preview { padding: 16px; border: 1px dashed #d6c4b3; border-radius: 10px; margin-top: 14px; overflow-wrap: anywhere; }
+.ac-preview img { max-width: 100%; }
+.ac-empty { text-align: center; padding: 30px 8px; color: #a08e7e; }
+.ac-pages { justify-content: center; margin-top: 20px; font-size: .85rem; }
+.ac-reply { padding: 10px 14px; border-radius: 8px; background: #f3eade; font-size: .85rem; }
+.ac-reply[hidden], .ac-preview[hidden] { display: none; }
+@media (max-width: 600px) { .cbox { padding: 20px 16px; border-radius: 16px; } .ac-fields { grid-template-columns: 1fr; gap: 12px; } .ac-hint { flex-basis: 100%; } .ac-actions > button:first-of-type { margin-left: auto; } .ac-comment { gap: 10px; } .ac-replies { padding-left: 8px; } .ac-replies .ac-avatar { display: none; } .ac-toolbar { align-items: flex-start; gap: 12px; } }
+/* 使用当前主题语义色，保持站点所有外观及暗色模式可读。 */
+.cbox { color: var(--text); }
+.cbox button, .ac-toolbar select { color: var(--text-muted); background: var(--surface-muted); border-color: var(--border); }
+.cbox button:hover { background: var(--accent-soft); }
+.ac-fields input, .cbox textarea { color: var(--text); background: var(--surface); border-color: var(--border-strong); }
+.ac-fields label, .ac-text-label, .ac-hint, .ac-comment time, .ac-device, .ac-empty, .ac-fields small { color: var(--text-muted); }
+.ac-avatar, .ac-device span, .ac-reply { background: var(--surface-muted); color: var(--text-muted); }
+.ac-toolbar, .ac-comment { border-color: var(--border); }
+.ac-replies, .ac-preview { border-color: var(--border-strong); }
+.ac-master { background: var(--brand-soft); color: var(--brand); }
+.ac-reply-to { font-size: .75rem; color: var(--text-muted); margin-bottom: 0; }
+.ac-comment footer button { color: var(--brand); }
+.cbox .ac-primary { background: var(--brand); color: #fff; border-color: var(--brand); }

@@ -10,7 +10,6 @@ import { initLiquidGlass } from './liquid-glass.js';
 import { initProgressiveBlur } from './progressive-blur.js';
 import { initProjects } from './projects.js';
 import { initAppearance } from './appearance.js';
-import { initCursorSettings } from './cursor-settings.js';
 import { initWallpapers } from './wallpapers.js';
 import { initImgFade } from './img-fade.js';
 import { initThemeToggle } from './theme-toggle.js';
@@ -24,8 +23,15 @@ import { initSwCleanup } from './sw-cleanup.js';
 import { trackView } from './tracking.js';
 
 let controller = null;
+let activeDocument;
+let navigationNode;
+let navigationController;
 
 const initPage = () => {
+  // after-swap 在新页面快照前准备动效，避免 page-load 才把已出现的标题
+  // 再次隐藏。page-load 仍负责首次直达；同一个 body 只初始化一次。
+  if (activeDocument === document.body) return;
+  activeDocument = document.body;
   controller?.abort();
   controller = new AbortController();
   const signal = controller.signal;
@@ -37,13 +43,23 @@ const initPage = () => {
   initProgress(signal);
   initToc(signal);
   initAppearance(signal);
-  initCursorSettings(signal);
   initWallpapers(signal);
-  initLiquidGlass(signal);
+  // 导航及 SVG 定义跨路由持久化；材质层的控制器不随正文重建，避免每次换页
+  // 都销毁 GPU 滤镜、按钮光照和 ResizeObserver。页面级按钮监听仍按页重新绑定。
+  const nav=document.querySelector('[data-site-header]');
+  if(nav!==navigationNode) {
+    navigationController?.abort();navigationController=new AbortController();navigationNode=nav;
+    initLiquidGlass(navigationController.signal);
+  }
+  nav?.querySelectorAll('.atlas-nav__links a').forEach((link)=>{
+    const href=link.getAttribute('href');
+    const active=href==='/'?location.pathname==='/':location.pathname.startsWith(href);
+    if(active)link.setAttribute('aria-current','page');else link.removeAttribute('aria-current');
+  });
   initMotion(signal);
   initProgressiveBlur(signal);
   initProjects(signal);
-  initImgFade();
+  initImgFade(signal);
   trackView();
 };
 
@@ -53,4 +69,5 @@ initShortcuts();
 initSwCleanup();
 
 document.addEventListener('astro:before-swap', () => controller?.abort());
+document.addEventListener('astro:after-swap', initPage);
 document.addEventListener('astro:page-load', initPage);

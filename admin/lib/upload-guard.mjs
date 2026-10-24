@@ -1,5 +1,5 @@
 // 上传文件内容校验（自 server.mjs 抽出，便于单元测试）：
-//   1. 文件头（magic number）必须与扩展名一致，防止任意内容伪装成图片；
+//   1. 文件头（magic number）必须能识别为图片，落盘后缀按实际内容纠正；
 //   2. SVG 必须剥离脚本能力（<script>、事件属性、javascript:/data: 链接、
 //      <foreignObject>），防止上传面成为存储型 XSS 跳板。
 // 仅管理员可上传，但账号一旦被盗不能成为跳板；剥离后图形仍可正常显示。
@@ -15,10 +15,15 @@ export const MAGIC_CHECKS = {
     b.length > 12 &&
     b.subarray(0, 4).toString('latin1') === 'RIFF' &&
     b.subarray(8, 12).toString('latin1') === 'WEBP',
-  '.avif': (b) =>
-    b.length > 12 &&
-    b.subarray(4, 8).toString('latin1') === 'ftyp' &&
-    /avi[fs]/.test(b.subarray(8, 12).toString('latin1')),
+  '.avif': (b) => {
+    if (b.length < 16 || b.subarray(4, 8).toString('latin1') !== 'ftyp') return false;
+    const size = b.readUInt32BE(0);
+    if (size < 16 || size > b.length || size % 4) return false;
+    // AVIF 的主品牌可以是 mif1；兼容品牌区从偏移 16 开始，跳过 minor_version。
+    const brands = [b.subarray(8, 12).toString('latin1')];
+    for (let offset = 16; offset < size; offset += 4) brands.push(b.subarray(offset, offset + 4).toString('latin1'));
+    return brands.some((brand) => brand === 'avif' || brand === 'avis');
+  },
   '.ico': (b) => b.length > 4 && b[0] === 0x00 && b[1] === 0x00 && b[2] === 0x01 && b[3] === 0x00,
   '.svg': (b) =>
     /^\s*(?:<\?xml[^>]*>\s*)?(?:<!--[\s\S]*?-->\s*)*(?:<!DOCTYPE[^>]*>\s*)?<svg[\s>]/i.test(
@@ -28,6 +33,13 @@ export const MAGIC_CHECKS = {
 
 export function looksLikeSvg(buf) {
   return MAGIC_CHECKS['.svg'](buf);
+}
+
+// 下载图片常见“文件名是 PNG，内容实际是 JPEG/WebP”。只接受明确识别的图片，
+// 按实际格式纠正落盘后缀；绝不通过跳过文件头校验来兼容错误文件名。
+export function imageExtension(buf, requested) {
+  if (MAGIC_CHECKS[requested]?.(buf)) return requested;
+  return Object.keys(MAGIC_CHECKS).find((ext) => MAGIC_CHECKS[ext](buf)) || null;
 }
 
 // SVG 脚本能力剥离：<script>、事件属性（on*）、javascript:/data:/vbscript: 链接、

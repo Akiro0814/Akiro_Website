@@ -28,8 +28,8 @@ const about = getAbout();
       <p class="eyebrow" data-animate>A LITTLE ABOUT ME</p>
       <h2 data-animate>与代码对话，<br />把日子写成故事。</h2>
       <ProgressiveBlur><div class="about-collage__cards">
-        <div class="about-collage__note" data-tilt data-animate><span>HELLO, WORLD</span><strong>{site.author}</strong><p>保持好奇，认真生活。</p><Icon name="arrow-up-right" size={28} /></div>
-        <figure class="about-collage__portrait" data-tilt data-animate><img src={site.avatar} width="240" height="240" alt={`${site.author} 的头像`} /><figcaption>{site.author} · nice to meet you</figcaption></figure>
+        <div class="about-collage__note" tabindex="0" data-tilt data-animate><span>HELLO, WORLD</span><strong>{site.author}</strong><p>保持好奇，认真生活。</p><Icon name="arrow-up-right" size={28} /></div>
+        <figure class="about-collage__portrait" tabindex="0" data-tilt data-animate><img src={site.avatar} width="240" height="240" alt={`${site.author} 的头像`} /><figcaption>{site.author} · nice to meet you</figcaption></figure>
         <div class="about-collage__note about-collage__note--index" data-tilt data-animate><span>PERSONAL ARCHIVE</span><strong>{postCount}<small>篇记录</small></strong><p>从 {firstYear} 开始，<br />收集灵感，也留下足迹。</p><a href="/archive/">翻翻我的笔记 <Icon name="arrow-right" size={16} /></a></div>
       </div></ProgressiveBlur>
     </section>

@@ -14,7 +14,7 @@ const items = [
 ];
 const current = (href: string) => href === '/' ? Astro.url.pathname === '/' : Astro.url.pathname.startsWith(href);
 ---
-<header class="atlas-nav" data-site-header>
+<header class="atlas-nav" data-site-header transition:persist="site-navigation" transition:animate="none">
   <span class="atlas-nav__glass" aria-hidden="true"></span>
   <span class="atlas-nav__light" aria-hidden="true"></span>
   <a class="atlas-brand" href="/" aria-label={`${site.author} 首页`} data-magnetic>
@@ -31,15 +31,15 @@ const current = (href: string) => href === '/' ? Astro.url.pathname === '/' : As
     <button type="button" class="atlas-menu-toggle" data-menu-toggle aria-haspopup="dialog" aria-controls="site-menu" aria-expanded="false"><span>探索</span><span class="atlas-menu-lines" aria-hidden="true"><i></i><i></i></span></button>
   </div>
 </header>
-<!-- 内缩 SDF 按实际尺寸生成位移图。三通道略微不同的折射率提供边缘色散，文字不经滤镜。 -->
-<svg class="atlas-glass-defs" aria-hidden="true" width="0" height="0" xmlns="http://www.w3.org/2000/svg"><defs>
+<!-- 胶囊边缘使用有界位移，三通道仅作亚像素色散，保留液态玻璃的透光感。 -->
+<svg class="atlas-glass-defs" aria-hidden="true" width="0" height="0" xmlns="http://www.w3.org/2000/svg" transition:persist="site-glass-definitions" transition:animate="none"><defs>
   <filter id="akiro-nav-refraction" filterUnits="userSpaceOnUse" x="0" y="0" width="1" height="1" color-interpolation-filters="sRGB">
     <feImage preserveAspectRatio="none" result="nav-map" />
-    <feDisplacementMap in="SourceGraphic" in2="nav-map" scale="0" data-dispersion="1.025" xChannelSelector="R" yChannelSelector="G" result="nav-r" />
+    <feDisplacementMap in="SourceGraphic" in2="nav-map" scale="0" data-dispersion="1.01" xChannelSelector="R" yChannelSelector="G" result="nav-r" />
     <feColorMatrix in="nav-r" type="matrix" values="1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0" result="nav-red" />
     <feDisplacementMap in="SourceGraphic" in2="nav-map" scale="0" data-dispersion="1" xChannelSelector="R" yChannelSelector="G" result="nav-g" />
     <feColorMatrix in="nav-g" type="matrix" values="0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 1 0" result="nav-green" />
-    <feDisplacementMap in="SourceGraphic" in2="nav-map" scale="0" data-dispersion=".975" xChannelSelector="R" yChannelSelector="G" result="nav-b" />
+    <feDisplacementMap in="SourceGraphic" in2="nav-map" scale="0" data-dispersion=".99" xChannelSelector="R" yChannelSelector="G" result="nav-b" />
     <feColorMatrix in="nav-b" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0" result="nav-blue" />
     <feBlend in="nav-red" in2="nav-green" mode="screen" result="nav-rg" />
     <feBlend in="nav-rg" in2="nav-blue" mode="screen" />

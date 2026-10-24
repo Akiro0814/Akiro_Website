@@ -215,8 +215,10 @@ npm run backup
 2. `git clone` 私有备份仓库，把 `src/content`、`public/uploads`、`data`、`profile.jpg` 拷贝到项目对应位置；默认不含 `.env`，需从安全保存的配置恢复，或基于 `.env.example` 重新配置
 3. `npm run deploy` 重新构建发布
 
-### Twikoo 评论服务
+### 独立评论服务
 
-官方 Twikoo 随 `npm run admin` 一起运行，默认数据库在 `data/twikoo/`，不需要额外端口或云数据库。前台官方 SDK 由构建自动复制到 `dist/vendor/`，需随整个静态产物发布；前后台 SDK/核心固定为同版本。后台「评论 → Twikoo 完整管理」复用博客登录。
+评论随 `npm run admin` 运行，数据库为 `data/comments-store.json`，无需额外端口、MongoDB 或 Twikoo。保持 `/api/`、`/admin/`、`/admin-assets/` 的现有反代。
 
-默认 Loki 目录只应由一个后台进程使用；复制或恢复整个数据库前先停后台。可选使用 `MONGODB_URI` 或接入已有 HTTP(S) Twikoo，详见 [Twikoo 配置与恢复](TWIKOO.md)。升级后需重启后台并重新构建前台；旧 JSON 评论会在首次使用时自动迁移，原文件保留。邮件、图床等外部服务按实际凭据配置后才可使用。
+升级后重启后台并重新构建发布前台。第一次使用会只读解析旧 `data/twikoo`，先备份至 `data/comment-migration-backup/` 再原子写入新库。不要同时运行新旧后台操作评论。旧运行文件原样保留；确认迁移数量与抽样回复后再考虑归档。
+
+只允许一个后台进程读写同一数据目录；停服后备份整个 `data/`（其中含私密邮箱与通知凭据），恢复需同时恢复 `comments-store.json`。详细设置与迁移说明见 [独立评论系统](COMMENTS.md)。

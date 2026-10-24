@@ -1,13 +1,16 @@
+import '/admin-assets/comment-settings.js?v=20261024-notifications-1';
+import '/admin-assets/project-ai.js?v=20261024-notifications-1';
 // 后台面板客户端。原生 JS（ES module），无需构建步骤。携带 CSRF token 调用
 // JSON API，驱动编辑器实时预览、媒体上传和构建任务。
 // HTML 净化复用前台同一套白名单逻辑（/admin-assets/shared/sanitize.js）；
 // 无刷新导航的页面请求走 /admin-assets/page-loader.js（路由白名单在彼处校验）。
 import { sanitizeHtml } from '/admin-assets/shared/sanitize.js';
+import { initMusicSort } from '/admin-assets/music-sort.js?v=20261024-notifications-1';
 import { isAllowedAdminRoute, loadAdminPage } from '/admin-assets/page-loader.js';
-import { initDashboard, stopDashboard } from '/admin-assets/dashboard.js?v=20261020-align-2';
-import { initDateTimePickers } from '/admin-assets/picker.js?v=20261020-align-2';
-import { initInterface, enhancePage, notify, confirmAction, loginSuccess } from '/admin-assets/interface.js?v=20261020-align-2';
-import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-assets/motion.js?v=20261020-align-2';
+import { initDashboard, stopDashboard } from '/admin-assets/dashboard.js?v=20261024-notifications-1';
+import { initDateTimePickers } from '/admin-assets/picker.js?v=20261024-notifications-1';
+import { initInterface, enhancePage, notify, confirmAction, loginSuccess } from '/admin-assets/interface.js?v=20261024-notifications-1';
+import { appear, dismiss, enterPage, leavePage, resetPage, flipLayout } from '/admin-assets/motion.js?v=20261024-notifications-1';
 
 (() => {
   initInterface();
@@ -206,6 +209,21 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
     // —— 自定义日期时间选择器（编辑器等页面的 [data-picker] 输入框） ——
     initDateTimePickers(signal);
 
+    // 页面文案的分区只改变可见性；全部字段继续由同一保存契约采集，切换不丢输入。
+    const contentTabs = [...document.querySelectorAll('[data-content-tab]')];
+    const selectContentPage = (key) => {
+      contentTabs.forEach((tab) => tab.setAttribute('aria-pressed', String(tab.dataset.contentTab === key)));
+      document.querySelectorAll('[data-content-group]').forEach((section) => { section.hidden = section.dataset.contentGroup !== key; });
+    };
+    contentTabs.forEach((tab) => tab.addEventListener('click', () => selectContentPage(tab.dataset.contentTab), { signal }));
+    if (contentTabs.length) selectContentPage('site');
+    // 轮换文字和旧备用标题有明确优先级，只允许编辑当前生效的主标题入口。
+    const heroWordsInput = document.querySelector('[data-presentation-key="heroWords"]');
+    const fallbackHeroTitle = document.getElementById('p-hero-title');
+    const syncHeroTitle = () => { if (fallbackHeroTitle) fallbackHeroTitle.disabled = Boolean(heroWordsInput?.value.trim()); };
+    heroWordsInput?.addEventListener('input', syncHeroTitle, { signal });
+    syncHeroTitle();
+
   // —— 编辑器（写作优先版式） ——
   const bodyArea = document.getElementById('body');
   const slugInput = document.getElementById('slug');
@@ -269,7 +287,11 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
             body: { id, originalId: boot.originalId || null, fields, body: bodyArea.value },
           });
           toast(result.message || '已保存');
-          if (boot.isNew) {
+          if (collection === 'posts') {
+            // 仅成功保存后退出文章编辑器；失败时继续保留全部输入。
+            resetEditorTracking();
+            navigate('/admin/posts');
+          } else if (boot.isNew) {
             // 保存成功后再跳转：先清空未保存标记，否则跳转会被自己的确认框拦下。
             resetEditorTracking();
             navigate(`/admin/${collection}/edit?path=${encodeURIComponent(result.id)}`);
@@ -356,6 +378,34 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
       history.lastAt = 0;
     };
     bodyArea.addEventListener('input', () => pushHistory(false));
+
+    // 导入只替换当前草稿，已有内容先确认；保留撤销历史和未保存离开保护。
+    const markdownFile = document.getElementById('markdown-file');
+    document.getElementById('markdown-import')?.addEventListener('click', () => markdownFile?.click());
+    markdownFile?.addEventListener('change', async () => {
+      const file = markdownFile.files?.[0];
+      markdownFile.value = '';
+      if (!file) return;
+      if (file.size > 512 * 1024) return toast('Markdown 文件不能超过 512 KB', true);
+      if ((bodyArea.value.trim() || editorDirty()) && !await confirmAction('导入会替换当前正文和文件中提供的文章设置，是否继续？')) return;
+      try {
+        const result = await api('/api/import/markdown', { method: 'POST', body: { markdown: await file.text(), filename: file.name } });
+        if (signal.aborted) return;
+        for (const input of document.querySelectorAll('[data-field]')) {
+          const key = input.dataset.field;
+          if (!Object.hasOwn(result.fields, key)) continue;
+          const value = result.fields[key];
+          if (input.type === 'checkbox') input.checked = value === true;
+          else input.value = Array.isArray(value) ? value.join(', ') : String(value ?? '');
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        bodyArea.value = result.body;
+        pushHistory(true);
+        updateCount();
+        document.querySelector('[data-tab="write"]')?.click();
+        toast('已导入编辑器，检查后点击保存');
+      } catch (err) { toast(err.message, true); }
+    }, { signal });
 
     // —— Markdown 快捷格式 ——
     const wrapSelection = (before, after, placeholder) => {
@@ -1064,6 +1114,7 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
   // ===== 项目管理 =====
   const projectEditor = document.getElementById('project-editor');
   if (projectEditor) {
+    window.initProjectAI?.({ api, toast, confirmAction, signal });
     const openEditor = (p) => {
       reveal(projectEditor);
       document.getElementById('project-editor-title').textContent = p ? '编辑项目' : '新建项目';
@@ -1141,14 +1192,6 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
   // ===== 网址导航 =====
   const navCats = document.getElementById('nav-cats');
   if (navCats) {
-    const catHtml = (ci) => `<div class="navcat" data-cat-index="${ci}">
-        <div class="navcat__head">
-          <input class="input navcat__name" value="" placeholder="分类名" aria-label="分类名" />
-          <button type="button" class="btn btn--sm btn--danger" data-cat-remove="${ci}">删除分类</button>
-        </div>
-        <div class="navcat__links"></div>
-        <button type="button" class="btn btn--sm" data-link-add="${ci}">+ 添加网址</button>
-      </div>`;
     const linkHtml = (ci, li) => `<div class="kv-row" data-cat-link="${ci}" data-link-index="${li}">
         <input class="input" data-lfield="name" value="" placeholder="网站名" aria-label="网站名" />
         <input class="input" data-lfield="url" value="" placeholder="https://…" aria-label="网站地址" />
@@ -1157,18 +1200,6 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
       </div>`;
 
     navCats.addEventListener('click', (e) => {
-      const addCat = e.target.closest('#nav-cat-add') || e.target.closest('[data-cat-add]');
-      if (addCat) {
-        const empty = navCats.querySelector('.empty');
-        if (empty) empty.remove();
-        navCats.insertAdjacentHTML('beforeend', catHtml(Date.now()));
-        return;
-      }
-      const rmCat = e.target.closest('[data-cat-remove]');
-      if (rmCat) {
-        rmCat.closest('.navcat').remove();
-        return;
-      }
       const addLink = e.target.closest('[data-link-add]');
       if (addLink) {
         const ci = addLink.getAttribute('data-link-add');
@@ -1178,20 +1209,15 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
       const rmLink = e.target.closest('[data-link-remove]');
       if (rmLink) rmLink.closest('.kv-row').remove();
     });
-    document.getElementById('nav-cat-add')?.addEventListener('click', () => {
-      const empty = navCats.querySelector('.empty');
-      if (empty) empty.remove();
-      navCats.insertAdjacentHTML('beforeend', catHtml(Date.now()));
-    });
-
     document.getElementById('nav-save')?.addEventListener('click', async () => {
       const categories = [...navCats.querySelectorAll('.navcat')].map((cat, ci) => ({
         id: `cat-${ci + 1}`,
-        name: cat.querySelector('.navcat__name').value.trim(),
+        name: '全部网站',
         links: [...cat.querySelectorAll('.kv-row')].map((row) => ({
           name: row.querySelector('[data-lfield="name"]').value.trim(),
           url: row.querySelector('[data-lfield="url"]').value.trim(),
           desc: row.querySelector('[data-lfield="desc"]').value.trim(),
+          icon: row.querySelector('[data-lfield="icon"]')?.value || '',
         })),
       }));
       try {
@@ -1206,6 +1232,26 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
   // ===== 友链 =====
   const friendEditor = document.getElementById('friend-editor');
   if (friendEditor) {
+    // 列表的开关始终在标题栏，不随列表内容收起；关闭保留反向动效。
+    const listToggle = document.getElementById('friend-list-toggle');
+    const listBody = document.getElementById('friend-list-body');
+    let listClosing = false;
+    listToggle?.addEventListener('click', async () => {
+      if (!listBody || listClosing) return;
+      if (listBody.hidden) {
+        reveal(listBody);
+        listToggle.textContent = '收起列表';
+        listToggle.setAttribute('aria-expanded', 'true');
+      } else {
+        listClosing = true;
+        await dismiss(listBody);
+        if (signal.aborted) return;
+        listBody.hidden = true;
+        listToggle.textContent = '展开列表';
+        listToggle.setAttribute('aria-expanded', 'false');
+        listClosing = false;
+      }
+    }, { signal });
     const openEditor = (f) => {
       reveal(friendEditor);
       document.getElementById('friend-editor-title').textContent = f ? '编辑友链' : '手动添加友链';
@@ -1406,12 +1452,30 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
 
     // 顺序调整：上移 / 下移所选行（点击行选中）。
     let selectedRow = null;
+    const sortStatus = document.getElementById('music-sort-status');
+    const sortSave = document.getElementById('music-reorder-save');
+    const selectTrackRow = (row) => {
+      musicTable.querySelectorAll('[data-track-row]').forEach((r) => r.classList.toggle('row-selected', r === row));
+      selectedRow = row;
+    };
+    let sortRevision = 0;
+    const markSortChanged = () => {
+      sortRevision++;
+      sortStatus.textContent = '顺序有更改，尚未保存';
+      sortStatus.classList.add('is-dirty');
+    };
+    initMusicSort(musicTable, {
+      signal,
+      select: selectTrackRow, changed: markSortChanged,
+      dragging: (active) => {
+        sortSave.disabled = active;
+        for (const id of ['music-reorder-up', 'music-reorder-down']) document.getElementById(id).disabled = active;
+      },
+    });
     musicTable.addEventListener('click', (e) => {
       const row = e.target.closest('[data-track-row]');
       if (row && !e.target.closest('button')) {
-        musicTable.querySelectorAll('[data-track-row]').forEach((r) => r.classList.remove('row-selected'));
-        row.classList.add('row-selected');
-        selectedRow = row;
+        selectTrackRow(row);
       }
     });
     const move = (dir) => {
@@ -1422,17 +1486,26 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
         if (dir < 0) sibling.before(selectedRow);
         else sibling.after(selectedRow);
       });
+      markSortChanged();
     };
     document.getElementById('music-reorder-up')?.addEventListener('click', () => move(-1));
     document.getElementById('music-reorder-down')?.addEventListener('click', () => move(1));
     document.getElementById('music-reorder-save')?.addEventListener('click', async () => {
       const ids = [...musicTable.querySelectorAll('[data-track-row]')].map((r) => r.getAttribute('data-track-row'));
+      const savingRevision = sortRevision;
+      sortSave.disabled = true;
       try {
         const result = await api('/api/manage/music/reorder', { method: 'POST', body: { ids } });
+        if (savingRevision === sortRevision) {
+          sortStatus.textContent = '顺序已保存，构建发布后前台生效';
+          sortStatus.classList.remove('is-dirty');
+        }
         toast(result.message || '顺序已保存');
       } catch (err) {
+        sortStatus.textContent = '保存失败，当前顺序尚未保存，请重试';
+        sortStatus.classList.add('is-dirty');
         toast(err.message, true);
-      }
+      } finally { sortSave.disabled = false; }
     });
   }
 
@@ -1577,11 +1650,18 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
 
   if (buildBtn) {
     buildBtn.addEventListener('click', async () => {
+      const input = document.getElementById('build-label');
+      const label = input?.value || '';
+      if ([...label.trim()].length > 64 || /[\p{Cc}\p{Cf}]/u.test(label)) {
+        toast('版本名称最多 64 个字符，且不能包含控制字符。', true);
+        input?.focus();
+        return;
+      }
       buildBtn.disabled = true;
       buildBtn.textContent = '构建中…';
       if (buildState) buildState.textContent = 'building';
       try {
-        const result = await api('/api/build', { method: 'POST' });
+        const result = await api('/api/build', { method: 'POST', body: { label } });
         if (buildLog) buildLog.textContent = result.log || '';
         if (buildState) buildState.textContent = result.ok ? 'success' : 'failed';
         if (buildTime) buildTime.textContent = new Date().toLocaleString('zh-CN');
@@ -1593,6 +1673,7 @@ import { appear, enterPage, leavePage, resetPage, flipLayout } from '/admin-asse
         toast(err.message, true);
         buildBtn.disabled = false;
         buildBtn.textContent = '构建并发布';
+        if (buildState) buildState.textContent = 'failed';
       }
     });
   }

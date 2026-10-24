@@ -1,4 +1,79 @@
 /* 内容工作室：延续暖白/淡红，用层次、光线与少量有目的的运动增强操作反馈。 */
+
+/* 写作采用系统正体：站点得意黑的字形自带倾斜，密集表单和长正文改用
+   正常字形更易扫描。画布统一留白，避免标题贴边及多层边框互相挤压。 */
+.editor, .editor__topbar { font-family: var(--font); }
+.editor { grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; }
+.editor__canvas { max-width: 980px; padding: clamp(24px, 3.5vw, 48px); min-width: 0; }
+.editor__title { font-family: inherit; font-style: normal; font-weight: 650; font-size: clamp(25px, 2.8vw, 36px); padding: 0 0 18px; line-height: 1.4; }
+.editor__title::placeholder { color: var(--text-faint); font-weight: 500; }
+.editor__meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; padding: 20px 0 28px; border-bottom: 1px solid var(--border); }
+.editor__meta .field { display: flex; flex-direction: column; align-items: stretch; gap: 8px; min-width: 0; }
+.editor__meta .field__label { font-size: 12px; font-weight: 550; color: var(--text-muted); }
+.editor__meta .input { width: 100%; min-width: 0; height: 44px; padding: 10px 12px; font-family: inherit; font-size: 13px; border-radius: 10px; }
+.editor__meta .picker-wrap { flex: none; width: 100%; min-width: 0; }
+.editor__toolbar { top: calc(var(--topbar-h) + 82px); margin: 24px 0 0; padding: 9px 6px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: var(--surface); gap: 2px; }
+.editor__toolbar .tool-btn { min-height: 36px; min-width: 34px; padding: 6px 9px; font-family: inherit; font-size: 13px; }
+.editor__count { font-size: 11px; white-space: nowrap; }
+.editor .body-area { min-height: 56vh; padding: 24px 2px; border: 0; border-radius: 0; font-family: "Cascadia Code", Consolas, "Microsoft YaHei", monospace; font-size: 15px; line-height: 1.9; box-shadow: none; background: transparent; }
+.editor .body-area:focus { outline: 2px solid color-mix(in srgb,var(--primary) 35%,transparent); outline-offset: 8px; }
+.editor .body-area::placeholder { color: var(--text-faint); font-size: 13px; line-height: 2; }
+.editor .preview { padding: 24px 2px; font-family: inherit; }
+.editor__side-title { font-family: inherit; font-weight: 600; }
+/* 设置与正文同级常驻，所有字段沿用原保存绑定；中小屏使用页面滚动，
+   不再生成遮罩、焦点圈定或独立的设置弹层。 */
+.editor__side { min-width: 0; top: calc(var(--topbar-h) + 96px); max-height: calc(100dvh - var(--topbar-h) - 120px); padding: 24px; border-radius: 20px; box-shadow: var(--shadow); scrollbar-width: thin; }
+.editor__side .input { font-family: inherit; font-size: 13px; min-width: 0; }
+.editor__side .field__label { font-size: 12px; }
+.editor__side .field__hint { font-size: 11px; line-height: 1.7; overflow-wrap: anywhere; }
+.editor__side .field__row { min-width: 0; }
+.editor__side .field__row .input { flex: 1; width: 0; }
+@media (max-width: 1200px) {
+  .editor { grid-template-columns: minmax(0, 1fr); }
+  .editor__side { position: static; max-height: none; width: 100%; max-width: 980px; margin-inline: auto; }
+}
+.build-label-field .field { margin: 0; max-width: 640px; }
+.release { flex-wrap: wrap; gap: 10px; }
+.release strong { overflow-wrap: anywhere; }
+
+/* 排序的占位、浮起和落位各有明确反馈，浮层不接收鼠标或键盘事件。 */
+.music-drag-handle { display: inline-grid; place-items: center; flex: 0 0 32px; width: 32px; height: 38px; margin-right: 8px; padding: 0; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--text-faint); cursor: grab; touch-action: none; font: 24px/1 system-ui; transition: background .2s,color .2s; }
+.music-drag-handle:hover, .music-drag-handle:focus-visible { background: var(--rose-soft); color: var(--primary); border-color: var(--border); }
+.music-drag-handle:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.music-sort-placeholder { opacity: .25; background: var(--rose-soft); }
+.music-drag-ghost { position: fixed; top: 0; z-index: 1000; margin: 0; table-layout: fixed; pointer-events: none; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 12px; box-shadow: 0 18px 40px -14px rgba(var(--shade),.35); transform-origin: center; overflow: hidden; }
+.music-drag-ghost td { border-bottom: 0; }
+.music-sorting, .music-sorting * { cursor: grabbing !important; user-select: none !important; }
+.music-sort-status { color: var(--text-muted); font-size: 12px; align-self: center; }
+.music-sort-status.is-dirty { color: var(--warn); }
+
+/* 参考连续面积图：不显示密集采样点，用两层透明面积和水平网格强调趋势。 */
+#dash-trend { --chart-pv: #c87570; --chart-uv: #7c9ec6; padding-top: 10px; }
+#dash-trend .chart-legend { justify-content: flex-end; gap: 22px; padding: 0 14px 10px; font-size: 12px; }
+#dash-trend .chart-legend i { width: 20px; height: 3px; border-radius: 2px; background: var(--chart-pv); }
+#dash-trend .chart-legend .chart-legend__uv { background: var(--chart-uv); }
+#dash-trend .chart-grid { stroke: color-mix(in srgb,var(--text) 14%,transparent); stroke-dasharray: none; }
+#dash-trend .chart-axis { font-family: "Segoe UI", "Microsoft YaHei", sans-serif; font-size: 11px; fill: var(--text-muted); }
+#dash-trend .chart-line { stroke-width: 2.8; stroke-linejoin: round; stroke-linecap: round; }
+#dash-trend .chart-area { fill: var(--chart-pv); opacity: .18; }
+#dash-trend .chart-area--uv { fill: var(--chart-uv); opacity: .22; }
+#dash-trend .chart-dot { opacity: 0; }
+#dash-trend .chart-dot.is-single { opacity: 1; }
+#dash-trend .chart-active-dot--pv { fill: var(--chart-pv); }
+#dash-trend .chart-halo { fill: color-mix(in srgb,var(--chart-pv) 18%,transparent); }
+#dash-trend .chart-tip__dot { background: var(--chart-pv); }
+#dash-trend .chart-tip__dot--uv { background: var(--chart-uv); }
+[data-theme='dark'] #dash-trend { --chart-pv: #efa3a5; --chart-uv: #a8c7ec; }
+@media (max-width: 640px) {
+  .editor__canvas { padding: 24px 20px; border-radius: 16px; }
+  .editor__meta { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .editor__toolbar { top: 0; }
+  .editor__toolbar .tool-btn { min-width: 28px; padding-inline: 6px; }
+  .editor__count { width: 100%; margin: 4px 0 0; padding-left: 8px; }
+  .editor__topbar { gap: 8px; }
+  .editor__topbar-actions { flex-wrap: wrap; }
+  .music-sort-status { flex-basis: 100%; }
+}
 .workspace { background: radial-gradient(ellipse at 85% 0%,color-mix(in srgb,var(--rose) 8%,transparent),transparent 55%); }
 .sidebar { background: linear-gradient(155deg,color-mix(in srgb,var(--surface) 94%,var(--rose)),var(--surface)); box-shadow: 8px 0 40px -30px rgba(var(--shade),.2); }
 .brand__mark { position: relative; border-radius: 16px; color: var(--rose); background: linear-gradient(145deg,var(--surface),var(--rose-soft)); box-shadow: inset 0 1px 0 var(--glass-edge),0 6px 16px -10px var(--rose); }

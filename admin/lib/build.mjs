@@ -15,6 +15,7 @@ import { setTimeout as delay } from 'node:timers/promises';
 import { ROOT } from './env.mjs';
 import { logWarn } from './log.mjs';
 import { createReleaseInput, completeReleaseInput } from './release-input.mjs';
+import { normalizeReleaseLabel, readReleaseLabel, writeReleaseLabel } from './release-label.mjs';
 import { drainManagedWrites } from './managed-writes.mjs';
 
 const RELEASES_DIR = path.join(ROOT, 'releases');
@@ -292,14 +293,15 @@ export function isBuilding() {
 }
 
 // 构建并发布站点。Promise 以 { ok, log, release, message } 兑现。
-export async function buildAndPublish() {
+export async function buildAndPublish({ label: requestedLabel } = {}) {
+  const label = normalizeReleaseLabel(requestedLabel);
   if (!acquireLock()) throw new Error('已有构建正在进行中。');
   const startedAt = new Date().toISOString();
   writeStatus({ status: 'building', startedAt });
   try {
     await drainManagedWrites();
-    const { twikoo } = await import('./twikoo.mjs');
-    const commentSnapshot = await twikoo.snapshot();
+    const { commentService } = await import('./comment-service.mjs');
+    const commentSnapshot = await commentService.snapshot();
     const workspace = createReleaseInput(commentSnapshot);
     // 子进程只读固定副本，.env 已在父进程加载，不把原数据目录传给构建。
     const options = { cwd: workspace, env: {
@@ -335,6 +337,8 @@ export async function buildAndPublish() {
     fs.mkdirSync(RELEASES_DIR, { recursive: true });
     const outputDir = completeReleaseInput(workspace);
     await moveBuildOutput(releaseDir, outputDir);
+    // 在切换 current 前完整写入名称；写入失败时不切换线上版本。
+    writeReleaseLabel(releaseDir, label);
     publish(releaseDir);
     pruneReleases();
 
@@ -343,6 +347,7 @@ export async function buildAndPublish() {
       startedAt,
       finishedAt: new Date().toISOString(),
       release: stamp,
+      label: label || stamp,
       log: output,
     };
     writeStatus(status);
@@ -370,9 +375,10 @@ export async function buildAndPublish() {
       ok: true,
       log: status.log,
       release: stamp,
+      label: label || stamp,
       cacheRebuilt,
       backup,
-      message: `构建成功并已发布。${cacheNote}数据备份：${backup.ok ? backup.summary : '失败（详见日志）。'}`,
+      message: `构建成功并已发布：${label || stamp}。${cacheNote}数据备份：${backup.ok ? backup.summary : '失败（详见日志）。'}`,
     };
   } catch (err) {
     writeStatus({
@@ -404,6 +410,6 @@ export function rollback() {
 export function releasesInfo() {
   const currentName = currentRelease();
   return listReleases()
-    .map((name) => ({ name, current: name === currentName }))
+    .map((name) => ({ name, label: readReleaseLabel(path.join(RELEASES_DIR, name), name), current: name === currentName }))
     .reverse();
 }

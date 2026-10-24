@@ -11,7 +11,7 @@ const cover = getPostCover(post);
 <article class="spring-writing-card" data-animate data-spotlight data-tilt>
   <a href={getPostPath(post)} class="spring-writing-card__link">
     {cover && <div class="spring-writing-card__image" data-parallax>
-      <img src={cover} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/covers/default-cover.svg'" />
+      <img src={cover} alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src='/covers/fallback.svg'" />
     </div>}
     <div class="spring-writing-card__body">
       <div class="spring-writing-card__meta">

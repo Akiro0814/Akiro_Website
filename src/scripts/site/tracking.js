@@ -29,7 +29,9 @@ export function trackView() {
     const request = window.__blogApi?.gateFetch
       ? window.__blogApi.gateFetch('/api/public/view', opts)
       : fetch('/api/public/view', opts);
-    Promise.resolve(request).catch(() => {});
+    // keepalive 的响应体也必须读完：仅等待 fetch 响应头会留下未消费的网络流，
+    // 浏览器可能持续判定页面仍在请求中。统计不使用返回值，直接排空并静默处理失败。
+    Promise.resolve(request).then((response) => response?.text()).catch(() => {});
   } catch {
     /* 打点失败静默 */
   }

@@ -1,19 +1,21 @@
-/* 液态材质适配 liquid-glass-web：SDF 位移图弯曲实时背景，RGB 分层产生细微色散。
+/* 液态材质适配 liquid-glass-web：有界 SDF 位移弯曲实时背景，并保留透明材质与轻微色散。
    玻璃与高光为独立背景层；导航文字、按钮和命中区域始终保持稳定。
    不支持 SVG 背景滤镜、禁用脚本或贴图生成失败时使用原生毛玻璃。 */
 :root {
-  --nav-glass-tint: color-mix(in srgb, var(--bg) 25%, transparent);
+  --nav-glass-tint: rgba(255,253,249,.24);
   --nav-glass-line: rgba(255,255,255,.58);
   --nav-glass-light: rgba(255,255,255,.8);
   --nav-glass-shadow: 0 12px 36px -18px rgba(18,36,25,.22);
 }
 html[data-theme='dark'] {
-  --nav-glass-tint: color-mix(in srgb, var(--bg) 40%, transparent);
+  --nav-glass-tint: rgba(22,27,34,.28);
   --nav-glass-line: rgba(255,255,255,.22);
   --nav-glass-light: rgba(255,255,255,.14);
   --nav-glass-shadow: 0 12px 36px -18px rgba(0,0,0,.58);
 }
 .atlas-glass-defs { position: absolute; pointer-events: none; overflow: hidden; }
+/* 持久化真实材质节点，不为玻璃另拍不透明的整块路由快照。 */
+.atlas-nav,.atlas-glass-defs { view-transition-name:none!important; }
 .atlas-nav {
   background: var(--nav-glass-tint);
   border: 1px solid var(--nav-glass-line);
@@ -41,8 +43,9 @@ html[data-theme='dark'] {
   z-index:-2;
   /* 统一透明底色，去除中段额外增白/压黑的横向色带；保留真实折射和边缘高光。 */
   background:var(--nav-glass-tint);
-  -webkit-backdrop-filter:url('#akiro-nav-refraction') blur(.65px) saturate(135%) brightness(1.04);
-  backdrop-filter:url('#akiro-nav-refraction') blur(.65px) saturate(135%) brightness(1.04);
+  /* 保留可见的背景折射，仅柔化亚像素锯齿；中心不拉伸，位移不随屏宽放大。 */
+  -webkit-backdrop-filter:url('#akiro-nav-refraction') blur(.8px) saturate(1.15);
+  backdrop-filter:url('#akiro-nav-refraction') blur(.8px) saturate(1.15);
   box-shadow:inset 0 1px 1px var(--nav-glass-light),inset 0 -7px 13px -10px rgba(12,25,20,.5);
   transform-origin:var(--nav-light-x,50%) 50%;
 }
@@ -85,26 +88,34 @@ html[data-theme='dark'] {
   border: 1px solid color-mix(in srgb,var(--text) 13%,transparent);
   box-shadow: 0 0 0 3px rgba(255,255,255,.13);
 }
-/* 内容使用各自独立的轻薄底色，保证壁纸前的可读性，不恢复整条导航中间的色带。 */
+/* 作者保持透明；每个导航按钮由透明高光与内边缘构成独立玻璃面，
+   不叠加接近不透明的主题色，避免遮住导航本身的背景折射。 */
 .atlas-nav .atlas-brand {
   padding:5px 11px 5px 5px;
-  border:1px solid color-mix(in srgb,var(--border) 75%,transparent);
+  border:0;
   border-radius:999px;
-  background:color-mix(in srgb,var(--bg) 94%,transparent);
+  background:transparent;
   color:var(--text);
 }
 .atlas-nav .atlas-brand:hover { color:var(--text); }
-.atlas-nav .atlas-brand small { color:var(--text-muted); opacity:1; }
-.atlas-nav .atlas-nav__links a { background:color-mix(in srgb,var(--bg) 94%,transparent); color:var(--text); }
-.atlas-nav .atlas-nav__links a:is(:hover,[aria-current='page']) { color:var(--brand); background:var(--bg); box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--brand) 30%,transparent); }
-.atlas-nav .atlas-nav__links small { color:var(--text-muted); }
-.atlas-nav .atlas-nav__tools>.atlas-icon { background:color-mix(in srgb,var(--bg) 94%,transparent); color:var(--text); }
-.atlas-nav .atlas-menu-toggle { background:color-mix(in srgb,var(--bg) 94%,transparent); color:var(--text); }
-.atlas-nav__links a:hover,.atlas-nav__links [aria-current='page'] {
-  background: color-mix(in srgb,var(--surface) 55%,transparent);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.3);
+/* 用紧贴字形的主题色细边保障照片上的可读性，不给作者名字添加矩形填充。 */
+.atlas-nav .atlas-brand span {
+  text-shadow:1px 0 0 var(--bg),-1px 0 0 var(--bg),0 1px 0 var(--bg),0 -1px 0 var(--bg);
 }
-.atlas-menu-toggle { background: color-mix(in srgb,var(--surface) 55%,transparent); }
+.atlas-nav .atlas-brand small { color:var(--text-muted); opacity:1; }
+.atlas-nav :is(.atlas-nav__links a,.atlas-nav__tools>.atlas-icon,.atlas-menu-toggle) {
+  background:linear-gradient(135deg,rgba(255,255,255,.18),rgba(255,255,255,.025) 55%,rgba(255,255,255,.09));
+  color:var(--text);
+  box-shadow:inset 0 1px 0 var(--nav-glass-line),inset 0 -1px 0 rgba(255,255,255,.08),0 2px 7px rgba(0,0,0,.035);
+  -webkit-backdrop-filter:blur(8px) saturate(130%);
+  backdrop-filter:blur(8px) saturate(130%);
+}
+.atlas-nav .atlas-nav__links a:is(:hover,[aria-current='page']) {
+  color:var(--brand);
+  background:linear-gradient(135deg,rgba(255,255,255,.28),rgba(255,255,255,.04) 60%,rgba(255,255,255,.13));
+  box-shadow:inset 0 0 0 1px var(--nav-glass-line),inset 0 1px 0 var(--nav-glass-light),0 3px 12px rgba(0,0,0,.06);
+}
+.atlas-nav .atlas-nav__links small { color:var(--text-muted); }
 @supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))) {
   .atlas-nav { background: color-mix(in srgb,var(--bg) 94%,transparent); }
 }
@@ -117,3 +128,18 @@ html[data-theme='dark'] {
   .atlas-nav,.atlas-nav[data-liquid-ready='true'] { background:var(--bg); -webkit-backdrop-filter:none; backdrop-filter:none; }
   .atlas-nav[data-liquid-ready='true'] :is(.atlas-nav__glass,.atlas-nav__light) { display:none; }
 }
+
+/* 按钮恢复独立液态折射面，并沿用有界纹理，保留局部高光与阻尼回弹。 */
+.atlas-nav[data-liquid-ready='true'] [data-liquid-button='true'] { position:relative; isolation:isolate; background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none; overflow:visible; }
+.nav-button__glass,.nav-button__light { position:absolute; inset:0; border-radius:inherit; pointer-events:none; z-index:-1; }
+.nav-button__glass { background:color-mix(in srgb,var(--surface) 14%,transparent); box-shadow:0 2px 5px rgba(0,0,0,.06),inset 0 1px 0 var(--nav-glass-line); }
+/* 按钮轻微折射与低透明度底色共同维持透光和轮廓，不用厚磨砂遮蔽材质。 */
+.atlas-nav[data-liquid-ready='true'] .nav-button__glass { -webkit-backdrop-filter:var(--button-refraction) blur(.6px) saturate(1.12); backdrop-filter:var(--button-refraction) blur(.6px) saturate(1.12); }
+.nav-button__light { background:radial-gradient(circle at var(--lx,50%) var(--ly,50%),rgba(255,255,255,.9),rgba(255,255,255,.25) 40%,transparent 70%); opacity:0; mix-blend-mode:soft-light; transition:opacity .25s; }
+.is-liquid-pressed .nav-button__glass { box-shadow:0 2px 4px rgba(0,0,0,.3),inset 0 -8px 18px rgba(0,0,0,.22),inset 0 0 16px rgba(255,255,255,.35); }
+.nav-volume { position:fixed; z-index:70; pointer-events:none; border-radius:50%; background:radial-gradient(ellipse,rgba(255,255,255,.9),rgba(255,255,255,.25) 40%,transparent 70%); filter:blur(22px); mix-blend-mode:screen; }
+@media(prefers-reduced-transparency:reduce) { .nav-button__glass { backdrop-filter:none!important; -webkit-backdrop-filter:none!important; background:var(--surface); } }
+@media(prefers-reduced-motion:reduce) { .nav-button__light { transition:none; } }
+
+/* 字形附近的细光晕改善深色正文穿透时的可读性，不抬高整块玻璃的不透明度。 */
+.atlas-nav :is(.atlas-nav__links a,.atlas-nav__tools>.atlas-icon,.atlas-menu-toggle) { text-shadow:0 1px 2px var(--surface),0 -1px 2px var(--surface); }

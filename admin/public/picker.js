@@ -4,7 +4,7 @@
 // 时显示时间行）；「此刻 / 今天」「清空」「确定」快捷操作。
 // 值格式：'YYYY-MM-DD'（未设时间）或 'YYYY-MM-DD HH:mm'（精确到分钟）。
 
-import { appear } from './motion.js?v=20261020-align-2';
+import { appear, dismiss } from './motion.js?v=20261024-notifications-1';
 
 const pad = (n) => String(n).padStart(2, '0');
 
@@ -35,7 +35,12 @@ export function initDateTimePickers(signal) {
   const close = () => {
     // 折叠时把触发器的展开态一起复位，否则下次打开前读屏会念错状态。
     currentInput?.setAttribute('aria-expanded', 'false');
-    if (pop) pop.remove();
+    // 留住当前 DOM 播放与展开对应的收回动画，异步完成时只移除这一层。
+    const closing = pop;
+    if (closing) {
+      closing.style.pointerEvents = 'none';
+      void dismiss(closing, 'pop').then(() => closing.remove());
+    }
     pop = null;
     currentInput = null;
   };
@@ -78,6 +83,10 @@ export function initDateTimePickers(signal) {
   };
 
   const open = (input) => {
+    if (currentInput === input && pop) {
+      close();
+      return;
+    }
     close();
     currentInput = input;
     const parsed = parseValue(input.value);
@@ -196,14 +205,14 @@ export function initDateTimePickers(signal) {
     input.classList.add('picker-input');
     // 初始折叠态：配合 open()/close() 的 aria-expanded 更新。
     input.setAttribute('aria-expanded', 'false');
-    input.addEventListener('click', () => open(input));
+    input.addEventListener('click', () => open(input), { signal });
     // 只读输入框不会自己响应键盘：键盘用户按 Enter / ↓ 也能打开面板。
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === 'ArrowDown') {
         e.preventDefault();
         open(input);
       }
-    });
+    }, { signal });
   });
 
   // 点面板与触发框之外、或按 Esc 关闭面板。

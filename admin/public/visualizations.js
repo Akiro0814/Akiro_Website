@@ -1,5 +1,5 @@
-import { contentGraph, dailyHeat } from './ui-model.js?v=20261020-align-2';
-import { appear, frameLoop, motionOff, flipLayout } from './motion.js?v=20261020-align-2';
+import { contentGraph, dailyHeat } from './ui-model.js?v=20261024-notifications-1';
+import { appear, frameLoop, motionOff, flipLayout } from './motion.js?v=20261024-notifications-1';
 
 const make = (tag, cls, text) => {
   const el = document.createElement(tag);
@@ -461,12 +461,15 @@ function publishViews(root, signal) {
   root.querySelector('.page__head')?.after(pipeline);
   const sync = () => {
     const value = state.textContent.trim();
-    steps.forEach((step, i) =>
-      step.classList.toggle(
-        'is-active',
-        value === 'building' ? i === 1 : value === 'success' ? i === 2 : i === 0
-      )
-    );
+    // 接口 success 已包含切换发布完成，不能继续显示运行中的发布动画。
+    pipeline.setAttribute('aria-label', value === 'success' ? '发布完成' : value === 'failed' ? '发布失败' : '发布进度');
+    steps.forEach((step, i) => {
+      step.classList.toggle('is-active', value === 'building' ? i === 1 : value !== 'success' && value !== 'failed' && i === 0);
+      step.classList.toggle('is-complete', value === 'success' || value === 'building' && i === 0);
+      step.classList.toggle('is-failed', value === 'failed' && i === 1);
+      step.querySelector('strong').textContent = value === 'success' ? `${labels[i][0]} · 完成` : labels[i][0];
+      step.querySelector('small').textContent = value === 'failed' && i === 1 ? '发布未完成，请查看下方日志' : labels[i][1];
+    });
   };
   sync();
   const observer = new MutationObserver(sync);
@@ -534,7 +537,8 @@ function settingsSamples(root, signal) {
       flipLayout(sections, () => {
         const collapsed = section.classList.toggle('pearl-sample-collapsed');
         header.setAttribute('aria-expanded', String(!collapsed));
-        for (const child of section.children) if (child !== header) child.hidden = collapsed;
+        // 标题可能位于 card__head 内，保留它的直接父容器才能再次展开。
+        for (const child of section.children) if (child !== header && !child.contains(header)) child.hidden = collapsed;
       });
     header.addEventListener('click', toggle, { signal });
     header.addEventListener(
@@ -602,7 +606,7 @@ function navGalaxy(root, signal, segmented) {
     if (value === 'graph' && !built) {
       const groups = cats.map((cat, i) => ({
         id: `group:${i}`,
-        label: cat.querySelector('.navcat__name')?.value || '未命名',
+        label: '全部网站',
         count: cat.querySelectorAll('.navcat__link,.kv-row,.navlink').length,
       }));
       const items = [],

@@ -6,7 +6,9 @@ const smoothStep = (a, b, value) => {
   return t * t * (3 - 2 * t);
 };
 
-export function createGlassMap(cssWidth, cssHeight, { radius = cssHeight / 2 } = {}) {
+export function createGlassMap(cssWidth, cssHeight, { radius = cssHeight / 2, profile = 'capsule' } = {}) {
+  // 严格保留参考仓库 fragment 和归一化常数；胶囊模式继续供既有组件兼容使用。
+  if (profile === 'reference') return referenceGlassMap(cssWidth, cssHeight);
   const w = Math.max(2, cssWidth), h = Math.max(2, cssHeight);
   // 一倍像素足够表现平滑位移；限制预算，避免超宽屏生成过大的 PNG。
   const ratio = Math.min(1, Math.sqrt(160000 / (w * h)));
@@ -45,3 +47,27 @@ export function createGlassMap(cssWidth, cssHeight, { radius = cssHeight / 2 } =
 
 // 参考实现的阻尼弹簧曲线，仅用于材质层的轻微回弹。
 export const glassSpring = (t) => 1 - Math.exp(-5 * t) * Math.cos(9 * t);
+
+function referenceGlassMap(cssWidth, cssHeight) {
+  const w=Math.max(2,cssWidth),h=Math.max(2,cssHeight);
+  const ratio=Math.min(1,Math.sqrt(160000/(w*h)));
+  const width=Math.max(2,Math.floor(w*ratio)),height=Math.max(2,Math.floor(h*ratio));
+  const data=new Uint8ClampedArray(width*height*4),raw=new Float64Array(width*height*2);
+  let maximum=0;
+  for(let y=0;y<height;y++) for(let x=0;x<width;x++) {
+    const ix=x/width-.5,iy=y/height-.5;
+    const qx=Math.abs(ix)-.3+.6,qy=Math.abs(iy)-.2+.6;
+    const distance=Math.min(Math.max(qx,qy),0)+Math.hypot(Math.max(qx,0),Math.max(qy,0))-.6;
+    const s=smoothStep(0,1,smoothStep(.8,0,distance-.15));
+    const i=(y*width+x)*2;
+    raw[i]=ix*(s-1)*w; raw[i+1]=iy*(s-1)*h;
+    maximum=Math.max(maximum,Math.abs(raw[i]),Math.abs(raw[i+1]));
+  }
+  const scale=maximum*.5;
+  for(let i=0,j=0;i<data.length;i+=4,j+=2) {
+    data[i]=(scale?raw[j]/scale+.5:.5)*255;
+    data[i+1]=(scale?raw[j+1]/scale+.5:.5)*255;
+    data[i+2]=0;data[i+3]=255;
+  }
+  return {width,height,data,scale};
+}

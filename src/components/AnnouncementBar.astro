@@ -1,74 +1,123 @@
 ---
-// 公告栏：从后台「公告」模块实时拉取启用中的公告，顶部横幅展示，
-// 可关闭（关闭状态记在 localStorage，同一公告不再重复打扰）。
+// 公告浮层：读取已发布且在有效期内的公告，不占据首页首屏的文档高度。
+// 关闭只对本次页面停留生效，刷新或重新访问可再次看到有效公告。
 ---
 
-<div class="announce" data-announce hidden>
+<dialog class="announce" data-announce hidden aria-label="站点公告" aria-live="polite" data-lenis-prevent>
   <div class="announce__inner">
     <span class="announce__badge" aria-hidden="true">公告</span>
-    <div class="announce__body" data-announce-body></div>
+    <div class="announce__body" data-announce-body data-lenis-prevent></div>
     <button type="button" class="announce__close" data-announce-close aria-label="关闭公告">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
         <path d="M6 6l12 12M18 6 6 18" />
       </svg>
     </button>
+    <nav class="announce__pages" data-announce-pages hidden aria-label="公告切换">
+      <button type="button" data-announce-prev aria-label="上一条公告">←</button>
+      <span data-announce-count></span>
+      <button type="button" data-announce-next aria-label="下一条公告">→</button>
+    </nav>
   </div>
-</div>
+</dialog>
 
 <script>
-  // 公告为运行时数据：每次进页面拉取一次，渲染最新一条启用中的公告。
-  const DISMISS_KEY = 'blog-announce-dismissed';
+  // 公告为运行时数据：所有有效公告都可访问，逐条关闭不会误删其他公告。
+  let controller: AbortController | undefined;
 
   const initAnnounce = () => {
-    const bar = document.querySelector<HTMLElement>('[data-announce]');
+    const bar = document.querySelector<HTMLDialogElement>('[data-announce]');
     if (!bar || bar.dataset.ready === '1') return;
     bar.dataset.ready = '1';
+    controller?.abort();
+    controller = new AbortController();
+    const { signal } = controller;
 
     const body = bar.querySelector<HTMLElement>('[data-announce-body]');
     const closeBtn = bar.querySelector<HTMLButtonElement>('[data-announce-close]');
+    const unlock = () => {
+      document.documentElement.classList.remove('has-announcement');
+      window.dispatchEvent(new CustomEvent('akiro:modal', { detail:false }));
+    };
+    const closeModal = () => { if (bar.open) bar.close(); bar.hidden = true; unlock(); };
+    bar.addEventListener('close', unlock, { signal });
+    signal.addEventListener('abort', closeModal, { once:true });
 
-    const dismissed = new Set<string>(
-      (() => {
-        try {
-          const raw = JSON.parse(localStorage.getItem(DISMISS_KEY) || '[]');
-          return Array.isArray(raw) ? raw.map(String) : [];
-        } catch {
-          return [];
-        }
-      })(),
-    );
+    // 旧版 localStorage 的 ID 黑名单会永久屏蔽同 ID 公告，包括重新启用的公告。
+    // 不再读取它；关闭状态只存在当前组件，重访按最新有效公告重新展示。
+    const dismissed = new Set<string>();
 
     // 走 API 哨兵门控：无后端时跳过请求（不产生控制台报错）。
     const api = window.__blogApi;
     const request = api?.gateFetch
-      ? api.gateFetch('/api/public/announcements')
-      : fetch('/api/public/announcements');
+      ? api.gateFetch('/api/public/announcements', { signal })
+      : fetch('/api/public/announcements', { signal });
     Promise.resolve(request)
       .then((r) => (r && r.ok ? r.json() : Promise.reject(new Error('load fail'))))
       .then((data: { items?: Array<{ id: string; title: string; content: string; link?: string }> }) => {
-        const item = (data.items ?? []).find((a) => a.id && !dismissed.has(a.id));
-        if (!item || !body) return;
-        const label = [item.title, item.content].filter(Boolean).join('：');
-        if (item.link) {
-          const a = document.createElement('a');
-          a.href = item.link;
-          a.target = '_blank';
-          a.rel = 'noopener noreferrer';
-          a.textContent = label;
-          body.append(a);
-        } else {
-          body.textContent = label;
-        }
-        bar.hidden = false;
-        closeBtn?.addEventListener('click', () => {
-          bar.hidden = true;
-          dismissed.add(item.id);
-          try {
-            localStorage.setItem(DISMISS_KEY, JSON.stringify([...dismissed].slice(-20)));
-          } catch {
-            /* 存储不可用时静默 */
-          }
+        if (!body || signal.aborted || !bar.isConnected) return;
+        const seen = new Set<string>();
+        const items = (data.items ?? []).filter((item) => {
+          if (!item.id || dismissed.has(item.id) || seen.has(item.id)) return false;
+          seen.add(item.id); return true;
         });
+        if (!items.length) return;
+        const pages = bar.querySelector<HTMLElement>('[data-announce-pages]');
+        const count = bar.querySelector<HTMLElement>('[data-announce-count]');
+        let index = 0;
+        let animation: Animation | undefined;
+        const render = () => {
+          animation?.cancel();
+          body.replaceChildren();
+          const item = items[index];
+          bar.hidden = !item;
+          if (!item) { closeModal(); return; }
+          if (!bar.open) {
+            bar.showModal();
+            document.documentElement.classList.add('has-announcement');
+            window.dispatchEvent(new CustomEvent('akiro:modal', { detail:true }));
+            closeBtn?.focus({ preventScroll:true });
+          }
+          if (item.title) {
+            const title = document.createElement('strong');
+            title.className = 'announce__title'; title.textContent = item.title; body.append(title);
+          }
+          if (item.content) {
+            const content = document.createElement('p'); content.textContent = item.content; body.append(content);
+          }
+          // 公开文本使用 textContent；链接仍单独校验，防止异常协议进入浮层。
+          if (item.link && /^(https?:\/\/|\/(?!\/))/.test(item.link)) {
+            const link = document.createElement('a');
+            link.href = item.link; link.target = '_blank'; link.rel = 'noopener noreferrer';
+            link.textContent = '查看详情 ↗'; body.append(link);
+          }
+          body.scrollTop = 0;
+          if (pages) pages.hidden = items.length < 2;
+          if (count) count.textContent = `${index + 1} / ${items.length}`;
+          if (closeBtn) closeBtn.disabled = false;
+        };
+        render();
+        for (const [selector, delta] of [['[data-announce-prev]', -1], ['[data-announce-next]', 1]] as const) {
+          bar.querySelector(selector)?.addEventListener('click', () => {
+            index = (index + delta + items.length) % items.length; render();
+          }, { signal });
+        }
+        const dismissCurrent = () => {
+          if (closeBtn) closeBtn.disabled = true;
+          dismissed.add(items[index].id);
+          items.splice(index, 1);
+          index = Math.min(index, Math.max(0, items.length - 1));
+          if (items.length) { render(); return; }
+          // 最后一则关闭时保留原淡出；离开页面时中断，避免保留旧 DOM 引用。
+          if (matchMedia('(prefers-reduced-motion: reduce)').matches) { render(); return; }
+          animation = bar.animate(
+            [{ opacity: 1, transform: 'translateY(0)' }, { opacity: 0, transform: 'translateY(12px)' }],
+            { duration: 160, easing: 'ease-out', fill: 'forwards' },
+          );
+          animation.finished.then(() => { if (!signal.aborted) closeModal(); }, () => {});
+        };
+        closeBtn?.addEventListener('click', dismissCurrent, { signal });
+        bar.addEventListener('cancel', (event) => { event.preventDefault(); if (!closeBtn?.disabled) dismissCurrent(); }, { signal });
+        signal.addEventListener('abort', () => animation?.cancel(), { once: true });
       })
       .catch(() => {
         /* 公告拉取失败不影响页面（降级标记已由哨兵处理） */
@@ -77,69 +126,29 @@
 
   initAnnounce();
   document.addEventListener('astro:page-load', initAnnounce);
+  document.addEventListener('astro:before-swap', () => controller?.abort());
 </script>
 
 <style>
-  .announce {
-    width: min(100% - 2.5rem, 63rem);
-    margin: 0 auto;
-    padding-top: 7rem;
-  }
-  .home-page .announce {
-    padding-top: 7.5rem;
-  }
-  .announce__inner {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-    padding: 0.62rem 1.15rem;
-    border: 1px solid color-mix(in srgb, var(--brand) 26%, var(--border));
-    border-radius: 999px;
-    background: var(--brand-soft);
-    font-size: 0.9rem;
-  }
-  .announce__badge {
-    flex-shrink: 0;
-    padding: 0.1rem 0.62rem;
-    border-radius: 999px;
-    background: var(--brand);
-    /* 徽标底色是品牌色，而品牌色在深浅两个主题里明暗相反：
-       浅色主题的陶土色能承白字（5.1:1），深色主题的亮橙底配白字只有
-       2.12:1。统一改用随主题切换的 --badge-text（与主色按钮同一套取值），
-       两边都达到 AA。 */
-    color: var(--badge-text);
-    font-size: 0.76rem;
-    font-weight: 650;
-    letter-spacing: 0.04em;
-  }
-  .announce__body {
-    flex: 1;
-    min-width: 0;
-    color: var(--text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .announce__body a {
-    color: inherit;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-  .announce__close {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.75rem;
-    height: 1.75rem;
-    border: 0;
-    border-radius: 50%;
-    background: transparent;
-    color: var(--text-muted);
-    cursor: pointer;
-  }
-  .announce__close:hover {
-    background: color-mix(in srgb, var(--brand) 14%, transparent);
-    color: var(--text);
-  }
+  /* 原生 dialog 的顶层与焦点圈定覆盖整个视口，页面和播放器都不能穿透操作。 */
+  .announce { position:fixed; inset:0; width:100vw; max-width:none; height:100dvh; max-height:none; margin:0; padding:clamp(16px,4vw,60px); border:0; color:var(--text); background:color-mix(in srgb,var(--bg) 76%,transparent); backdrop-filter:blur(14px); overscroll-behavior:contain; }
+  .announce[open] { display:grid; place-items:center; }
+  .announce[hidden] { display:none; }
+  .announce::backdrop { background:rgba(20,18,16,.38); }
+  .announce__inner { width:min(100%,760px); max-height:calc(100dvh - 48px); display:grid; grid-template-columns:1fr auto; align-items:start; gap:20px; padding:clamp(24px,5vw,56px); border:1px solid var(--border); border-radius:28px; background:var(--surface); box-shadow:0 24px 90px -32px #302a2950; animation:announce-enter .3s cubic-bezier(.2,.8,.2,1) both; overflow:hidden; }
+  .announce__badge { grid-column:1; color:var(--brand); font-size:12px; letter-spacing:.18em; }
+  .announce__body { grid-column:1 / -1; min-width:0; max-height:calc(100dvh - 300px); overflow:auto; overscroll-behavior:contain; font-size:16px; line-height:1.9; overflow-wrap:anywhere; }
+  .announce__body :global(.announce__title) { display:block; font-size:clamp(24px,4vw,36px); font-weight:550; line-height:1.4; }
+  .announce__body :global(p) { margin:18px 0 0; color:var(--text-muted); white-space:pre-wrap; }
+  .announce__body :global(a) { display:inline-block; margin-top:20px; color:var(--brand); text-decoration:underline; text-underline-offset:4px; }
+  .announce__pages { grid-column:1 / -1; display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:16px; border-top:1px solid var(--border); color:var(--text-muted); font-size:13px; }
+  .announce__pages[hidden] { display:none; }
+  .announce__pages button,.announce__close { display:grid; place-items:center; width:44px; height:44px; border:1px solid var(--border); border-radius:50%; background:transparent; color:var(--text); cursor:pointer; }
+  .announce__close { grid-column:2; grid-row:1; margin:-10px -10px 0 0; }
+  .announce__close:hover,.announce__pages button:hover { background:var(--brand-soft); }
+  .announce button:focus-visible { outline:2px solid var(--brand); outline-offset:4px; }
+  :global(html.has-announcement) { overflow:hidden; }
+  @keyframes announce-enter { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+  @media(max-width:520px) { .announce__inner { border-radius:20px; } .announce__body { max-height:calc(100dvh - 260px); font-size:14px; } }
+  @media(prefers-reduced-motion:reduce) { .announce__inner { animation:none; } }
 </style>

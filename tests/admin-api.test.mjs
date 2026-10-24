@@ -29,6 +29,29 @@ test('真实后台拒绝非法路径/缺日期/无效音频，并保留权限和
   assert.equal(login.status(), 200);
   csrf = (await login.json()).csrfToken;
   const headers = { 'X-CSRF-Token': csrf };
+  // 模拟浏览器统一入口：图片被保存为不同后缀，不能误拒或继续存成错误后缀。
+  const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=', 'base64');
+  const renamed = await client.post('/api/_', { headers: { ...headers, 'Content-Type': 'image/jpeg', 'X-Target': Buffer.from(encodeURIComponent('/api/upload?filename=cover.JPG')).toString('base64') }, data: png });
+  assert.equal(renamed.status(), 200, await renamed.text());
+  const image = await renamed.json();
+  assert.match(image.name, /\.png$/);
+  assert.deepEqual(await (await client.get(`/api/media/preview/${image.name}`)).body(), png);
+  // 同名图片在同一毫秒到达也不能相互覆盖，且每个响应 URL 必须读回对应字节。
+  const concurrent = await Promise.all(Array.from({ length: 20 }, async (_, index) => {
+    const bytes = Buffer.concat([png, Buffer.from([index])]);
+    const response = await client.post('/api/upload?filename=concurrent.png', { headers: { ...headers, 'Content-Type': 'application/octet-stream' }, data: bytes });
+    assert.equal(response.status(), 200);
+    return { bytes, name: (await response.json()).name };
+  }));
+  assert.equal(new Set(concurrent.map((item) => item.name)).size, concurrent.length, '并发上传必须使用独立文件名');
+  for (const item of concurrent) assert.deepEqual(await (await client.get(`/api/media/preview/${item.name}`)).body(), item.bytes);
+  for (const filename of ['fake.png', 'fake.jpg', 'fake.svg', 'fake.exe']) {
+    assert.equal((await client.post(`/api/upload?filename=${filename}`, { headers: { ...headers, 'Content-Type': 'application/octet-stream' }, data: Buffer.from('<html>not an image</html>') })).status(), 400);
+  }
+  const invalidBuild = await client.post('/api/build', { headers, data: { label: 'x'.repeat(65) } });
+  assert.equal(invalidBuild.status(), 400);
+  assert.match((await invalidBuild.json()).error, /版本名称/);
+  assert.equal(fs.existsSync(path.join(preview.sandbox, '.build-lock')), false);
   const editor = await (await client.get('/admin/notes/new')).text();
   assert.match(editor, /data-field="date"[^>]*aria-required="true"/);
   for (const url of ['/api/entry/posts?path=..%2F..%2F.env', '/api/entry/posts', '/api/entry/unknown?path=x']) {

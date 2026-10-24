@@ -78,6 +78,8 @@ export function appear(el, kind = 'panel', origin) {
 
 export function dismiss(el, kind = 'panel', origin) {
   if (!el || motionOff() || !engine()) return Promise.resolve();
+  // 打开尚未播完就关闭时，结束旧动画对同一属性的控制，防止回弹到展开态。
+  engine().killTweensOf(el);
   return new Promise((resolve) => {
     if (kind === 'drawer' && origin?.isConnected) {
       const a = el.getBoundingClientRect(),

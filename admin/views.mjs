@@ -5,6 +5,7 @@ import { COLLECTIONS } from './lib/content.mjs';
 import { stripAnsi } from './lib/build.mjs';
 import { navIcon } from './lib/ui-icons.mjs';
 import { renderPresentationFields } from './lib/presentation-fields.mjs';
+import { displayCommentUrl } from './lib/comment-url.mjs';
 
 export const esc = (v) =>
   String(v ?? '')
@@ -27,12 +28,13 @@ const FIELD_META = {
   keywords: { label: '关键词', type: 'tags', placeholder: '逗号分隔（SEO，可选）' },
   ai: { label: 'AI 摘要', type: 'tags', placeholder: '逗号分隔（可选）' },
   sticky: { label: '置顶权重', type: 'number', placeholder: '数字越大越靠前，留空不置顶' },
-  mood: { label: '心情', type: 'text', placeholder: '如 夜、晴（可选）' },
+  mood: { label: '心情', type: 'text', placeholder: '如：开心、平静、期待（可选）' },
   draft: { label: '存为草稿', type: 'bool' },
 };
 
 // 编辑器的字段布局：标题进大标题区、常用信息进标题下的元信息行、
-// 其余进「文章设置」抽屉。保存统一按 [data-field] 收集，位置不影响存取。
+// 其余直接显示在编辑页右侧设置区，小屏纵向排列。保存统一按 [data-field]
+// 收集，设置始终属于一级页面，不需要打开抽屉或再次提交。
 const FIELD_PLACEMENT = {
   posts: {
     hero: ['title'],
@@ -50,10 +52,11 @@ const asArray = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
 // 静态资源版本号：改 admin.css / admin.js 后递增即可让浏览器绕开 1 小时缓存，
 // 避免「改了样式但看到的还是旧文件」的排查成本（后台资源带 maxAge 缓存）。
-export const ASSET_V = '20261020-align-2';
+export const ASSET_V = '20261024-notifications-1';
 
 const UI_ASSETS = `<link rel="stylesheet" href="/admin-assets/pearl.css?v=${ASSET_V}" />
   <link rel="stylesheet" href="/admin-assets/studio.css?v=${ASSET_V}" />
+  <link rel="stylesheet" href="/admin-assets/content-editor.css?v=${ASSET_V}" />
   <script src="/admin-assets/vendor/gsap.js?v=${ASSET_V}" defer></script>
   <script src="/admin-assets/vendor/flip.js?v=${ASSET_V}" defer></script>`;
 
@@ -203,7 +206,7 @@ export function loginPage({ csrfToken, error }) {
   <section class="login-scene" aria-label="博客工作室">
     <canvas id="login-network" aria-hidden="true"></canvas>
     <div class="brand"><span class="brand__mark">◆</span><span>博客后台<small>个人内容工作室</small></span></div>
-    <div class="login-scene-copy"><h1>让每一次记录，<br />都有自己的光。</h1><p>把想法写下来，把作品分享出去。<br />在这里，专注于值得留下的内容。</p><div class="login-capabilities"><span>内容创作</span><span>读者互动</span><span>数据洞察</span><span>构建发布</span></div></div>
+    <div class="login-scene-copy"><h1>把日常写下来，<br />让好奇心继续生长。</h1><p>AI · Code · Web<br />记录实践、分享作品，也留下生活里的片刻。</p><div class="login-capabilities"><span>内容创作</span><span>读者互动</span><span>数据洞察</span><span>构建发布</span></div></div>
     <div class="login-scene-foot"><div><div class="login-clock" id="login-clock"></div><span id="login-date"></span></div><span>◇ 写作，从此刻开始</span></div>
   </section>
   <section class="login-panel" aria-label="管理员登录">
@@ -485,6 +488,7 @@ export function editorPage({ user, boot, collection, entry, isNew }) {
           <button type="button" class="tab tab--active" data-tab="write">写作</button>
           <button type="button" class="tab" data-tab="preview">预览</button>
         </div>
+        ${collection === 'posts' ? '<button type="button" class="btn btn--sm" id="markdown-import">导入 Markdown</button><input type="file" id="markdown-file" accept=".md,.markdown,text/markdown,text/plain" hidden />' : ''}
         <button type="button" class="btn btn--sm btn--primary" id="save-btn">保存</button>
       </div>
     </header>
@@ -513,8 +517,8 @@ export function editorPage({ user, boot, collection, entry, isNew }) {
         <div id="preview" class="preview prose" hidden></div>
       </div>
 
-      <aside class="editor__side">
-        <h2 class="editor__side-title">文章设置</h2>
+      <aside class="editor__side" aria-labelledby="editor-settings-title">
+        <h2 class="editor__side-title" id="editor-settings-title">${collection === 'posts' ? '文章设置' : '随笔设置'}</h2>
         <label class="field">
           <span class="field__label">路径 / slug</span>
           <input class="input" type="text" id="slug" value="${esc(id)}" placeholder="如 技术/my-post 或 20260928-hello" />
@@ -622,7 +626,7 @@ export function buildPage({ user, boot, status, releases, backupConfig }) {
   const releaseRows = releases
     .map(
       (r) => `<li class="${r.current ? 'release release--current' : 'release'}">
-        <code>${esc(r.name)}</code>
+        <strong>${esc(r.label || r.name)}</strong>${r.label && r.label !== r.name ? `<code class="text-muted">${esc(r.name)}</code>` : ''}
         ${r.current ? '<span class="badge badge--pub">当前</span>' : ''}
       </li>`,
     )
@@ -653,7 +657,14 @@ export function buildPage({ user, boot, status, releases, backupConfig }) {
       <div class="kv">
         <div><span>状态</span><strong id="build-state">${esc(state)}</strong></div>
         <div><span>完成时间</span><strong id="build-time">${esc(finished)}</strong></div>
+        <div><span>当前版本</span><strong>${esc(releases.find((r) => r.current)?.label || releases.find((r) => r.current)?.name || '尚未发布')}</strong></div>
       </div>
+    </section>
+    <section class="card build-label-field">
+      <label class="field" for="build-label"><span class="field__label">版本名称（可选）</span>
+        <input class="input" id="build-label" type="text" maxlength="128" placeholder="例如 V2.4.0、秋日更新2026" aria-describedby="build-label-hint" />
+        <span class="field__hint" id="build-label-hint">支持文字和数字，最多 64 个字符；留空自动使用构建时间。同名发布会保留独立历史。</span>
+      </label>
     </section>
     ${backupCard}
     <section class="card">
@@ -687,32 +698,38 @@ export function siteContentPage({ user, boot, profile }) {
       )
       .join('\n');
 
+  const heroControls = {
+    eyebrow: `<label class="field"><span class="field__label">头像右侧第一段 · 标签</span><input class="input" id="p-hero-eyebrow" value="${esc(hero.eyebrow)}" /></label>`,
+    title: `<label class="field"><span class="field__label">备用大标题（打字轮换文字留空时生效）</span><input class="input" id="p-hero-title" value="${esc(hero.title)}" /></label>`,
+    bio: `<label class="field"><span class="field__label">大标题下方 · 个人简介</span><textarea class="input" id="p-hero-bio" rows="3">${esc(hero.bio)}</textarea></label>`,
+    actionLabel: `<label class="field" style="flex:1"><span class="field__label">首屏左侧主按钮 · 文字</span><input class="input" id="p-hero-action-label" value="${esc(hero.actionLabel)}" /></label>`,
+    actionHref: `<label class="field" style="flex:2"><span class="field__label">首屏左侧主按钮 · 链接</span><input class="input" id="p-hero-action-href" value="${esc(hero.actionHref)}" /></label>`,
+    socials: `<div class="field">
+        <span class="field__label">主按钮下方 · 社交图标</span>
+        <div id="p-hero-socials">${socialRows(hero.socials, 'hero')}</div>
+        <button type="button" class="btn btn--sm" data-social-add="hero">+ 添加社交链接</button>
+      </div>`,
+  };
+  const backgroundControls = `      <label class="field"><span class="field__label">固定背景 / 随机壁纸失效时的回退</span><input class="input" id="p-hero-background-url" value="${esc(hero.backgroundUrl || '')}" placeholder="/uploads/照片.jpg 或 https://…/视频.mp4" /><span class="field__hint">上方选择“固定图片或视频”时使用此地址；随机模式优先读取本地壁纸目录，目录为空才回退到此地址。<a href="/admin/media">打开媒体库</a></span></label>`;
+
   const content = `
     <header class="page__head page__head--row">
-      <div><h1>页面内容</h1><p>品牌、首页分区、默认外观、关于页与页脚统一配置，保存后构建发布。</p></div>
+      <div><h1>页面内容</h1><p>先选择要修改的页面，再编辑对应区域；切换分区会保留输入，保存后构建发布。</p></div>
       <button type="button" class="btn btn--primary" id="profile-save">保存</button>
     </header>
 
-    ${renderPresentationFields(profile.presentation, esc)}
-    <section class="card">
-      <h2 class="card__title">主页首屏</h2>
-      <label class="field"><span class="field__label">固定背景 / 随机壁纸失效时的回退</span><input class="input" id="p-hero-background-url" value="${esc(hero.backgroundUrl || '')}" placeholder="/uploads/照片.jpg 或 https://…/视频.mp4" /><span class="field__hint">上方选择“固定图片或视频”时使用此地址；随机模式优先读取本地壁纸目录，目录为空才回退到此地址。<a href="/admin/media">打开媒体库</a></span></label>
-      <label class="field"><span class="field__label">眉标（小字）</span><input class="input" id="p-hero-eyebrow" value="${esc(hero.eyebrow)}" /></label>
-      <label class="field"><span class="field__label">主标题</span><input class="input" id="p-hero-title" value="${esc(hero.title)}" /></label>
-      <label class="field"><span class="field__label">简介</span><textarea class="input" id="p-hero-bio" rows="3">${esc(hero.bio)}</textarea></label>
-      <div class="field__row">
-        <label class="field" style="flex:1"><span class="field__label">按钮文字</span><input class="input" id="p-hero-action-label" value="${esc(hero.actionLabel)}" /></label>
-        <label class="field" style="flex:2"><span class="field__label">按钮链接</span><input class="input" id="p-hero-action-href" value="${esc(hero.actionHref)}" /></label>
-      </div>
-      <div class="field">
-        <span class="field__label">社交链接</span>
-        <div id="p-hero-socials">${socialRows(hero.socials, 'hero')}</div>
-        <button type="button" class="btn btn--sm" data-social-add="hero">+ 添加社交链接</button>
-      </div>
-    </section>
+    <nav class="content-tabs" aria-label="选择文案所属页面">
+      <button type="button" class="btn" data-content-tab="site" aria-pressed="true">全站设置</button>
+      <button type="button" class="btn" data-content-tab="home" aria-pressed="false">首页</button>
+      <button type="button" class="btn" data-content-tab="about" aria-pressed="false">关于页</button>
+      <button type="button" class="btn" data-content-tab="footer" aria-pressed="false">页脚</button>
+    </nav>
+    ${renderPresentationFields(profile.presentation, esc, { heroControls, backgroundControls })}
 
-    <section class="card">
+
+    <section class="card" data-content-group="about">
       <h2 class="card__title">关于页</h2>
+      <p class="field__hint">填写位置：上方三张倾斜卡片之后的作者介绍区。这里的主旨句显示在头像下方，正文段落紧随其后，速览标签位于介绍底部。</p>
       <label class="field"><span class="field__label">主旨句（支持 &lt;em&gt; 强调）</span><textarea class="input" id="p-about-lead" rows="2">${esc(about.lead)}</textarea></label>
       <label class="field"><span class="field__label">正文段落（每行一段）</span><textarea class="input" id="p-about-subs" rows="4">${esc(about.subs.join('\n'))}</textarea></label>
       <label class="field"><span class="field__label">速览标签（每行一条）</span><textarea class="input" id="p-about-facts" rows="3">${esc(about.facts.join('\n'))}</textarea>
@@ -724,7 +741,7 @@ export function siteContentPage({ user, boot, profile }) {
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" data-content-group="footer">
       <h2 class="card__title">页脚</h2>
       <div class="field__row">
         <label class="field" style="flex:1"><span class="field__label">头像旁标语</span><input class="input" id="p-footer-tagline" value="${esc(footer.tagline)}" /></label>
@@ -772,6 +789,15 @@ export function projectsPage({ user, boot, projects }) {
 
     <section class="card" id="project-editor" hidden>
       <h2 class="card__title" id="project-editor-title">新建项目</h2>
+      <details id="project-ai" class="project-ai">
+        <summary>AI 帮写 · DeepSeek Flash</summary>
+        <p>填写公开 GitHub 仓库地址，分析结果会填入下方表单，检查后再保存。</p>
+        <label class="field"><span class="field__label">项目仓库</span><input class="input" id="project-ai-repository" type="url" placeholder="https://github.com/作者/仓库" /></label>
+        <div class="field__row"><label class="field"><span class="field__label">DeepSeek API 密钥</span><input class="input" id="project-ai-key" type="password" autocomplete="new-password" placeholder="填写后保存密钥" /></label>
+        <button class="btn btn--sm" type="button" id="project-ai-save-key">保存密钥</button><button class="btn btn--sm btn--ghost" type="button" id="project-ai-clear-key">清除密钥</button></div>
+        <p class="field__hint">固定使用 DeepSeek / deepseek-flash。密钥仅保存在后台；分析时会把公开仓库资料发送给 DeepSeek。</p>
+        <button type="button" class="btn" id="project-ai-analyze">分析并填写</button><p id="project-ai-status" role="status"></p>
+      </details>
       <input type="hidden" id="pj-id" />
       <div class="field__row">
         <label class="field" style="flex:2"><span class="field__label">项目名称 *</span><input class="input" id="pj-title" /></label>
@@ -803,29 +829,18 @@ export function projectsPage({ user, boot, projects }) {
 
 // —— 导航 · 友链（原「网址导航」「友链」两页合并） ——
 export function linksPage({ user, boot, nav, friends }) {
-  const cats = nav.categories
-    .map(
-      (cat, ci) => `<div class="navcat" data-cat-index="${ci}">
-        <div class="navcat__head">
-          <input class="input navcat__name" value="${esc(cat.name)}" placeholder="分类名" aria-label="分类名" />
-          <button type="button" class="btn btn--sm btn--danger" data-cat-remove="${ci}">删除分类</button>
-        </div>
-        <div class="navcat__links">
-          ${cat.links
-            .map(
-              (l, li) => `<div class="kv-row" data-cat-link="${ci}" data-link-index="${li}">
-                <input class="input" data-lfield="name" value="${esc(l.name)}" placeholder="网站名" aria-label="网站名" />
-                <input class="input" data-lfield="url" value="${esc(l.url)}" placeholder="https://…" aria-label="网站地址" />
-                <input class="input" data-lfield="desc" value="${esc(l.desc)}" placeholder="简介（选填）" aria-label="网站简介" />
-                <button type="button" class="btn btn--sm btn--danger" data-link-remove="${ci}" data-link-index="${li}" aria-label="删除这条网址">删</button>
-              </div>`,
-            )
-            .join('\n')}
-        </div>
-        <button type="button" class="btn btn--sm" data-link-add="${ci}">+ 添加网址</button>
-      </div>`,
-    )
-    .join('\n');
+  // 历史分类只在读取时展开，页面统一呈现网址列表，不丢失任何原链接和图标。
+  const links = nav.categories.flatMap((category) => category.links);
+  const cats = `<div class="navcat" data-cat-index="0">
+    <div class="navcat__links">${links.map((l, li) => `<div class="kv-row" data-cat-link="0" data-link-index="${li}">
+      <input class="input" data-lfield="name" value="${esc(l.name)}" placeholder="网站名" aria-label="网站名" />
+      <input class="input" data-lfield="url" value="${esc(l.url)}" placeholder="https://…" aria-label="网站地址" />
+      <input class="input" data-lfield="desc" value="${esc(l.desc)}" placeholder="简介（选填）" aria-label="网站简介" />
+      <input type="hidden" data-lfield="icon" value="${esc(l.icon || '')}" />
+      <button type="button" class="btn btn--sm btn--danger" data-link-remove="0" aria-label="删除这条网址">删</button>
+    </div>`).join('')}</div>
+    <button type="button" class="btn btn--sm" data-link-add="0">+ 添加网址</button>
+  </div>`;
 
   const badge = { approved: '<span class="badge badge--pub">已通过</span>', pending: '<span class="badge badge--draft">待审核</span>', rejected: '<span class="badge badge--danger">已拒绝</span>' };
   const rows = friends.items
@@ -854,7 +869,7 @@ export function linksPage({ user, boot, nav, friends }) {
 
   const content = `
     <header class="page__head page__head--row">
-      <div><h1>导航 · 友链</h1><p>前台「导航」页的分类网址与「友链」页的交换友链在此管理。导航保存后到「构建发布」上线；友链审核通过后也需构建发布。${pendingCount ? `当前有 <strong>${pendingCount}</strong> 条友链待审。` : ''}</p></div>
+      <div><h1>导航 · 友链</h1><p>全部网址在同一列表管理，网站图标自动获取；友链在下方单独管理。导航保存后到「构建发布」上线；友链审核通过后也需构建发布。${pendingCount ? `当前有 <strong>${pendingCount}</strong> 条友链待审。` : ''}</p></div>
       <div class="actions">
         <button type="button" class="btn" id="friend-new">手动添加友链</button>
         <button type="button" class="btn btn--primary" id="nav-save">保存导航</button>
@@ -863,8 +878,7 @@ export function linksPage({ user, boot, nav, friends }) {
 
     <section class="card">
       <h2 class="card__title">网址导航</h2>
-      <div id="nav-cats">${cats || '<p class="empty">还没有分类，点「添加分类」开始。</p>'}</div>
-      <div class="actions"><button type="button" class="btn btn--sm" id="nav-cat-add">+ 添加分类</button></div>
+      <div id="nav-cats">${cats}</div>
     </section>
 
     <section class="card">
@@ -873,12 +887,13 @@ export function linksPage({ user, boot, nav, friends }) {
       <div class="actions"><button type="button" class="btn" id="friend-notice-save">保存须知</button></div>
     </section>
 
-    <div class="card">
-      <h2 class="card__title">友链列表</h2>
+    <div class="card" id="friends-list">
+      <div class="card__head"><h2 class="card__title">友链列表</h2><button type="button" class="btn btn--sm" id="friend-list-toggle" aria-expanded="true" aria-controls="friend-list-body">收起列表</button></div>
+      <div id="friend-list-body">
       <div class="table-wrap" role="region" tabindex="0" aria-label="数据表格"><table class="table">
         <thead><tr><th scope="col">站点</th><th scope="col">链接</th><th scope="col">状态</th><th scope="col">提交时间</th><th scope="col" aria-label="操作"></th></tr></thead>
         <tbody>${rows || '<tr><td colspan="5" class="empty">暂无友链。</td></tr>'}</tbody>
-      </table></div>
+      </table></div></div>
     </div>
 
     <section class="card" id="friend-editor" hidden>
@@ -907,6 +922,7 @@ export function musicPage({ user, boot, tracks }) {
     .map(
       (t) => `<tr data-track-row="${esc(t.id)}">
         <td class="cell-title">
+          <button type="button" class="music-drag-handle" data-track-drag aria-label="拖动排序：${esc(t.title)}" aria-pressed="false" title="拖动排序，也可用上下方向键调整">⠿</button>
           ${t.cover ? `<img class="track-cover" src="${esc(t.cover.startsWith('/uploads/') ? '/api/media/preview/' + t.cover.slice(9) : t.cover)}" alt="" referrerpolicy="no-referrer" />` : '<span class="track-cover track-cover--fallback">♪</span>'}
           <span>${esc(t.title)}</span>
         </td>
@@ -963,6 +979,7 @@ export function musicPage({ user, boot, tracks }) {
         <button type="button" class="btn" id="music-reorder-up">上移所选</button>
         <button type="button" class="btn" id="music-reorder-down">下移所选</button>
         <button type="button" class="btn btn--primary" id="music-reorder-save">保存顺序</button>
+        <span class="music-sort-status" id="music-sort-status" role="status">拖动手柄调整歌曲顺序，完成后保存</span>
       </div>
     </div>
 
@@ -1055,7 +1072,8 @@ export function commentsPage({ user, boot, items, counts, filter = {} }) {
         <td class="cell-title">
           <strong>${esc(c.nick)}</strong>${c.master ? ' <span class="badge badge--pub">博主</span>' : ''}
           ${c.status === 'hidden' ? ' <span class="badge badge--draft">已隐藏</span>' : ''}
-          <div class="cell-sub"><code>${esc(c.url)}</code></div>
+          <div class="cell-sub"><code>${esc(displayCommentUrl(c.url))}</code></div>
+          ${c.device && !c.master ? `<div class="cell-sub">${esc(c.device.os)} · ${esc(c.device.browser)}</div>` : ''}
           <div class="cell-sub">${esc((c.commentMd || '').slice(0, 80))}${(c.commentMd || '').length > 80 ? '…' : ''}</div>
         </td>
         <td>${c.mail ? esc(c.mail) : '—'}</td>
@@ -1072,7 +1090,7 @@ export function commentsPage({ user, boot, items, counts, filter = {} }) {
 
   const content = `
     <header class="page__head page__head--row">
-      <div><h1>评论</h1><p>已接入官方 Twikoo。共 ${counts.total} 条（可见 ${counts.visible} / 隐藏 ${counts.hidden}）；审核规则可在完整管理面板中调整。</p><a class="btn btn--sm" href="/admin/twikoo">Twikoo 完整管理 ↗</a></div>
+      <div><h1>评论</h1><p>本站独立评论系统，采用先显后审：访客提交后立即展示，后台回复、隐藏和删除即时生效，无需构建发布。共 ${counts.total} 条（可见 ${counts.visible} / 隐藏 ${counts.hidden}）。</p><a class="btn btn--sm" href="/admin/comment-settings">评论设置 ↗</a></div>
       <div class="actions">
         <input class="input" id="comment-search" placeholder="搜索昵称 / 内容 / 页面" aria-label="搜索评论" style="width:220px" value="${esc(filter.keyword || '')}" />
         <button type="button" class="btn${filter.status !== 'visible' && filter.status !== 'hidden' ? ' btn--primary' : ''}" data-comment-filter="all">全部</button>
@@ -1100,11 +1118,37 @@ export function commentsPage({ user, boot, items, counts, filter = {} }) {
   return layout({ title: '评论', active: 'comments', user, boot: { ...boot, comments: items }, content });
 }
 
-export function twikooPage({ user, boot }) {
-  return layout({ title: 'Twikoo 管理', active: 'comments', user, boot, content: `<header class="page__head"><h1>Twikoo 完整管理</h1><p>已通过博客账户登录。评论、审核、配置与导入导出使用同一个 Twikoo 数据库；公开展示在构建发布后同步。</p><a class="btn btn--sm" href="/admin/comments">返回评论列表</a></header><section class="card" style="padding:0;overflow:hidden"><iframe src="/admin/twikoo-panel" title="Twikoo 官方管理面板" style="display:block;width:100%;min-height:850px;border:0" loading="eager"></iframe></section>` });
-}
-export function twikooPanel({ csrfToken }) {
-  return `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="csrf-token" content="${esc(csrfToken)}"><title>Twikoo 管理</title></head><body class="akiro-twikoo-admin"><button type="button" id="open-twikoo-admin">打开官方管理面板</button><p id="twikoo-status" role="status">正在加载 Twikoo…</p><div id="twikoo-admin-mount"></div><script src="/admin-assets/vendor/twikoo.js"></script><link rel="stylesheet" href="/admin-assets/twikoo-panel.css"><script src="/admin-assets/twikoo-panel.js" defer></script></body></html>`;
+export function commentSettingsPage({ user, boot, settings, health, notifications = { config: {}, secrets: {} } }) {
+  const toggles = [['enabled', '开放评论'], ['showDevice', '展示系统与浏览器'], ['notifyOwner', '新评论通知站长'], ['notifyReply', '回复时通知原评论者']];
+  const config = notifications.config;
+  const input = (key, label, options = {}) => `<label class="field"><span class="field__label">${label}</span><input class="input" name="${key}" type="${options.type || 'text'}" value="${esc(config[key] || '')}" ${options.attributes || ''} autocomplete="off">${options.hint ? `<span class="field__hint">${options.hint}</span>` : ''}</label>`;
+  const secret = (key, label) => `<label class="field"><span class="field__label">${label}</span><input class="input" name="${key}" type="password" autocomplete="new-password" placeholder="${notifications.secrets[key] ? '已配置，留空保留原值' : '尚未配置'}"><span class="field__hint">密钥不回显。填写新值可替换，留空保留。</span></label><label class="field"><span><input type="checkbox" name="clear${key}"> 清除已保存的${label}</span></label>`;
+  return layout({ title: '评论设置', active: 'comments', user, boot, content: `<link rel="stylesheet" href="/admin-assets/comment-settings.css?v=20261024-notifications-1"><header class="page__head"><h1>评论设置</h1><p>本站独立运行，评论和设置即时生效。设备信息仅供参考；邮箱与原始 UA 不公开。</p><a class="btn btn--sm" href="/admin/comments">返回评论列表</a></header>
+    <section class="card"><h2 class="card__title">显示与提交</h2><form id="comment-settings-form">
+      ${toggles.map(([key, label]) => `<label class="field"><span><input type="checkbox" name="${key}" ${settings[key] ? 'checked' : ''}> ${label}</span></label>`).join('')}
+      <label class="field"><span class="field__label">每页主评论数（1–50）</span><input class="input" name="pageSize" type="number" min="1" max="50" value="${settings.pageSize}" required></label>
+      <label class="field"><span class="field__label">评论字数上限（10–10000）</span><input class="input" name="maxLength" type="number" min="10" max="10000" value="${settings.maxLength}" required></label>
+      <label class="field"><span class="field__label">输入框提示</span><input class="input" name="placeholder" maxlength="200" value="${esc(settings.placeholder)}"></label>
+      <button type="submit" class="btn btn--primary">保存评论设置</button><p role="status" data-comment-settings-status></p>
+    </form></section>
+    <form id="comment-notifications-form" class="comment-config">
+      <section class="card"><h2 class="card__title">通知站点与收件人</h2><p>直接编辑并保存到服务器私有配置，立即生效。此处保存的字段优先于环境变量；保存不会发送测试通知。</p><div class="comment-config__grid">
+        ${input('BLOGGER_EMAIL', '站长收件邮箱', { type: 'email' })}${input('SITE_NAME', '通知中的站点名称')}
+        ${input('SITE_URL', '通知中的站点地址', { type: 'url', hint: '完整 HTTP(S) 地址，用于生成可访问的中文评论链接。' })}
+      </div></section>
+      <section class="card"><h2 class="card__title">SMTP 邮件</h2><p>启用上方的新评论/回复通知开关，并填写以下服务参数。</p><div class="comment-config__grid">
+        ${input('SMTP_HOST', 'SMTP 服务器', { hint: '例如 smtp.qq.com，只填写主机名。' })}${input('SMTP_SERVICE', 'SMTP 服务名称（可选）', { hint: '通常留空并使用服务器地址。' })}
+        ${input('SMTP_PORT', 'SMTP 端口', { type: 'number', attributes: 'min="1" max="65535" required' })}
+        <label class="field"><span class="field__label">SMTP 加密方式</span><select class="input" name="SMTP_SECURE"><option value="true" ${config.SMTP_SECURE !== 'false' ? 'selected' : ''}>隐式 TLS（通常为 465）</option><option value="false" ${config.SMTP_SECURE === 'false' ? 'selected' : ''}>STARTTLS（通常为 587）</option></select></label>
+        ${input('SMTP_USER', 'SMTP 登录账号')}${secret('SMTP_PASS', 'SMTP 密码 / 授权码')}
+        ${input('SENDER_EMAIL', '发件邮箱', { type: 'email', hint: '留空使用 SMTP 登录账号。' })}${input('SENDER_NAME', '发件人名称')}
+      </div></section>
+      <section class="card"><h2 class="card__title">站长推送</h2><div class="comment-config__grid"><label class="field"><span class="field__label">推送通道</span><select class="input" name="PUSHOO_CHANNEL"><option value="" ${config.PUSHOO_CHANNEL !== 'serverchan' ? 'selected' : ''}>关闭推送</option><option value="serverchan" ${config.PUSHOO_CHANNEL === 'serverchan' ? 'selected' : ''}>Server酱 Turbo</option></select></label>${secret('PUSHOO_TOKEN', 'Server酱 SendKey')}</div>
+        <div class="actions"><button class="btn btn--primary" type="submit">保存通知配置</button></div><p role="status" data-comment-notifications-status></p>
+      </section>
+    </form>
+    <section class="card"><h2 class="card__title">迁移与通知状态</h2><p>首次迁移 ${Number(health.migration?.count) || 0} 条评论；原库备份保存在服务器 data/comment-migration-backup。</p><p data-comment-notifications-health>SMTP：${health.smtpConfigured ? '已配置' : '未配置'} · 站长推送：${health.pushConfigured ? '已配置' : '未配置'} · 待处理通知：${Number(health.pendingNotifications) || 0}</p><p>通知失败会重试，不影响评论发布。</p></section>
+    <section class="card"><h2 class="card__title">评论数据</h2><p>导出包含评论者邮箱，请妥善保存。导入支持本站导出文件及 Twikoo 评论数组，按 ID 合并且保留已有记录。</p><div class="actions"><button type="button" class="btn" data-comments-export>导出评论 JSON</button><label class="btn">选择导入文件<input type="file" accept="application/json,.json" data-comments-import hidden></label></div><p role="status" data-comment-import-status></p></section>` });
 }
 
 // —— 站点数据（开站日期 + 访客数据 + 访问统计，原「访问统计」页并入） ——

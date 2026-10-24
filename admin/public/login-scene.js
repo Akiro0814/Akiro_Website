@@ -1,10 +1,12 @@
-import { frameLoop, motionOff, tween } from './motion.js?v=20261020-align-2';
+import { frameLoop, motionOff, tween } from './motion.js?v=20261024-notifications-1';
 
 export function initLoginScene() {
   const canvas = document.getElementById('login-network');
   if (!canvas) return;
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
+  const controller = new AbortController();
+  const { signal } = controller;
   let width = 0,
     height = 0,
     burst = 0;
@@ -25,15 +27,16 @@ export function initLoginScene() {
     y: 0.12 + ((i * 29) % 61) / 100,
     r: i % 7 === 0 ? 4 : 1.8,
   }));
+  // 节点结构只分配一次，每帧只更新坐标，保留连线、流光与成功脉冲动画。
+  const nodes = points.map((point) => ({ x: 0, y: 0, r: point.r }));
   const draw = (time) => {
     ctx.clearRect(0, 0, width, height);
     const off = motionOff(),
       t = off ? 0 : time;
-    const nodes = points.map((p, i) => ({
-      x: p.x * width + Math.sin(t * 0.17 + i) * 9,
-      y: p.y * height + Math.cos(t * 0.15 + i) * 8,
-      r: p.r,
-    }));
+    points.forEach((point, i) => {
+      nodes[i].x = point.x * width + Math.sin(t * 0.17 + i) * 9;
+      nodes[i].y = point.y * height + Math.cos(t * 0.15 + i) * 8;
+    });
     for (let i = 0; i < nodes.length; i++)
       for (let j = i + 1; j < nodes.length; j++) {
         const a = nodes[i],
@@ -102,10 +105,11 @@ export function initLoginScene() {
     }
   };
   const loop = frameLoop(canvas, draw);
+  const clock = document.getElementById('login-clock');
+  const label = document.getElementById('login-date');
   const update = () => {
+    if (document.hidden) return;
     const date = new Date();
-    const clock = document.getElementById('login-clock'),
-      label = document.getElementById('login-date');
     if (clock) clock.textContent = date.toLocaleTimeString('zh-CN', { hour12: false });
     if (label)
       label.textContent = date.toLocaleDateString('zh-CN', {
@@ -128,20 +132,23 @@ export function initLoginScene() {
         duration: 0.5,
         ease: 'power3.out',
       });
-    });
+    }, { signal });
     card.addEventListener('pointerleave', () =>
-      tween(card, { rotationX: 0, rotationY: 0, duration: 0.6, ease: 'power3.out', clearProps: 'transform' })
+      tween(card, { rotationX: 0, rotationY: 0, duration: 0.6, ease: 'power3.out', clearProps: 'transform' }),
+      { signal }
     );
   }
   document.addEventListener('blog:login-success', () => {
     burst = performance.now() / 1000;
-  });
+  }, { signal });
   window.addEventListener(
     'pagehide',
     () => {
       loop.stop();
       observer.disconnect();
       clearInterval(timer);
+      controller.abort();
+      window.gsap?.killTweensOf(card);
     },
     { once: true }
   );

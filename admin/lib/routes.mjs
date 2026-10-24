@@ -5,14 +5,14 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { rateLimit, MUSIC_FILES_DIR } from './store.mjs';
 import * as comments from './comments.mjs';
-import { twikoo } from './twikoo.mjs';
+import { commentService } from './comment-service.mjs';
 import * as siteData from './site-data.mjs';
 import * as music from './music.mjs';
 import * as projects from './projects.mjs';
+import * as projectAI from './project-ai.mjs';
 import * as stats from './stats.mjs';
 import { publishedPostCount } from './published-content.mjs';
 import { readPublishedState, publishedRoot } from './published-state.mjs';
-import { createPublishedComments, SNAPSHOT_COMMENT_EVENTS } from './published-comments.mjs';
 import { ROOT } from './env.mjs';
 import { readWallpapers } from '../../src/lib/wallpapers.mjs';
 
@@ -27,7 +27,7 @@ export async function siteStats() {
   return {
     since: siteData.getSiteMeta().since,
     posts: publishedPostCount(),
-    comments: (await comments.adminCount()).visible,
+    comments: await commentService.visibleCount(),
     totalViews: s.total,
     todayViews: s.today,
   };
@@ -36,7 +36,7 @@ export async function siteStats() {
 // ============================ 公开接口 ============================
 export function publicRouter() {
   const router = express.Router();
-  // 固定本次响应的 release。所有公开展示均取发布快照，首次完整发布前不读源数据。
+  // 页面内容固定本次响应的 release；评论独立走实时数据库，不随静态版本回滚。
   router.use((req, res, next) => {
     res.set('Cache-Control', 'no-store');
     req.publishedRoot = publishedRoot();
@@ -63,11 +63,16 @@ export function publicRouter() {
     res.sendFile(path.join(req.publishedRoot, 'wallpapers', name));
   });
 
-  // —— 评论（Twikoo 协议：事件 POST /api/public/twikoo） ——
-  router.post('/twikoo', async (req, res) => {
+  // 独立评论查询与短时挑战不依赖文章是否已构建发布。
+  router.get('/comments', async (req, res) => {
+    if (!rateLimit(req, { key: 'comment-read', max: 300, windowMs: 300000 }).ok) return res.status(429).json({ error: '读取过于频繁。' });
+    try { res.json(await commentService.list(req.query)); } catch (error) { jsonError(res, error); }
+  });
+  router.get('/comments/challenge', (req, res) => res.json(commentService.challenge({ ip: req.ip })));
+  router.post('/comments', async (req, res) => {
     // 按事件分桶限流：浏览（GET）宽松——每次打开文章/随笔页都算一次读，
     // 若与发送共用一个桶，刷新十来次后连看都看不了；发送与点赞各自限额防刷。
-    const event = String(req.body?.event || '');
+    const event = req.body?.action === 'like' ? 'COMMENT_LIKE' : 'COMMENT_SUBMIT';
     const limitFor =
       event === 'COMMENT_GET' || event.startsWith('GET_') || event === 'COUNTER_GET'
         ? { key: 'comment-read', max: 300, windowMs: 5 * 60 * 1000 }
@@ -80,11 +85,15 @@ export function publicRouter() {
     }
     const body = req.body || {};
     try {
-      const result = SNAPSHOT_COMMENT_EVENTS.has(event)
-        ? await createPublishedComments(req.published?.comments || { comments: [], config: {}, counters: [] })(body)
-        : await twikoo.publicCall(body, { ip: req.ip, ua: req.get('user-agent'), origin: req.get('origin') });
-      if (event === 'COMMENT_SUBMIT' && result.body.code === 0) result.body.message = '评论已提交，等待站长构建发布后展示。';
-      return res.status(result.status).json(result.body);
+      const origin = req.get('origin');
+      const allowed = new Set([`${req.protocol}://${req.get('host')}`, process.env.SITE_URL].filter(Boolean));
+      // 同源网关经开发反代后 Host 可能变为后台端口；浏览器的 Fetch Metadata
+      // 仍描述访客实际发起请求的站点关系，不信任任意 forwarded-host。
+      if (origin && !allowed.has(origin) && req.get('sec-fetch-site') !== 'same-origin') return res.status(403).json({ error: '请从本站提交评论。' });
+      const context = { ip: req.ip, ua: req.get('user-agent'), hints: body.hints || {} };
+      if (body.website || !commentService.verifyChallenge(body.token, context)) return res.status(400).json({ error: '请稍候再提交，或刷新验证码。' });
+      const result = body.action === 'like' ? await commentService.like(body.id, context) : await commentService.submit(body, context);
+      return res.json(result);
     } catch (err) {
       return jsonError(res, err);
     }
@@ -192,7 +201,11 @@ export function publicRouter() {
   router.get('/site-stats', async (req, res) => {
     const limit = rateLimit(req, { key: 'site-stats', max: 60, windowMs: 60 * 1000 });
     if (!limit.ok) return res.status(429).json({ error: '请求过于频繁，请稍后再试。' });
-    res.json(req.published?.stats || { since: '', posts: publishedPostCount(), comments: 0, totalViews: 0, todayViews: 0 });
+    try {
+      // 文章和访问统计维持发布语义；评论数量与实时列表及后台审核状态保持一致。
+      const count = await commentService.visibleCount();
+      res.json({ ...(req.published?.stats || { since: '', posts: publishedPostCount(), totalViews: 0, todayViews: 0 }), comments: count });
+    } catch (err) { jsonError(res, err, '评论统计暂不可用'); }
   });
 
   return router;
@@ -234,7 +247,8 @@ export function manageRouter({ requireApiAuth, requireCsrf }) {
   router.get('/friends', (_req, res) => res.json(siteData.getFriends()));
   router.post('/friends/notice', requireCsrf, async (req, res) => {
     try {
-      res.json({ ok: true, notice: await siteData.saveFriendsNotice(req.body?.notice).notice, message: '申请须知已保存。' });
+      // 先等待写入完成再读取 notice，避免对 Promise 取属性而提前返回成功。
+      res.json({ ok: true, notice: (await siteData.saveFriendsNotice(req.body?.notice)).notice, message: '申请须知已保存。' });
     } catch (err) {
       jsonError(res, err);
     }
@@ -265,6 +279,17 @@ export function manageRouter({ requireApiAuth, requireCsrf }) {
 
   // —— 项目管理 ——
   router.get('/projects', (_req, res) => res.json({ items: projects.listProjects() }));
+  // AI 配置与调用只存在于鉴权管理路由，写入和付费请求均验证 CSRF。
+  router.get('/projects/ai/config', (_req, res) => res.set('Cache-Control', 'no-store').json(projectAI.projectAIStatus()));
+  router.post('/projects/ai/config', requireCsrf, (req, res) => {
+    try { res.set('Cache-Control', 'no-store').json(projectAI.saveProjectAIKey(req.body?.apiKey)); }
+    catch (err) { jsonError(res, err); }
+  });
+  router.post('/projects/ai/analyze', requireCsrf, async (req, res) => {
+    if (!rateLimit(req, { key: 'project-ai', max: 5, windowMs: 300000 }).ok) return res.status(429).json({ error: '分析请求过于频繁，请稍后再试' });
+    try { res.set('Cache-Control', 'no-store').json({ draft: await projectAI.analyzeProjectRepository(req.body?.repositoryUrl) }); }
+    catch (err) { jsonError(res, err); }
+  });
   router.post('/projects/save', requireCsrf, (req, res) => {
     try {
       const entry = projects.saveProject(req.body || {});
@@ -364,12 +389,23 @@ export function manageRouter({ requireApiAuth, requireCsrf }) {
     try { res.json({ items: await comments.adminList({ status: req.query.status, keyword: req.query.keyword }), counts: await comments.adminCount() }); }
     catch (error) { jsonError(res, error); }
   });
-  // 官方管理面板的所有请求均继承博客会话与 CSRF，不向客户端暴露桥接令牌。
-  router.post('/twikoo', requireCsrf, async (req, res) => {
-    try {
-      const result = await twikoo.adminCall(req.body || {}, { ip: req.ip, ua: req.get('user-agent') });
-      res.status(result.status).json(result.body);
-    } catch (error) { jsonError(res, error); }
+  router.get('/comments/settings', async (_req, res) => {
+    try { res.json({ settings: await commentService.settings(), health: await commentService.health() }); } catch (error) { jsonError(res, error); }
+  });
+  router.post('/comments/settings', requireCsrf, async (req, res) => {
+    try { res.json({ ok: true, settings: await commentService.saveSettings(req.body || {}) }); } catch (error) { jsonError(res, error); }
+  });
+  router.get('/comments/export', async (_req, res) => {
+    try { res.attachment('akiro-comments.json').json(await commentService.export()); } catch (error) { jsonError(res, error); }
+  });
+  router.get('/comments/notifications', async (_req, res) => {
+    try { res.json(await commentService.notificationSettings()); } catch (error) { jsonError(res, error); }
+  });
+  router.post('/comments/notifications', requireCsrf, async (req, res) => {
+    try { res.json(await commentService.saveNotificationSettings(req.body || {})); } catch (error) { jsonError(res, error); }
+  });
+  router.post('/comments/import', requireCsrf, async (req, res) => {
+    try { res.json(await commentService.import(req.body)); } catch (error) { jsonError(res, error); }
   });
   router.post('/comments/status', requireCsrf, async (req, res) => {
     try {
@@ -392,7 +428,7 @@ export function manageRouter({ requireApiAuth, requireCsrf }) {
         comment: req.body?.comment,
         nick: req.body?.nick,
       });
-      res.json({ ok: true, ...result, message: '回复已保存，构建发布后展示。' });
+      res.json({ ok: true, ...result, message: '回复已发布，前台即时可见。' });
     } catch (err) {
       jsonError(res, err);
     }

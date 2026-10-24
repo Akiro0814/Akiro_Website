@@ -35,12 +35,9 @@ const siteData = await import('./lib/site-data.mjs');
 const commentsLib = await import('./lib/comments.mjs');
 const { findMediaReferences } = await import('./lib/media-references.mjs');
 const { trackManagedWrite } = await import('./lib/managed-writes.mjs');
-const { twikoo } = await import('./lib/twikoo.mjs');
+const { commentService } = await import('./lib/comment-service.mjs');
 async function mediaReferences(name) {
-  const [documents, config] = await Promise.all([
-    twikoo.documents(), twikoo.publicCall({ event: 'GET_CONFIG' }),
-  ]);
-  return findMediaReferences(name, { commentDocuments: documents, commentConfig: config.body.config || {} });
+  return findMediaReferences(name, { commentDocuments: await commentService.documents(), commentConfig: {} });
 }
 
 const app = express();
@@ -77,8 +74,8 @@ function resolveSessionSecret() {
 
 app.set('trust proxy', process.env.TRUST_PROXY || (COOKIE_SECURE ? 1 : false));
 app.disable('x-powered-by');
-// Twikoo 图片上传与导入包含 base64，独立提高解析上限，其余管理接口仍维持 2MB。
-app.use(['/api/public/twikoo', '/api/manage/twikoo'], express.json({ limit: '16mb' }));
+// 评论导入单独放宽大小，其余接口维持 2MB。
+app.use('/api/manage/comments/import', express.json({ limit: '16mb' }));
 app.use(express.json({ limit: '2mb' }));
 
 // —— 统一请求入口（常量基址 + 查询传目标） ——
@@ -122,9 +119,7 @@ app.get('/admin-assets/vendor/gsap.js', (_req, res) => {
 app.get('/admin-assets/vendor/flip.js', (_req, res) => {
   res.type('application/javascript').sendFile(path.join(ROOT, 'node_modules', 'gsap', 'dist', 'Flip.min.js'));
 });
-app.get('/admin-assets/vendor/twikoo.js', (_req, res) => {
-  res.type('application/javascript').sendFile(path.join(ROOT, 'node_modules', 'twikoo', 'dist', 'twikoo.min.js'));
-});
+
 
 // 共享的 HTML 白名单净化模块：前台评论与后台预览共用同一份源码，
 // 后台以 ES module 方式加载 src/lib/sanitize.js。
@@ -389,13 +384,12 @@ app.get('/admin/comments', requirePageAuth, wrap(async (req, res) => {
   );
 }));
 
-app.get('/admin/twikoo', requirePageAuth, (req, res) => {
-  res.send(views.twikooPage({ user: req.session.user, boot: currentBoot(req) }));
-});
-app.get('/admin/twikoo-panel', requirePageAuth, (req, res) => {
-  res.set('Cache-Control', 'no-store');
-  res.send(views.twikooPanel({ csrfToken: req.session.csrfToken }));
-});
+app.get('/admin/comment-settings', requirePageAuth, wrap(async (req, res) => {
+  res.send(views.commentSettingsPage({ user: req.session.user, boot: currentBoot(req), settings: await commentService.settings(), health: await commentService.health(), notifications: await commentService.notificationSettings() }));
+}));
+// 旧后台书签继续跳转，旧服务入口不再提供协议。
+app.get(['/admin/twikoo', '/admin/twikoo-panel'], requirePageAuth, (_req, res) => res.redirect('/admin/comment-settings'));
+
 
 // —— 站点数据（开站日期 + 访客数据 + 访问统计，原「访问统计」页并入） ——
 app.get('/admin/site-stats', requirePageAuth, wrap(async (req, res) => {
@@ -488,6 +482,12 @@ app.post('/api/save/:collection', requireApiAuth, requireCsrf, wrap(async (req, 
   } catch (err) {
     res.status(400).json({ error: err.message || '保存失败' });
   }
+}));
+
+// 导入仅返回经过限定的表单字段；复用编辑器的保存入口完成最终落盘。
+app.post('/api/import/markdown', requireApiAuth, requireCsrf, wrap(async (req, res) => {
+  try { res.json(content.parseMarkdownImport(req.body?.markdown, req.body?.filename)); }
+  catch (err) { res.status(400).json({ error: err.message || '导入失败' }); }
 }));
 
 app.post('/api/delete/:collection', requireApiAuth, requireCsrf, wrap(async (req, res) => {
@@ -600,7 +600,7 @@ function findUploadByHash(hash) {
 
 // 上传内容校验（文件头 magic number + SVG 脚本剥离）实现在
 // admin/lib/upload-guard.mjs，这里只做接线；规则与单元测试见该模块。
-import { MAGIC_CHECKS, looksLikeSvg, sanitizeSvg } from './lib/upload-guard.mjs';
+import { imageExtension, sanitizeSvg } from './lib/upload-guard.mjs';
 
 // 媒体引用就存在于 Markdown 内容本身（封面 frontmatter 以及正文中的图片/链接）
 // —— 没有数据库，因此引用扫描会遍历内容文件。原始 URL 和百分号编码后的 URL
@@ -610,17 +610,17 @@ const SAFE_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.av
 // 单个图片 10MB 上限（与编辑器「插入图片」组件的客户端校验一致）。
 app.post('/api/upload', requireApiAuth, requireCsrf, express.raw({ type: () => true, limit: '10mb' }), wrap(async (req, res) => {
   const original = String(req.query.filename || 'image.png');
-  const ext = path.extname(original).toLowerCase();
-  if (!SAFE_EXT.has(ext)) return res.status(400).json({ error: '不支持的文件类型' });
+  const requestedExt = path.extname(original).toLowerCase();
+  if (!SAFE_EXT.has(requestedExt)) return res.status(400).json({ error: '不支持的文件类型' });
   if (!Buffer.isBuffer(req.body) || req.body.length === 0) return res.status(400).json({ error: '文件为空' });
 
-  // 文件头必须与扩展名一致：防止把任意内容伪装成图片扩展名上传。
-  const magic = MAGIC_CHECKS[ext];
-  if (magic && !magic(req.body)) {
-    return res.status(400).json({ error: '文件内容与扩展名不符，已拒绝上传' });
+  // 使用真实图片格式落盘，兼容图片下载后被改错后缀；未知内容仍拒绝。
+  const ext = imageExtension(req.body, requestedExt);
+  if (!ext) {
+    return res.status(400).json({ error: '无法识别图片内容，请选择有效的 PNG、JPEG、GIF、WebP、AVIF、ICO 或 SVG 图片' });
   }
   // SVG 剥离脚本能力后再入库。
-  const payload = ext === '.svg' || looksLikeSvg(req.body) ? sanitizeSvg(req.body) : req.body;
+  const payload = ext === '.svg' ? sanitizeSvg(req.body) : req.body;
 
   await ensureUploadHashIndex();
   const incomingHash = crypto.createHash('sha256').update(payload).digest('hex');
@@ -636,13 +636,14 @@ app.post('/api/upload', requireApiAuth, requireCsrf, express.raw({ type: () => t
   }
 
   const base = path
-    .basename(original, ext)
+    .basename(original, path.extname(original))
     .replace(/[^\w一-龥-]+/g, '-')
     .replace(/^-+|-+$/g, '')
     .slice(0, 40) || 'image';
-  const name = `${Date.now()}-${base}${ext}`;
+  // 时间戳不足以区分并发同名上传；加入随机标识，并以独占创建避免静默覆盖。
+  const name = `${Date.now()}-${base}-${crypto.randomBytes(8).toString('hex')}${ext}`;
   await fs.promises.mkdir(UPLOAD_DIR, { recursive: true });
-  await fs.promises.writeFile(path.join(UPLOAD_DIR, name), payload);
+  await fs.promises.writeFile(path.join(UPLOAD_DIR, name), payload, { flag: 'wx' });
   uploadHashMap.set(name, incomingHash);
   res.json({ ok: true, url: `/uploads/${name}`, name, duplicate: false });
 }));
@@ -676,20 +677,27 @@ app.use('/api/music', routesLib.musicFilesRouter());
 app.use('/api/manage/music-preview', requireApiAuth, routesLib.musicFilesRouter({ preview: true }));
 
 // —— 构建 ——
-app.post('/api/build', requireApiAuth, requireCsrf, wrap(async (_req, res) => {
+app.post('/api/build', requireApiAuth, requireCsrf, wrap(async (req, res) => {
   if (build.isBuilding()) return res.status(409).json({ error: '已有构建正在进行中。' });
-  const result = await build.buildAndPublish();
+  // 在启动耗时构建之前校验，非法名称返回用户可修正的 400 错误。
+  const { normalizeReleaseLabel } = await import('./lib/release-label.mjs');
+  let label;
+  try { label = normalizeReleaseLabel(req.body?.label); }
+  catch (err) { return res.status(400).json({ error: err.message }); }
+  const result = await build.buildAndPublish({ label });
   res.status(result.ok ? 200 : 500).json(result);
 }));
 
 app.get('/api/build/status', requireApiAuth, (_req, res) => {
-  res.json({ status: build.lastBuildStatus(), building: build.isBuilding(), releases: build.releasesInfo(), current: build.currentRelease() });
+  const releases = build.releasesInfo();
+  res.json({ status: build.lastBuildStatus(), building: build.isBuilding(), releases, current: build.currentRelease(), currentLabel: releases.find((r) => r.current)?.label || null });
 });
 
 app.post('/api/build/rollback', requireApiAuth, requireCsrf, wrap(async (_req, res) => {
   try {
     const target = build.rollback();
-    res.json({ ok: true, release: target, message: `已回滚到 ${target}` });
+    const label = build.releasesInfo().find((r) => r.name === target)?.label || target;
+    res.json({ ok: true, release: target, label, message: `已回滚到 ${label}` });
   } catch (err) {
     res.status(400).json({ error: err.message || '回滚失败' });
   }
@@ -719,7 +727,7 @@ app.use((req, res, next) => {
 app.use((err, req, res, _next) => {
   // 上传超限：给出可操作的提示而不是笼统的服务器错误。
   if (err?.type === 'entity.too.large') {
-    if (req.path.endsWith('/twikoo')) return res.status(413).json({ error: 'Twikoo 请求不能超过 16MB，请分批导入或压缩图片。' });
+    if (req.path.endsWith('/comments/import')) return res.status(413).json({ error: '评论导入不能超过 16MB，请分批导入。' });
     if (req.path === '/api/manage/music/upload') return res.status(413).json({ error: '音频不能超过 30MB，请压缩后再上传。' });
     return res.status(413).json({ error: '图片不能超过 10MB，请压缩后再上传。' });
   }
@@ -730,6 +738,8 @@ app.use((err, req, res, _next) => {
   return res.status(500).send('服务器内部错误');
 });
 
+const commentTimer = setInterval(() => commentService.flushNotifications().catch(() => {}), 60000);
+commentTimer.unref();
 const httpServer = app.listen(PORT, () => {
   console.log(`[admin] 博客后台已启动: http://localhost:${PORT}/admin`);
   console.log(`[admin] 内容目录: ${path.join(ROOT, 'src', 'content')}`);
@@ -740,14 +750,13 @@ const httpServer = app.listen(PORT, () => {
     .catch(() => {});
 });
 
-// 正常退出先排空 HTTP 请求，再保存并关闭官方数据库，避免自动保存窗口丢数据。
+// 正常退出先排空 HTTP 请求，再等待评论原子写入。
 let stopping = false;
 for (const name of ['SIGINT', 'SIGTERM']) process.once(name, () => {
   if (stopping) return;
   stopping = true;
   httpServer.close(async () => {
-    const { twikoo } = await import('./lib/twikoo.mjs');
-    await twikoo.close();
+    await commentService.close();
     process.exit(0);
   });
 });

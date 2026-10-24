@@ -3,19 +3,26 @@ import Icon from '../components/Icon.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getNavCategories } from '../lib/site-content';
 
-const categories = getNavCategories();
+// 历史分类在展示层合并，旧数据无需预先迁移也能完整显示。
+const links = getNavCategories().flatMap((category) => category.links);
+const categories = links.length ? [{ id: 'all', name: '全部网站', links }] : [];
+const iconFor = (link: { icon?: string; url: string }) => {
+  if (link.icon) return link.icon;
+  try { const url = new URL(link.url); return ['https:', 'http:'].includes(url.protocol) ? `${url.origin}/favicon.ico` : ''; }
+  catch { return ''; }
+};
 const total = categories.reduce((sum, c) => sum + c.links.length, 0);
 ---
 
 <BaseLayout
   title="网址导航"
-  description="常用网站与工具的分类导航，按需快速访问。"
+  description="常用网站与工具，按需快速访问。"
   pageClass="content-page spring-inner"
 >
   <header class="page-header" data-animate>
     <p class="eyebrow">Navigation</p>
     <h1>网址导航</h1>
-    <p>常用网站与工具的分类汇总，共 {total} 个站点。</p>
+    <p>常用网站与工具，共 {total} 个站点。</p>
   </header>
 
   {categories.length === 0 ? (
@@ -41,7 +48,7 @@ const total = categories.reduce((sum, c) => sum + c.links.length, 0);
             <h2 class="proj-section__label" id={`cat-${cat.id}`}>{cat.name}</h2>
             <p class="proj-section__desc">{cat.links.length} 个站点</p>
           </div>
-          <div class="proj-grid">
+          <div class="nav-grid">
             {cat.links.map((link) => (
               <a
                 class="navlink" data-animate data-spotlight
@@ -52,11 +59,8 @@ const total = categories.reduce((sum, c) => sum + c.links.length, 0);
                 data-keywords={`${link.name} ${link.desc} ${cat.name}`.toLowerCase()}
               >
                 <span class="navlink__icon" aria-hidden="true">
-                  {link.icon ? (
-                    <img src={link.icon} alt="" loading="lazy" referrerpolicy="no-referrer" />
-                  ) : (
-                    <Icon name="globe" size={18} />
-                  )}
+                  <Icon name="globe" size={18} />
+                  {iconFor(link) && <img data-site-icon src={iconFor(link)} alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />}
                 </span>
                 <span class="navlink__body">
                   <strong class="navlink__name">
@@ -81,6 +85,12 @@ const total = categories.reduce((sum, c) => sum + c.links.length, 0);
     const input = document.getElementById('nav-filter-input') as HTMLInputElement | null;
     if (!input || input.dataset.ready === '1') return;
     input.dataset.ready = '1';
+    // 图标无法加载时露出下层地球图标，避免破图和重复请求。
+    document.querySelectorAll<HTMLImageElement>('[data-site-icon]').forEach((img) => {
+      const fallback = () => { img.hidden = true; };
+      img.addEventListener('error', fallback, { once: true });
+      if (img.complete && !img.naturalWidth) fallback();
+    });
     const links = [...document.querySelectorAll<HTMLElement>('[data-nav-link]')];
     const cats = [...document.querySelectorAll<HTMLElement>('[data-nav-cat]')];
     const empty = document.getElementById('nav-empty');
@@ -106,6 +116,8 @@ const total = categories.reduce((sum, c) => sum + c.links.length, 0);
 </script>
 
 <style>
+  /* 卡片 display:grid 会覆盖浏览器的 hidden 默认样式，筛选必须明确收起命中外项目。 */
+  .navlink[hidden], .navcat[hidden] { display:none; }
   /* 空状态样式由 global.css 的 .empty-hint 统一提供 */
   .nav-filter {
     position: relative;
@@ -137,13 +149,18 @@ const total = categories.reduce((sum, c) => sum + c.links.length, 0);
     border-color: var(--border-strong);
   }
 
+  /* 独立网格隔离项目页样式；长名称允许断行，不再用负边距扩大命中区。 */
+  .nav-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr)); gap:1.2rem; align-items:stretch; }
   .navlink {
     display: grid;
     grid-template-columns: auto minmax(0, 1fr);
     gap: 0.9rem;
     align-items: center;
     padding: 1rem 0.9rem;
-    margin-inline: -0.9rem;
+    margin: 0;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     border-radius: var(--radius-sm);
     color: inherit;
     text-decoration: none;
@@ -153,6 +170,7 @@ const total = categories.reduce((sum, c) => sum + c.links.length, 0);
     background: var(--bg-tint);
   }
   .navlink__icon {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -166,10 +184,14 @@ const total = categories.reduce((sum, c) => sum + c.links.length, 0);
     flex-shrink: 0;
   }
   .navlink__icon img {
+    position: absolute;
+    inset: 0;
+    background: var(--surface);
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
+  .navlink__icon img[hidden] { display: none; }
   .navlink__body {
     display: flex;
     flex-direction: column;
@@ -182,6 +204,8 @@ const total = categories.reduce((sum, c) => sum + c.links.length, 0);
     gap: 0.3rem;
     font-size: 0.98rem;
     font-weight: 620;
+    min-width: 0;
+    overflow-wrap: anywhere;
   }
   .navlink__go {
     opacity: 0;
@@ -197,6 +221,7 @@ const total = categories.reduce((sum, c) => sum + c.links.length, 0);
     font-size: 0.84rem;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 </style>

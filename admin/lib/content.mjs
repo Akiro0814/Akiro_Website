@@ -144,6 +144,26 @@ function normalizeData(col, data) {
   return out;
 }
 
+// 本地导入只做解析，不落盘、不信任文件路径；仅接受 YAML，禁止 gray-matter 的代码引擎。
+export function parseMarkdownImport(raw, filename = '未命名文章.md') {
+  if (typeof raw !== 'string' || Buffer.byteLength(raw, 'utf8') > 512 * 1024) throw new ContentInputError('Markdown 文件不能超过 512 KB');
+  const source = raw.replace(/^\uFEFF/, '');
+  if (/^---[^\r\n]*\r?\n/.test(source) && !/^---[ \t]*\r?\n/.test(source)) throw new ContentInputError('仅支持 YAML 格式的文章元数据');
+  let parsed;
+  try { parsed = matter(source, { language: 'yaml' }); }
+  catch { throw new ContentInputError('YAML 元数据格式不正确，请检查后重新导入'); }
+  const col = COLLECTIONS.posts;
+  const known = [...col.textFields, ...col.dateFields, ...col.listFields, ...col.numberFields, ...col.boolFields];
+  const fields = normalizeData(col, Object.fromEntries(known.filter((key) => Object.hasOwn(parsed.data, key)).map((key) => [key, parsed.data[key]])));
+  // YAML 会把不带引号的日期转成 UTC Date；日历日期不应因本机时区多出 08:00。
+  for (const key of col.dateFields) {
+    const calendar = new RegExp(`^${key}:\\s*['"]?(\\d{4}-\\d{2}-\\d{2})['"]?[ \\t]*(?:#.*)?$`, 'm').exec(parsed.matter || '');
+    if (calendar) fields[key] = calendar[1];
+  }
+  if (!fields.title) fields.title = /^#\s+(.+)$/m.exec(parsed.content)?.[1]?.trim() || path.basename(String(filename)).replace(/\.(md|markdown)$/i, '');
+  return { fields, body: parsed.content.replace(/^\r?\n+/, '') };
+}
+
 function readEntry(collectionName, filePath) {
   const col = COLLECTIONS[collectionName];
   const raw = fs.readFileSync(filePath, 'utf8');

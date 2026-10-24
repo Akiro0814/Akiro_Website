@@ -1,7 +1,6 @@
 ---
 import AnnouncementBar from '../components/AnnouncementBar.astro';
 import Footer from '../components/Footer.astro';
-import SmoothCursor from '../components/SmoothCursor.astro';
 import MusicPlayer from '../components/MusicPlayer.astro';
 import Nav from '../components/Nav.astro';
 import StyleConsole from '../components/StyleConsole.astro';
@@ -13,8 +12,7 @@ import '../styles/atlas.css';
 import '../styles/inner-pages.css';
 import '../styles/theme-components.css';
 import '../styles/navigation-glass.css';
-import '@twikoo-sdk/twikoo.css';
-import '../styles/twikoo.css';
+import '../styles/comments.css';
 import '../styles/readability.css';
 // 仅主题初始化与 API 哨兵两段极小脚本内联在 <head>（必须在首帧前同步执行 /
 // 早于一切请求）；其余站点脚本统一打包在 src/scripts/site/，可被浏览器缓存。
@@ -153,7 +151,6 @@ const routeMotion = {
     <Footer />
     <StyleConsole />
     <MusicPlayer />
-    <SmoothCursor />
     <button type="button" class="to-top" data-to-top aria-label="回到顶部">
       <svg
         width="20"

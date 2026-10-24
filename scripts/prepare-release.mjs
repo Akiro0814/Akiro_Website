@@ -27,7 +27,8 @@ const state = {
   catalog: await projectCatalog.read(),
   wallpapers: readWallpapers(ROOT),
   tracks: tracks.map(({ id, source, title, artist, cover, fileName, neteaseId, url }) => ({ id, source, title, artist, cover, fileName, neteaseId, url })),
-  comments,
+  // 评论已独立实时读写，不把正文/配置固化到可公开下载的静态 JSON。
+  // 构建副本中的脱敏评论仍用于媒体引用索引及取样统计，运行库不受影响。
   stats: { since: site.getSiteMeta().since, comments: comments.comments.length,
     totalViews: Number(stats.total) || 0, todayViews: Number(typeof today === 'number' ? today : today?.pv ?? today?.count) || 0 },
 };

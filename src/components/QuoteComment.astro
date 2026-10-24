@@ -11,7 +11,7 @@ const { selector = '.post-content' } = Astro.props;
 <div data-qc-root data-qc-selector={selector} hidden></div>
 
 <script>
-  // 评论默认启用（内置 Twikoo 协议后端），引用按钮随之常开。
+  // 评论默认启用（本站独立评论服务），引用按钮随之常开。
   // 判定与 CommentsBox 同源（lib/comments.js），避免两处各写一套而行为不一致。
   import { commentsAvailable } from '../lib/comments.js';
 

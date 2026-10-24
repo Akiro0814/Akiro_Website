@@ -54,6 +54,11 @@ try {
   const nav = await page.locator('.atlas-nav').boundingBox();
   const clip = { x: Math.floor(nav.x + nav.width / 2 - 160), y: Math.ceil(nav.y + 3), width: 320, height: 10 };
   const scales = await page.locator('#akiro-nav-refraction feDisplacementMap').evaluateAll((nodes) => nodes.map((el) => el.getAttribute('scale')));
+  assert.equal(scales.length, 3, '液态玻璃保留三通道轻微色散');
+  assert.ok(scales.every(value => Number(value) <= 24), '折射强度不应随宽屏导航宽度放大');
+  const material = await page.locator('.atlas-nav__glass').evaluate(el => getComputedStyle(el).backdropFilter);
+  assert.doesNotMatch(material, /blur\((?:[3-9]|\d{2,})px\)/, '不能用强模糊替代液态折射');
+  assert.match(await page.locator('.nav-button__glass').first().evaluate(el => getComputedStyle(el).backdropFilter), /url\(/, '按钮也应真实折射背景');
   await page.locator('#akiro-nav-refraction feDisplacementMap').evaluateAll((nodes) => nodes.forEach((el) => el.setAttribute('scale', '0')));
   await page.waitForTimeout(150);
   const flat = await page.screenshot({ clip });

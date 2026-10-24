@@ -36,7 +36,8 @@
 .spring-writing-card__bottom { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding-top: 1rem; margin-top: auto; border-top: 1px solid var(--paper-line); color: var(--text-muted); font: .6rem var(--font-mono,monospace); letter-spacing: .06em; }
 .spring-writing-card__read { display: inline-flex; align-items: center; gap: .4rem; color: var(--brand); }
 .spring-writing-card__tags { display: flex; flex-wrap: wrap; gap: .7rem; margin-top: .8rem; font-size: .65rem; color: var(--text-muted); }
-.spring-inner .proj-section { margin-top: 3rem; }
+/* 分组标题已有下分割线，移除 section 上边框，避免标题前后出现两条空线。 */
+.spring-inner .proj-section { margin-top: 3rem; border-top: 0; padding-top: 0; }
 .spring-inner .proj-section__head { display: flex; justify-content: space-between; gap: 1rem; align-items: baseline; padding-bottom: 1rem; border-bottom: 1px solid var(--paper-line); margin-bottom: 1.5rem; }
 .spring-inner .proj-section__label { font-family: var(--font-serif,Georgia,serif); font-size: 1.5rem; font-weight: 400; }
 .spring-inner .proj-section__desc { font-size: .76rem; max-width: 28rem; }
@@ -124,3 +125,8 @@
 @media(max-width:800px) { .spring-inner .archive-summary { grid-template-columns: 1fr; } .spring-inner .archive-year { grid-template-columns: 1fr; gap: 1.2rem; } .spring-inner .archive-year__head { position: static; flex-direction: row; align-items: baseline; gap: 1rem; } .spring-inner .article--toc .article__body { grid-template-columns: minmax(0,1fr); } .spring-inner .article__aside { display: none; } .spring-inner .proj-grid { grid-template-columns: 1fr; } .about-collage__cards > * { width: 13rem; flex-basis: 13rem; min-height: 18rem; padding: 1.5rem; } .about-collage__cards > .about-collage__portrait { width: 13rem; } .spring-inner .proj-section__head { display: block; } }
 @media(max-width:600px) { .spring-inner .page-header { padding-top: 0; padding-bottom: 2.5rem; } .spring-writing-card__link { grid-template-columns: 1fr; } .spring-writing-card__image { min-height: 12rem; } .spring-writing-card:nth-child(even) .spring-writing-card__image { order: 0; } .spring-writing-card__body { padding: 1.4rem; } .spring-inner .notes-year { grid-template-columns: minmax(0,1fr); } .spring-inner .about__intro { padding: 1.5rem; } .about-collage__cards { flex-wrap: wrap; gap: 1rem; padding-bottom: 1rem; } .about-collage__cards > * { width: 43%; flex-basis: 43%; min-height: 15rem; padding: 1rem; margin: 0; } .about-collage__cards > .about-collage__portrait { width: 43%; margin: 0; padding: .6rem .6rem 1rem; order: -1; } .about-collage__note--index { display: none; } .about-collage__note > strong { font-size: 2.3rem; margin-block: 2rem 1rem; } .spring-inner .friend-form__row { grid-template-columns: 1fr; } .spring-inner .page-header::after { font-size: .5rem; } }
 @media(prefers-reduced-motion:reduce) { .spring-writing-card *, .about-collage * { transition: none !important; } }
+
+/* 关于页的三个卡片保持原倾斜动效；悬停或键盘焦点时抬到相邻卡片前方。 */
+.about-collage__cards > * { transition: translate .35s cubic-bezier(.2,.8,.2,1), scale .35s cubic-bezier(.2,.8,.2,1), box-shadow .35s; }
+.about-collage__cards > :is(:hover,:focus-within) { z-index:3; translate:0 -18px; scale:1.06; box-shadow:0 24px 55px color-mix(in srgb,var(--text) 20%,transparent); }
+@media(prefers-reduced-motion:reduce) { .about-collage__cards > * { transition:none; } .about-collage__cards > :is(:hover,:focus-within) { translate:none; scale:1; } }

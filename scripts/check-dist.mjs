@@ -76,6 +76,17 @@ try {
   fail(error.message);
 }
 
+// 6. 模板使用的封面兜底也必须随产物发布，防止图片失败后二次 404。
+const coverFallbacks = new Set();
+for (const file of allHtml) {
+  const html = fs.readFileSync(file, 'utf8');
+  for (const match of html.matchAll(/\/covers\/(?:default-cover|fallback)\.svg/g)) coverFallbacks.add(match[0]);
+}
+for (const cover of coverFallbacks) {
+  if (!fs.existsSync(path.join(DIST, cover.slice(1)))) fail(`封面兜底文件缺失：${cover}`);
+}
+if (coverFallbacks.size && !process.exitCode) ok('封面兜底文件存在');
+
 if (process.exitCode) {
   console.error('产物体检未通过');
 } else {

@@ -40,10 +40,10 @@ try {
   await page.getByRole('button', { name: '取消', exact: true }).click();
   assert.equal(page.url(), `${preview.url}/admin/site-content`);
   assert.equal(await page.locator('[data-presentation-key="author"]').inputValue(), '回归作者');
-  const homeGroup = page.locator('.presentation-group').filter({ hasText: '首页分区与轮换内容' });
-  await homeGroup.locator('summary').click();
+  await page.locator('[data-content-tab="home"]').click();
   await page.locator('[data-presentation-key="writingTitle"]').fill('后台写入的首页标题');
   await page.locator('[data-presentation-key="showProjects"]').uncheck();
+  await page.locator('[data-content-tab="site"]').click();
   await page.locator('[data-presentation-key="defaultStyle"]').selectOption('glass', { force: true });
   await page.locator('[data-presentation-key="wallpaperMode"]').selectOption('fixed', { force: true });
   await page.locator('#profile-save').click();

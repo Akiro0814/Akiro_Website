@@ -18,6 +18,9 @@ test('实际 Astro 构建：中文 URL、图注、草稿隔离与删除后发布
   fs.writeFileSync(configFile, JSON.stringify(config));
   for (const file of ['astro.config.mjs', 'tsconfig.json']) fs.copyFileSync(path.join(PROJECT_ROOT, file), path.join(root, file));
   fs.cpSync(path.join(PROJECT_ROOT, 'public', 'fonts'), path.join(root, 'public', 'fonts'), { recursive: true });
+  // 构建夹具只复制公共兜底资源，不复制作者的封面或上传素材。
+  fs.mkdirSync(path.join(root, 'public', 'covers'), { recursive: true });
+  fs.copyFileSync(path.join(PROJECT_ROOT, 'public', 'covers', 'fallback.svg'), path.join(root, 'public', 'covers', 'fallback.svg'));
   fs.mkdirSync(path.join(root, 'scripts'), { recursive: true });
   fs.cpSync(path.join(PROJECT_ROOT, 'scripts', 'check-dist.mjs'), path.join(root, 'scripts', 'check-dist.mjs'));
   fs.mkdirSync(path.join(root, 'src', 'content', 'posts', '技术'), { recursive: true });

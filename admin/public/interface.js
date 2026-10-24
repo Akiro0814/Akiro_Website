@@ -1,4 +1,4 @@
-import { normalizeAppearance, filterCommands } from './ui-model.js?v=20261020-align-2';
+import { normalizeAppearance, filterCommands } from './ui-model.js?v=20261024-notifications-1';
 import {
   appear,
   dismiss,
@@ -9,10 +9,10 @@ import {
   motionOff,
   tween,
   typeOut,
-} from './motion.js?v=20261020-align-2';
-import { initVisualizations } from './visualizations.js?v=20261020-align-2';
-import { initLoginScene } from './login-scene.js?v=20261020-align-2';
-import { enhanceStudio } from './studio-motion.js?v=20261020-align-2';
+} from './motion.js?v=20261024-notifications-1';
+import { initVisualizations } from './visualizations.js?v=20261024-notifications-1';
+import { initLoginScene } from './login-scene.js?v=20261024-notifications-1';
+import { enhanceStudio } from './studio-motion.js?v=20261024-notifications-1';
 
 const make = (tag, cls, text) => {
   const el = document.createElement(tag);
@@ -47,6 +47,7 @@ themeQuery.addEventListener('change', () => {
 });
 let overlays = [];
 let popClose = null;
+let popTrigger = null;
 let latestPointer = null;
 
 export function openDialog(title, { width, command = false } = {}) {
@@ -341,6 +342,8 @@ function showUserMenu(trigger) {
 }
 
 function showPopover(trigger, items) {
+  // 同一触发器再次点击时只收回，不销毁后立即重建闪烁。
+  if (popTrigger === trigger) { popClose?.(); return; }
   popClose?.();
   const menu = make('div', 'pearl-popover');
   menu.setAttribute('role', 'menu');
@@ -350,12 +353,15 @@ function showPopover(trigger, items) {
   const controller = new AbortController();
   const { signal } = controller;
   const close = () => {
+    if (signal.aborted) return;
     controller.abort();
-    menu.remove();
+    menu.style.pointerEvents = 'none';
+    void dismiss(menu, 'pop').then(() => menu.remove());
     trigger.setAttribute('aria-expanded', 'false');
-    popClose = null;
+    if (popClose === close) { popClose = null; popTrigger = null; }
   };
   popClose = close;
+  popTrigger = trigger;
   for (const item of items) {
     const button = make('button', `pearl-menu-item${item.danger ? ' is-danger' : ''}`, item.label);
     button.type = 'button';
@@ -535,6 +541,7 @@ function enhanceSelect(select, signal) {
   trigger.addEventListener(
     'click',
     () => {
+      if (popTrigger === trigger) { popClose?.(); return; }
       popClose?.();
       const pop = make('div', 'pearl-popover pearl-pop-select');
       pop.setAttribute('role', 'listbox');
@@ -547,12 +554,16 @@ function enhanceSelect(select, signal) {
       });
       const ctrl = new AbortController();
       const close = () => {
-        pop.remove();
+        if (ctrl.signal.aborted) return;
         ctrl.abort();
+        signal.removeEventListener('abort', close);
+        pop.style.pointerEvents = 'none';
+        void dismiss(pop, 'pop').then(() => pop.remove());
         trigger.setAttribute('aria-expanded', 'false');
-        popClose = null;
+        if (popClose === close) { popClose = null; popTrigger = null; }
       };
       popClose = close;
+      popTrigger = trigger;
       signal.addEventListener('abort', close, { once: true });
       for (const option of select.options) {
         const button = make('button', 'pearl-menu-item', option.textContent);
@@ -743,7 +754,7 @@ function enhanceHover(root, signal) {
   root.addEventListener(
     'pointerover',
     (e) => {
-      const target = e.target.closest('.media-item');
+      const target = e.target.closest('.media-item > img');
       if (target && !target.contains(e.relatedTarget)) show(target);
     },
     { signal }
@@ -751,7 +762,7 @@ function enhanceHover(root, signal) {
   root.addEventListener(
     'pointerout',
     (e) => {
-      const target = e.target.closest('.media-item');
+      const target = e.target.closest('.media-item > img');
       if (target && !target.contains(e.relatedTarget)) close();
     },
     { signal }
@@ -759,7 +770,7 @@ function enhanceHover(root, signal) {
   root.addEventListener(
     'focusin',
     (e) => {
-      const target = e.target.closest('.media-item');
+      const target = e.target.closest('.media-item > img');
       if (target) show(target);
     },
     { signal }
@@ -860,79 +871,6 @@ export function enhancePage(root, signal) {
   });
   observer.observe(root, { subtree: true, attributes: true, attributeFilter: ['hidden'] });
   signal.addEventListener('abort', () => observer.disconnect(), { once: true });
-  initSettingsDrawer(root, signal);
-}
-
-function initSettingsDrawer(root, signal) {
-  const side = root.querySelector('.editor__side');
-  const bar = root.querySelector('.editor__topbar-actions');
-  if (!side || !bar) return;
-  const trigger = make('button', 'btn btn--sm', '文章设置');
-  trigger.type = 'button';
-  trigger.setAttribute('aria-expanded', 'false');
-  bar.prepend(trigger);
-  const scrim = make('div', 'pearl-settings-scrim');
-  scrim.hidden = true;
-  side.before(scrim);
-  side.classList.add('pearl-settings-drawer');
-  side.hidden = true;
-  side.setAttribute('role', 'dialog');
-  side.setAttribute('aria-modal', 'true');
-  side.setAttribute('aria-label', '文章设置');
-  const close = make('button', 'icon-button pearl-settings-close', '×');
-  close.type = 'button';
-  close.setAttribute('aria-label', '关闭文章设置');
-  side.prepend(close);
-  let busy = false;
-  const hide = async () => {
-    if (side.hidden || busy) return;
-    busy = true;
-    await dismiss(side, 'drawer', trigger);
-    side.hidden = true;
-    scrim.hidden = true;
-    trigger.setAttribute('aria-expanded', 'false');
-    trigger.focus();
-    busy = false;
-  };
-  trigger.addEventListener(
-    'click',
-    () => {
-      if (!side.hidden) {
-        hide();
-        return;
-      }
-      side.hidden = false;
-      scrim.hidden = false;
-      trigger.setAttribute('aria-expanded', 'true');
-      appear(side, 'drawer', trigger);
-      close.focus();
-    },
-    { signal }
-  );
-  close.addEventListener('click', hide, { signal });
-  scrim.addEventListener('click', hide, { signal });
-  side.addEventListener(
-    'keydown',
-    (e) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        hide();
-      }
-      if (e.key === 'Tab') {
-        const nodes = [...side.querySelectorAll('button,input,textarea,select')].filter(
-          (el) => !el.disabled && el.getClientRects().length
-        );
-        if (e.shiftKey && document.activeElement === nodes[0]) {
-          e.preventDefault();
-          nodes.at(-1)?.focus();
-        } else if (!e.shiftKey && document.activeElement === nodes.at(-1)) {
-          e.preventDefault();
-          nodes[0]?.focus();
-        }
-      }
-    },
-    { signal }
-  );
 }
 
 export async function loginSuccess(button) {
