@@ -126,6 +126,7 @@ export function startPreview({ port = 4413, quiet = false } = {}) {
       },
     ])
   );
+  fs.copyFileSync(path.join(root, 'src/styles/palettes.css'), path.join(sandbox, 'src/styles/palettes.css'));
   const salt = crypto.randomBytes(16).toString('hex');
   const hash = crypto.scryptSync('visual-preview-only', salt, 64).toString('hex');
   const child = spawn(process.execPath, [path.join(sandbox, 'admin', 'server.mjs')], {

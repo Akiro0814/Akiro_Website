@@ -1,0 +1,50 @@
+/* 后台使用与博客一致的色彩、独立的工作台布局：主要动作优先，密度由用户选择。 */
+body { background-color:var(--bg); background-image:var(--palette-wash,none); }
+.app { background:transparent; }
+.sidebar { background:color-mix(in srgb,var(--surface) 88%,var(--bg)); border-right:1px solid var(--border); }
+.brand__mark { color:var(--brand,var(--rose)); }
+.brand__text small { font-size:12px; letter-spacing:.06em; }
+.main { max-width:1600px; margin-inline:auto; padding:clamp(24px,3.5vw,52px); }
+.page__head { margin-bottom:32px; row-gap:12px; }
+.page__head h1 { font-size:clamp(28px,3vw,40px); line-height:1.25; letter-spacing:-.035em; font-weight:600; }
+.page__head>p { font-size:14px; line-height:1.8; max-width:68ch; }
+.card { border-color:var(--border); box-shadow:0 2px 12px -8px color-mix(in srgb,var(--text) 16%,transparent); }
+.card__title { font-size:17px; letter-spacing:-.015em; }
+.nav__item { min-height:44px; }
+.input { font-size:14px; border-color:var(--border-strong); background:var(--surface); transition:border-color .18s,box-shadow .18s; }
+.input:focus { border-color:var(--primary); box-shadow:0 0 0 3px var(--primary-soft); }
+.field__label { font-size:13px; line-height:1.6; }
+.field__hint { font-size:12px; line-height:1.8; }
+.btn { min-height:40px; font-size:13px; border-radius:10px; }
+.btn--primary { background:var(--primary); border-color:var(--primary); color:#fff; }
+html[data-theme='dark'] .btn--primary { color:var(--bg); }
+.btn:active:not(:disabled) { transform:translateY(1px); }
+:is(a,button,input,textarea,select):focus-visible { outline:2px solid var(--primary); outline-offset:3px; }
+.icon-button { min-width:44px; min-height:44px; }
+.table th { font-size:12px; letter-spacing:.035em; }
+.table td { font-size:14px; line-height:1.65; }
+.table tbody tr { transition:background .15s; }
+.table tbody tr:hover { background:var(--surface-muted); }
+.pref-row { gap:20px; }
+.pref-row small { font-size:12px; line-height:1.8; }
+.pearl-dialog { max-height:calc(100dvh - 32px); overflow:auto; }
+.pearl-dialog__head h2 { font-size:23px; letter-spacing:-.025em; }
+.pearl-dialog__body .palette-field { margin-block:24px 10px; }
+.login-scene { background:radial-gradient(ellipse at 10% 15%,color-mix(in srgb,var(--primary) 24%,transparent),transparent 60%),var(--bg-tint); color:var(--text); }
+.login-scene-copy h1 { font-size:clamp(32px,3.8vw,58px); line-height:1.45; letter-spacing:-.035em; color:var(--text); }
+.login-scene-copy p,.login-scene-foot { color:var(--text-muted); }
+.login-capabilities span { color:var(--text); border-color:var(--border-strong); background:var(--surface); }
+.login-panel { background:var(--surface); }
+.login-sub { color:var(--text-muted); font-size:14px; line-height:1.8; }
+.login-panel .btn { min-height:46px; }
+@media(max-width:820px) {
+  .main { padding:24px 18px 40px; }
+  .page__head { margin-bottom:24px; }
+  .page__head h1 { font-size:29px; }
+  .btn { min-height:44px; }
+  .input { min-height:44px; font-size:16px; }
+  .pref-row { flex-wrap:wrap; gap:12px; }
+  .pearl-dialog { width:min(560px,calc(100vw - 24px)); }
+  .pearl-dialog__head,.pearl-dialog__body,.pearl-dialog__foot { padding-inline:20px; }
+}
+@media(prefers-reduced-motion:reduce) { :is(.input,.table tbody tr) { transition:none; } }

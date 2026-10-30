@@ -2,11 +2,7 @@
    不改变评论、回复、友链申请的 DOM 选择器和业务流程。 */
 :root,
 html[data-style] {
-  --font-display: 'Smiley Sans', 'Microsoft YaHei', sans-serif;
-  --font-body: 'Smiley Sans', 'Microsoft YaHei', sans-serif;
-  --font-editorial: 'Smiley Sans', 'Microsoft YaHei', sans-serif;
-  --font-serif: 'Smiley Sans', 'Microsoft YaHei', sans-serif;
-  --font-mono: 'Smiley Sans', 'Microsoft YaHei', sans-serif;
+  /* 字体统一由 editorial.css 管理，组件层只定义材质，避免属性选择器覆盖字体契约。 */
   --component-radius: var(--radius, 24px);
   --component-control-radius: var(--radius-sm, 14px);
   --component-shadow: var(--shadow);

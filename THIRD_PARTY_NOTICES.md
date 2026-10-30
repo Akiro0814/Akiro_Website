@@ -10,10 +10,11 @@ Original licenses are retained in their npm packages. Twikoo is no longer a runt
 
 ## 得意黑 Smiley Sans
 
-全站字体使用 [atelier-anchor/smiley-sans v2.0.1](https://github.com/atelier-anchor/smiley-sans/releases/tag/v2.0.1)
+仓库保留 [atelier-anchor/smiley-sans v2.0.1](https://github.com/atelier-anchor/smiley-sans/releases/tag/v2.0.1)
 官方 WOFF2 文件，本地路径为 `public/fonts/smiley-sans.woff2`。
 Copyright 2022–2024 atelierAnchor。依照 SIL Open Font License 1.1 分发，
 完整许可证保留在 `public/fonts/OFL-SmileySans.txt`。
+当前默认正文与控件使用本地正体，标题使用衬线字体；得意黑仍可作为代码中文等字形的后备，随附资源及许可证继续保留。
 
 ## spring_blogs visual and interaction reference
 

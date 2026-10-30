@@ -1,6 +1,6 @@
 ---
 // 公告浮层：读取已发布且在有效期内的公告，不占据首页首屏的文档高度。
-// 关闭只对本次页面停留生效，刷新或重新访问可再次看到有效公告。
+// 成功展示后只在本次浏览器会话内记忆，跨页面和标签页不重复打断阅读。
 ---
 
 <dialog class="announce" data-announce hidden aria-label="站点公告" aria-live="polite" data-lenis-prevent>
@@ -23,10 +23,15 @@
 <script>
   // 公告为运行时数据：所有有效公告都可访问，逐条关闭不会误删其他公告。
   let controller: AbortController | undefined;
+  const sessionKey = 'akiro_announcement_session';
+  // Cookie 不设置 Max-Age/Expires，由浏览器维护会话生命周期；恢复上次会话
+  // 的浏览器也可能恢复会话 Cookie。禁用 Cookie 时退化为当前文档生命周期记忆。
+  let shownInDocument = false;
+  const hasShown = () => shownInDocument || document.cookie.split(';').some((part) => part.trim() === `${sessionKey}=1`);
 
   const initAnnounce = () => {
     const bar = document.querySelector<HTMLDialogElement>('[data-announce]');
-    if (!bar || bar.dataset.ready === '1') return;
+    if (!bar || bar.dataset.ready === '1' || hasShown()) return;
     bar.dataset.ready = '1';
     controller?.abort();
     controller = new AbortController();
@@ -42,8 +47,7 @@
     bar.addEventListener('close', unlock, { signal });
     signal.addEventListener('abort', closeModal, { once:true });
 
-    // 旧版 localStorage 的 ID 黑名单会永久屏蔽同 ID 公告，包括重新启用的公告。
-    // 不再读取它；关闭状态只存在当前组件，重访按最新有效公告重新展示。
+    // 保留当前浮层多条公告逐条关闭的能力，不读取旧版永久 ID 黑名单。
     const dismissed = new Set<string>();
 
     // 走 API 哨兵门控：无后端时跳过请求（不产生控制台报错）。
@@ -53,7 +57,7 @@
       : fetch('/api/public/announcements', { signal });
     Promise.resolve(request)
       .then((r) => (r && r.ok ? r.json() : Promise.reject(new Error('load fail'))))
-      .then((data: { items?: Array<{ id: string; title: string; content: string; link?: string }> }) => {
+      .then(async (data: { items?: Array<{ id: string; title: string; content: string; link?: string }> }) => {
         if (!body || signal.aborted || !bar.isConnected) return;
         const seen = new Set<string>();
         const items = (data.items ?? []).filter((item) => {
@@ -95,7 +99,19 @@
           if (count) count.textContent = `${index + 1} / ${items.length}`;
           if (closeBtn) closeBtn.disabled = false;
         };
-        render();
+        const showOnce = () => {
+          // 等待 API 或跨标签锁期间可能已切页，不能展示失效节点。
+          if (signal.aborted || !bar.isConnected || hasShown()) return;
+          render();
+          if (bar.open) {
+            shownInDocument = true;
+            document.cookie = `${sessionKey}=1; Path=/; SameSite=Lax${location.protocol === 'https:' ? '; Secure' : ''}`;
+          }
+        };
+        // 同源标签同时载入时串行领取展示机会；旧浏览器仍可依靠 Cookie 去重。
+        if (navigator.locks) await navigator.locks.request('akiro:announcement', showOnce);
+        else showOnce();
+        if (!bar.open) return;
         for (const [selector, delta] of [['[data-announce-prev]', -1], ['[data-announce-next]', 1]] as const) {
           bar.querySelector(selector)?.addEventListener('click', () => {
             index = (index + delta + items.length) % items.length; render();

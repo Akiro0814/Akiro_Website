@@ -6,10 +6,12 @@
     try { state = JSON.parse(localStorage.getItem('akiro-appearance') || '{}') || {}; } catch {}
     const style = ['life','swiss','minimalist','glass','brutalist'].includes(state.style) ? state.style : root.dataset.defaultStyle || 'life';
     const mode = ['manual','time','scroll'].includes(state.mode) ? state.mode : root.dataset.defaultMode || 'manual';
+    const validPalettes = ['original', 'ocean', 'berry', 'apricot', 'coral'];
+    const palette = validPalettes.includes(state.palette) ? state.palette : validPalettes.includes(root.dataset.defaultPalette) ? root.dataset.defaultPalette : 'original';
     const hour = new Date().getHours();
-    return { style: mode === 'time' ? (hour >= 6 && hour < 9 ? 'minimalist' : hour >= 9 && hour < 18 ? 'life' : 'glass') : style, mode };
+    return { style: mode === 'time' ? (hour >= 6 && hour < 9 ? 'minimalist' : hour >= 9 && hour < 18 ? 'life' : 'glass') : style, mode, palette };
   };
-  const apply = (root) => { const state = read(root); root.dataset.style = state.style; root.dataset.styleMode = state.mode; };
+  const apply = (root) => { const state = read(root); root.dataset.style = state.style; root.dataset.styleMode = state.mode; root.dataset.palette = state.palette; };
   apply(document.documentElement);
   document.addEventListener('astro:before-swap', (event) => { if (event.newDocument) apply(event.newDocument.documentElement); });
 })();

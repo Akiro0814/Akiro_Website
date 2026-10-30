@@ -14,6 +14,8 @@ import '../styles/theme-components.css';
 import '../styles/navigation-glass.css';
 import '../styles/comments.css';
 import '../styles/readability.css';
+import '../styles/palettes.css';
+import '../styles/editorial.css';
 // 仅主题初始化与 API 哨兵两段极小脚本内联在 <head>（必须在首帧前同步执行 /
 // 早于一切请求）；其余站点脚本统一打包在 src/scripts/site/，可被浏览器缓存。
 import apiGuardSrc from '../scripts/inline/api-guard.js?raw';
@@ -92,7 +94,7 @@ const routeMotion = {
 ---
 
 <!doctype html>
-<html lang="zh-CN" transition:name="root" transition:animate="none" data-default-style={presentation.defaultStyle} data-default-mode={presentation.defaultMode} data-default-theme={presentation.defaultTheme}>
+<html lang="zh-CN" transition:name="root" transition:animate="none" data-default-style={presentation.defaultStyle} data-default-mode={presentation.defaultMode} data-default-theme={presentation.defaultTheme} data-default-palette={presentation.defaultPalette}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

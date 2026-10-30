@@ -107,6 +107,14 @@ app.all('/api/_', (req, res) => {
   app.handle(req, res);
 });
 
+// 精确暴露外观契约，置于静态目录之前；不开放整个源码目录。
+app.get('/admin-assets/shared/appearance.js', (_req, res) => {
+  res.type('application/javascript').sendFile(path.join(ROOT, 'src/lib/appearance.js'));
+});
+app.get('/admin-assets/palettes.css', (_req, res) => {
+  res.type('text/css').sendFile(path.join(ROOT, 'src/styles/palettes.css'));
+});
+
 app.use(
   '/admin-assets',
   express.static(path.join(ROOT, 'admin', 'public'), { maxAge: '1h' }),

@@ -1,4 +1,5 @@
 import { normalizeMediaUrl } from './media-url.js';
+import { PALETTES } from './appearance.js';
 
 // 一份配置契约同时用于后台表单、写入校验与前台构建；新增页面字段必须从这里定义，
 // 防止后台显示“已保存”但前台仍读取另一套写死的值。
@@ -41,6 +42,7 @@ export const PRESENTATION_FIELDS = [
   ['defaultStyle', '新访客默认风格', 'appearance', 'life', ['life', 'swiss', 'minimalist', 'glass', 'brutalist']],
   ['defaultMode', '新访客风格切换方式', 'appearance', 'manual', ['manual', 'time', 'scroll']],
   ['defaultTheme', '新访客明暗主题', 'appearance', 'auto', ['auto', 'light', 'dark']],
+  ['defaultPalette', '新访客默认配色', 'appearance', 'original', PALETTES.map((p) => p.id)],
   ['wallpaperMode', '首页背景来源', 'appearance', 'random', ['random', 'fixed', 'gradient']],
 ];
 export const PUBLIC_NAV_ROUTES = ['/', '/archive/', '/projects/', '/notes/', '/nav/', '/friends/', '/about/'];

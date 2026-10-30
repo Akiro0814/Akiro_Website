@@ -1,4 +1,5 @@
 ---
+import { PALETTES } from '../lib/appearance.js';
 const styles = [
   { id: 'life', label: '生活', en: 'Life', color: '#d97757' },
   { id: 'swiss', label: '瑞士', en: 'Swiss', color: '#e43d30' },
@@ -12,6 +13,10 @@ const styles = [
   <div class="atlas-menu__head"><div><small>MAKE YOURSELF AT HOME</small><h2 id="style-title">换一种心情</h2></div><button type="button" class="atlas-icon" data-dialog-close aria-label="关闭外观设置">✕</button></div>
   <p class="atlas-console__description">同一份记录，不一样的观看方式。</p>
   <section id="appearance-panel" aria-label="页面外观">
+  <fieldset class="palette-field"><legend>色彩心情</legend><div class="palette-grid">
+    {PALETTES.map((palette) => <button type="button" class="palette-choice" data-palette-choice={palette.id} aria-pressed={palette.id === 'original'}><span class="palette-choice__colors" aria-hidden="true">{palette.colors.map((color) => <i style={`background:${color}`}></i>)}</span><span>{palette.label}</span><span class="palette-choice__check" aria-hidden="true">✓</span></button>)}
+  </div></fieldset>
+  <p class="atlas-console__section-label">视觉风格</p>
   <div class="atlas-style-grid" role="group" aria-label="视觉风格">
     {styles.map((style) => <button type="button" data-style-choice={style.id} aria-pressed={style.id === 'life'} style={`--swatch:${style.color}`}><span class={`atlas-style-preview atlas-style-preview--${style.id}`} aria-hidden="true"><i></i><b>Aa</b><em></em></span><strong>{style.label}</strong><small>{style.en}</small></button>)}
   </div>

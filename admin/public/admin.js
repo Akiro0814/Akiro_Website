@@ -1,16 +1,16 @@
-import '/admin-assets/comment-settings.js?v=20261024-notifications-1';
-import '/admin-assets/project-ai.js?v=20261024-notifications-1';
+import '/admin-assets/comment-settings.js?v=20261030-editorial-1';
+import '/admin-assets/project-ai.js?v=20261030-editorial-1';
 // 后台面板客户端。原生 JS（ES module），无需构建步骤。携带 CSRF token 调用
 // JSON API，驱动编辑器实时预览、媒体上传和构建任务。
 // HTML 净化复用前台同一套白名单逻辑（/admin-assets/shared/sanitize.js）；
 // 无刷新导航的页面请求走 /admin-assets/page-loader.js（路由白名单在彼处校验）。
 import { sanitizeHtml } from '/admin-assets/shared/sanitize.js';
-import { initMusicSort } from '/admin-assets/music-sort.js?v=20261024-notifications-1';
+import { initMusicSort } from '/admin-assets/music-sort.js?v=20261030-editorial-1';
 import { isAllowedAdminRoute, loadAdminPage } from '/admin-assets/page-loader.js';
-import { initDashboard, stopDashboard } from '/admin-assets/dashboard.js?v=20261024-notifications-1';
-import { initDateTimePickers } from '/admin-assets/picker.js?v=20261024-notifications-1';
-import { initInterface, enhancePage, notify, confirmAction, loginSuccess } from '/admin-assets/interface.js?v=20261024-notifications-1';
-import { appear, dismiss, enterPage, leavePage, resetPage, flipLayout } from '/admin-assets/motion.js?v=20261024-notifications-1';
+import { initDashboard, stopDashboard } from '/admin-assets/dashboard.js?v=20261030-editorial-1';
+import { initDateTimePickers } from '/admin-assets/picker.js?v=20261030-editorial-1';
+import { initInterface, enhancePage, notify, confirmAction, loginSuccess } from '/admin-assets/interface.js?v=20261030-editorial-1';
+import { appear, dismiss, enterPage, leavePage, resetPage, flipLayout } from '/admin-assets/motion.js?v=20261030-editorial-1';
 
 (() => {
   initInterface();

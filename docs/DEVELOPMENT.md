@@ -87,6 +87,8 @@ npx playwright install chromium
 | `npm run test:admin-ui` | 真实登录、模块导航、列表/视图、编辑与未保存保护、焦点和手机布局 |
 | `npm run test:admin-interactions` | 弹层再次点击收回、媒体引用区域、列表重开、发布完成态 |
 | `npm run test:editor-ui` | 页面分区跨区保存、Markdown 导入、预览图片对齐、失败保留与保存退出、导航友链、AI 预填 |
+| `npm run test:announcement-session` | 公告首次展示、刷新/跨页/多标签去重、新会话及请求失败重试 |
+| `npm run test:palette-ui` | 四套配色与五风格/深浅色、持久化、默认配色实际保存及三视口导航布局 |
 | `npm run test:public-fixes` | 多公告关闭与切换、图片对齐、透明品牌与玻璃按钮、连续换页清理 |
 | `npm run test:refinement-ui` | 换页复用导航和滤镜、独立玻璃按钮交互、长网址无重叠、关于页悬停、全屏公告与 Escape |
 | `npm run test:admin-segments` | 主题、密度及视图选项对齐 |

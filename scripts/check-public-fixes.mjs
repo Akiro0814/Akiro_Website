@@ -39,13 +39,17 @@ try {
   // 模拟旧版已有的永久关闭记录，修复后不能继续屏蔽有效公告。
   await page.evaluate(()=>localStorage.setItem('blog-announce-dismissed','["first","second"]'));
   await page.reload({waitUntil:'networkidle'});
+  await expect(page.locator('[data-announce]')).toBeHidden();
+  // 清除会话 Cookie 后模拟新浏览器会话，旧版永久关闭记录不应屏蔽新会话公告。
+  await page.context().clearCookies();
+  await page.reload({waitUntil:'networkidle'});
   await expect(page.locator('[data-announce-body]')).toContainText('第一则公告');
   await page.locator('[data-announce-close]').click();
   await expect(page.locator('[data-announce-body]')).toContainText('第二则公告');
   await page.locator('[data-announce-close]').click();
   await expect(page.locator('[data-announce]')).toBeHidden();
   showAnnouncements = false;
-  console.log('✓ 全部公告可切换、逐条关闭，刷新可重新打开且兼容旧关闭记录');
+  console.log('✓ 全部公告可切换、逐条关闭，同会话刷新不重复，新会话兼容旧关闭记录');
 
   await page.evaluate(()=>{
     const content=document.createElement('div');content.className='post-content';content.id='alignment-fixture';

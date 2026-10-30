@@ -1,6 +1,7 @@
+import { PALETTES } from '../../src/lib/appearance.js';
 import { PRESENTATION_FIELDS, PUBLIC_NAV_ROUTES, normalizePresentation } from '../../src/lib/presentation.js';
 
-const labels = { life: '生活', swiss: '瑞士', minimalist: '极简', glass: '玻璃', brutalist: '粗野', manual: '手动', time: '随时间', scroll: '随滚动', auto: '跟随系统', light: '浅色', dark: '深色', random: '本地目录随机壁纸', fixed: '固定图片或视频', gradient: '纯渐变背景' };
+const labels = { ...Object.fromEntries(PALETTES.map((p) => [p.id, p.label])), life: '生活', swiss: '瑞士', minimalist: '极简', glass: '玻璃', brutalist: '粗野', manual: '手动', time: '随时间', scroll: '随滚动', auto: '跟随系统', light: '浅色', dark: '深色', random: '本地目录随机壁纸', fixed: '固定图片或视频', gradient: '纯渐变背景' };
 const routeLabels = ['首页', '文章', '项目', '随笔', '网址导航', '友链', '关于'];
 
 // 后台表单从共享契约生成，键名和输入类型同时交给客户端采集；
@@ -38,7 +39,7 @@ export function renderPresentationFields(value, esc, { heroControls = {}, backgr
     ${key === 'brand' ? `<fieldset class="presentation-nav"><legend>顶部导航入口</legend>${PUBLIC_NAV_ROUTES.map((route, index) => `<label class="presentation-check"><input type="checkbox" data-presentation-nav="${route}" ${presentation.navItems.includes(route) ? 'checked' : ''} />${routeLabels[index]}</label>`).join('')}<p class="field__hint">这里控制顶部快捷链接；探索菜单保留全部可用页面。</p></fieldset>` : ''}</section>`;
   return `<div class="presentation-notice"><span class="presentation-notice__dot"></span><div><strong>设置与前台使用同一份数据</strong><p>文案、区块与默认外观：保存后构建发布。访客手动选择的外观优先于站点默认值。</p></div><a class="btn btn--sm" href="/admin/build">构建发布 ↗</a></div>
     ${group('brand', '品牌与导航', '站点名称 · 作者 · 头像 · 导航', true)}
-    ${group('appearance', '全站默认外观', '五种风格 · 切换方式 · 明暗主题')}
+    ${group('appearance', '全站默认外观', '五种风格 · 配色 · 切换方式 · 明暗主题')}
 
     <section class="card" data-content-group="footer"><h2 class="card__title">页脚 · 主句</h2>${PRESENTATION_FIELDS.filter((item) => item[0] === 'footerQuote').map(field).join('')}</section>
     ${group('home', '首页 · 分区文案', '按前台从上到下排列，可分别编辑每个区域的文字和显示设置')}

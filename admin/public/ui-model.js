@@ -1,8 +1,10 @@
+import { normalizePalette } from './shared/appearance.js';
 // UI-only models: no filesystem, credentials or server state.
 export function normalizeAppearance(value) {
   const saved = value && typeof value === 'object' ? value : {};
   return {
     theme: ['light', 'dark', 'auto'].includes(saved.theme) ? saved.theme : 'auto',
+    palette: normalizePalette(saved.palette),
     density: ['comfy', 'regular', 'compact'].includes(saved.density) ? saved.density : 'regular',
     collapsed: saved.collapsed === true,
   };

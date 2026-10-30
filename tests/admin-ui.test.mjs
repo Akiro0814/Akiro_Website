@@ -3,14 +3,16 @@ import assert from 'node:assert/strict';
 import { normalizeAppearance, filterCommands, contentGraph, dailyHeat } from '../admin/public/ui-model.js';
 
 test('appearance accepts supported values and recovers from invalid saved settings', () => {
-  assert.deepEqual(normalizeAppearance(null), { theme: 'auto', density: 'regular', collapsed: false });
+  assert.deepEqual(normalizeAppearance(null), { theme: 'auto', palette: 'original', density: 'regular', collapsed: false });
   assert.deepEqual(normalizeAppearance({ theme: 'bad', density: 'wide', collapsed: 'false' }), {
     theme: 'auto',
+    palette: 'original',
     density: 'regular',
     collapsed: false,
   });
   assert.deepEqual(normalizeAppearance({ theme: 'dark', density: 'compact', collapsed: true }), {
     theme: 'dark',
+    palette: 'original',
     density: 'compact',
     collapsed: true,
   });

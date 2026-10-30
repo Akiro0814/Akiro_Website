@@ -1,0 +1,56 @@
+/* 前后台共用配色契约。参考原色用于弥散光场，交互色单独加深以保证浅色正文对比度。 */
+html[data-palette='ocean'] { --palette-a:#598bfd; --palette-b:#9ad4cb; --palette-c:#35b3c9; --palette-ink:#2857b7; --palette-night:#aac5ff; }
+html[data-palette='berry'] { --palette-a:#945ffa; --palette-b:#f698b8; --palette-c:#f7dfd9; --palette-ink:#7542bb; --palette-night:#d2b7ff; }
+html[data-palette='apricot'] { --palette-a:#bbade6; --palette-b:#fec96d; --palette-c:#e2adb4; --palette-ink:#755392; --palette-night:#d7c5fa; }
+html[data-palette='coral'] { --palette-a:#f0826e; --palette-b:#f0b4a9; --palette-c:#fefee1; --palette-ink:#a23f32; --palette-night:#ffb8a8; }
+html[data-palette]:not([data-palette='original']) {
+  --bg:color-mix(in srgb,var(--palette-c) 11%,#fafbfc);
+  --bg-tint:color-mix(in srgb,var(--palette-a) 8%,#f4f5f8);
+  --surface:color-mix(in srgb,var(--palette-c) 4%,#fff);
+  --surface-muted:color-mix(in srgb,var(--palette-a) 6%,#f5f6f8);
+  --text:#232632; --text-muted:#555b6c; --text-faint:#666c7c;
+  --border:color-mix(in srgb,var(--palette-a) 16%,#e0e3e9);
+  --border-strong:color-mix(in srgb,var(--palette-a) 26%,#b1b8c4);
+  --brand:var(--palette-ink); --primary:var(--palette-ink); --rose:var(--palette-ink);
+  --brand-soft:color-mix(in srgb,var(--palette-a) 11%,var(--surface));
+  --primary-soft:var(--brand-soft); --rose-soft:var(--brand-soft);
+  --accent:var(--text); --accent-strong:var(--text); --accent-soft:var(--bg-tint);
+  --accent-line:var(--palette-a); --hairline:var(--border); --edge:var(--border);
+  --focus-ring:color-mix(in srgb,var(--brand) 65%,transparent);
+  --nav-bg:color-mix(in srgb,var(--bg) 92%,transparent);
+  --nav-pill-bg:color-mix(in srgb,var(--surface) 90%,transparent);
+  --glass:color-mix(in srgb,var(--surface) 86%,transparent);
+  --glass-tint:var(--glass); --glass-edge:#ffffffb0;
+  --shade:35,38,50;
+  --page-glow:radial-gradient(ellipse at 8% 12%,color-mix(in srgb,var(--palette-a) 8%,transparent),transparent 55%);
+  --palette-wash:radial-gradient(ellipse at 5% 5%,color-mix(in srgb,var(--palette-a) 12%,transparent),transparent 42%),radial-gradient(ellipse at 90% 0%,color-mix(in srgb,var(--palette-b) 12%,transparent),transparent 46%);
+  --chart-pv:var(--brand); --chart-uv:#397a80;
+}
+html[data-palette]:not([data-palette='original'])[data-theme='dark'] {
+  --bg:color-mix(in srgb,var(--palette-a) 5%,#171a22);
+  --bg-tint:color-mix(in srgb,var(--palette-a) 7%,#222631);
+  --surface:color-mix(in srgb,var(--palette-a) 5%,#222630);
+  --surface-muted:color-mix(in srgb,var(--palette-b) 5%,#2b2f3b);
+  --text:#f1f2f8; --text-muted:#bec3d2; --text-faint:#a8afc1;
+  --border:color-mix(in srgb,var(--palette-a) 16%,#363d4c);
+  --border-strong:color-mix(in srgb,var(--palette-a) 28%,#636c7e);
+  --brand:var(--palette-night); --primary:var(--palette-night); --rose:var(--palette-night);
+  --glass-edge:#ffffff20; --button-text-on-accent:#171a22;
+  --chart-uv:#8ed3cc;
+}
+/* 色样有可读名称和独立选中标记，颜色本身不承担唯一的信息传达。 */
+.palette-field { border:0; padding:0; margin:24px 0; min-width:0; }
+.palette-field legend,.atlas-console__section-label { font-size:13px; font-weight:600; color:var(--text-muted); margin-bottom:12px; }
+.palette-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
+.palette-choice { display:flex; align-items:center; gap:10px; min-height:52px; min-width:0; padding:10px 12px; border:1px solid var(--border); border-radius:12px; background:var(--surface); color:var(--text); cursor:pointer; font:inherit; font-size:13px; text-align:left; transition:background .18s,border-color .18s,transform .18s; }
+.palette-choice:first-child { grid-column:1 / -1; }
+.palette-choice__colors { display:flex; flex-shrink:0; padding-right:5px; }
+.palette-choice__colors i { width:18px; height:24px; display:block; border:1px solid #23263218; border-radius:50%; margin-right:-5px; }
+.palette-choice__check { margin-left:auto; color:var(--brand); opacity:0; }
+.palette-choice[aria-pressed='true'] { border-color:var(--brand); background:var(--brand-soft); }
+.palette-choice[aria-pressed='true'] .palette-choice__check { opacity:1; }
+.palette-choice:hover { border-color:var(--brand); }
+.palette-choice:active { transform:scale(.98); }
+.palette-choice:focus-visible { outline:2px solid var(--brand); outline-offset:3px; }
+@media(max-width:380px) { .palette-grid { grid-template-columns:1fr; } }
+@media(prefers-reduced-motion:reduce) { .palette-choice { transition:none; } }

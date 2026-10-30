@@ -52,11 +52,14 @@ const asArray = (v) => (Array.isArray(v) ? v : v == null ? [] : [v]);
 
 // 静态资源版本号：改 admin.css / admin.js 后递增即可让浏览器绕开 1 小时缓存，
 // 避免「改了样式但看到的还是旧文件」的排查成本（后台资源带 maxAge 缓存）。
-export const ASSET_V = '20261024-notifications-1';
+export const ASSET_V = '20261030-editorial-1';
 
 const UI_ASSETS = `<link rel="stylesheet" href="/admin-assets/pearl.css?v=${ASSET_V}" />
   <link rel="stylesheet" href="/admin-assets/studio.css?v=${ASSET_V}" />
   <link rel="stylesheet" href="/admin-assets/content-editor.css?v=${ASSET_V}" />
+  <link rel="stylesheet" href="/admin-assets/palettes.css?v=${ASSET_V}" />
+  <link rel="stylesheet" href="/admin-assets/editorial.css?v=${ASSET_V}" />
+  <script src="/admin-assets/appearance-init.js?v=${ASSET_V}"></script>
   <script src="/admin-assets/vendor/gsap.js?v=${ASSET_V}" defer></script>
   <script src="/admin-assets/vendor/flip.js?v=${ASSET_V}" defer></script>`;
 
@@ -1123,7 +1126,7 @@ export function commentSettingsPage({ user, boot, settings, health, notification
   const config = notifications.config;
   const input = (key, label, options = {}) => `<label class="field"><span class="field__label">${label}</span><input class="input" name="${key}" type="${options.type || 'text'}" value="${esc(config[key] || '')}" ${options.attributes || ''} autocomplete="off">${options.hint ? `<span class="field__hint">${options.hint}</span>` : ''}</label>`;
   const secret = (key, label) => `<label class="field"><span class="field__label">${label}</span><input class="input" name="${key}" type="password" autocomplete="new-password" placeholder="${notifications.secrets[key] ? '已配置，留空保留原值' : '尚未配置'}"><span class="field__hint">密钥不回显。填写新值可替换，留空保留。</span></label><label class="field"><span><input type="checkbox" name="clear${key}"> 清除已保存的${label}</span></label>`;
-  return layout({ title: '评论设置', active: 'comments', user, boot, content: `<link rel="stylesheet" href="/admin-assets/comment-settings.css?v=20261024-notifications-1"><header class="page__head"><h1>评论设置</h1><p>本站独立运行，评论和设置即时生效。设备信息仅供参考；邮箱与原始 UA 不公开。</p><a class="btn btn--sm" href="/admin/comments">返回评论列表</a></header>
+  return layout({ title: '评论设置', active: 'comments', user, boot, content: `<link rel="stylesheet" href="/admin-assets/comment-settings.css?v=20261030-editorial-1"><header class="page__head"><h1>评论设置</h1><p>本站独立运行，评论和设置即时生效。设备信息仅供参考；邮箱与原始 UA 不公开。</p><a class="btn btn--sm" href="/admin/comments">返回评论列表</a></header>
     <section class="card"><h2 class="card__title">显示与提交</h2><form id="comment-settings-form">
       ${toggles.map(([key, label]) => `<label class="field"><span><input type="checkbox" name="${key}" ${settings[key] ? 'checked' : ''}> ${label}</span></label>`).join('')}
       <label class="field"><span class="field__label">每页主评论数（1–50）</span><input class="input" name="pageSize" type="number" min="1" max="50" value="${settings.pageSize}" required></label>

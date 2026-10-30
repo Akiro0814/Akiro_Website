@@ -70,6 +70,8 @@ try {
     await page.getByRole('heading', { name: /与代码对话/ }).hover();
     await expect(card).not.toHaveCSS('z-index', '3');
     announcements = true;
+    // 每个视口单独验证首次展示，避免上一轮会话状态干扰。
+    await page.context().clearCookies();
     await page.goto(base, { waitUntil: 'networkidle' });
     const modal = page.locator('dialog[data-announce]');
     await expect(modal).toBeVisible();
@@ -82,8 +84,6 @@ try {
     await expect(modal).toBeHidden();
     assert.equal(await page.evaluate(() => document.documentElement.classList.contains('has-announcement')), false);
     await page.reload({ waitUntil: 'networkidle' });
-    await expect(page.locator('dialog[data-announce]')).toBeVisible();
-    await page.keyboard.press('Escape');
     await expect(page.locator('dialog[data-announce]')).toBeHidden();
     fs.mkdirSync('docs/assets/spring-ui', { recursive: true });
     await page.screenshot({ path: path.resolve('docs/assets/spring-ui/refinement-home.png') });

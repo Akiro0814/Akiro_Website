@@ -1,0 +1,111 @@
+/* 编辑式阅读层：标题建立节奏，光场留在内容背后；沿用已有风格的结构差异。 */
+:root {
+  --palette-a:#d97757; --palette-b:#ead9c8; --palette-c:#faf3df; --editorial-measure:74ch;
+  /* 正文采用本地正体，装饰字形不再扩散到段落、表单和导航中。 */
+  --font-body:'PingFang SC','Microsoft YaHei',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-display:'Georgia','Noto Serif SC','Songti SC','SimSun',serif;
+  --font-serif:var(--font-display); --font-editorial:var(--font-display);
+  --font-mono:ui-monospace,'Cascadia Code',Consolas,'Microsoft YaHei',monospace;
+}
+body { background-color:var(--bg); background-image:var(--palette-wash,none); }
+::selection { color:var(--text); background:color-mix(in srgb,var(--brand) 22%,var(--bg)); }
+:is(button,a,input,select,textarea):focus-visible { outline:2px solid var(--brand); outline-offset:4px; }
+:is(.atlas-button,.atlas-icon,.atlas-text-link,.atlas-nav__links a) { transition:background .2s,color .2s,box-shadow .2s; }
+.atlas-nav { box-shadow:0 5px 30px -18px color-mix(in srgb,var(--text) 25%,transparent); }
+.atlas-nav__links a { font-size:14px; }
+.atlas-brand small { font-size:10px; letter-spacing:.13em; }
+.atlas-menu-toggle { white-space:nowrap; flex-shrink:0; }
+.atlas-section { padding-block:clamp(60px,7.5vw,112px); }
+.atlas-section-intro__index { font-size:12px; letter-spacing:.15em; margin-bottom:28px; color:var(--text-muted); }
+.atlas-section-intro h2 { font-size:clamp(32px,3.7vw,52px); line-height:1.35; letter-spacing:-.035em; }
+.atlas-section-intro p { font-size:15px; line-height:1.9; max-width:30ch; }
+.atlas-text-link { min-height:44px; font-size:14px; gap:12px; }
+.atlas-section-intro__icon { background:var(--brand-soft); color:var(--brand); border:0; }
+.atlas-writing-card { border-color:var(--border); box-shadow:0 6px 28px -20px color-mix(in srgb,var(--text) 20%,transparent); }
+.atlas-writing-card__body { padding:24px; }
+.atlas-writing-card h3 { font-size:23px; line-height:1.5; letter-spacing:-.025em; }
+.atlas-writing-card :is(p,.atlas-card-meta) { font-size:13px; line-height:1.8; }
+.atlas-status-card { border:1px solid var(--border); background:var(--surface); }
+.atlas-status-card--code { background:linear-gradient(140deg,var(--surface),var(--brand-soft)); }
+.atlas-status-card--links { background:linear-gradient(140deg,var(--surface),color-mix(in srgb,var(--palette-b) 14%,var(--surface))); }
+.atlas-status-card .atlas-card-meta { font-size:12px; letter-spacing:.08em; }
+.atlas-status-card p { font-size:14px; line-height:1.8; }
+.atlas-project-slice { border:1px solid var(--border); }
+.atlas-project-slice p { font-size:14px; line-height:1.7; }
+.atlas-home-quote { padding-block:clamp(80px,10vw,150px); }
+.atlas-home-quote p { font-size:clamp(27px,3.5vw,46px); line-height:1.65; letter-spacing:-.03em; text-wrap:balance; }
+.atlas-home-quote small { font-size:12px; letter-spacing:.14em; }
+.site-footer__bar { font-size:12px; line-height:1.8; gap:12px; }
+.site-footer__links a { min-height:44px; display:inline-flex; align-items:center; }
+
+/* 没有图片/视频时呈现柔色光场；已有壁纸保持图片本身的构图和可读遮罩。 */
+.atlas-hero:not(:has([data-hero-media])) { background:var(--bg); color:var(--text); }
+.atlas-hero:not(:has([data-hero-media])) .atlas-hero__background {
+  background:radial-gradient(ellipse at 15% 65%,color-mix(in srgb,var(--palette-a) 65%,transparent),transparent 60%),radial-gradient(ellipse at 80% 20%,color-mix(in srgb,var(--palette-b) 72%,transparent),transparent 62%),radial-gradient(ellipse at 92% 95%,var(--palette-c),transparent 68%),var(--bg);
+}
+.atlas-hero:not(:has([data-hero-media])) .atlas-hero__background::after { background:linear-gradient(0deg,var(--bg),transparent 22%); }
+.atlas-hero:not(:has([data-hero-media])) :is(.atlas-hero__eyebrow,.atlas-hero__bio,.atlas-hero__identity,.atlas-hero__bottom) { color:var(--text); text-shadow:none; }
+.atlas-hero:not(:has([data-hero-media])) .atlas-hero__identity { border-color:color-mix(in srgb,var(--text) 16%,transparent); background:color-mix(in srgb,var(--bg) 60%,transparent); }
+.atlas-hero:not(:has([data-hero-media])) .atlas-button--light { background:var(--text); color:var(--bg); box-shadow:none; }
+.atlas-hero:not(:has([data-hero-media])) .atlas-button--ghost { background:var(--surface); color:var(--text); border-color:var(--border-strong); text-shadow:none; }
+.atlas-hero:not(:has([data-hero-media])) .atlas-social-dock a { color:var(--text); background:var(--surface); border-color:var(--border-strong); }
+.atlas-hero__eyebrow { font-size:12px; letter-spacing:.16em; }
+.atlas-hero__bio { font-size:17px; line-height:1.9; }
+.atlas-hero__bottom { font-size:13px; }
+.atlas-hero__bottom small { font-size:11px; }
+.atlas-type-cursor { color:var(--brand); }
+/* 深色光场降低原色的混合比例，保持文字背景稳定。 */
+html[data-theme='dark'] .atlas-hero:not(:has([data-hero-media])) .atlas-hero__background {
+  background:radial-gradient(ellipse at 15% 65%,color-mix(in srgb,var(--palette-a) 22%,transparent),transparent 60%),radial-gradient(ellipse at 80% 20%,color-mix(in srgb,var(--palette-b) 15%,transparent),transparent 62%),var(--bg);
+}
+.spring-inner .page-header { margin-bottom:clamp(36px,5vw,64px); padding-bottom:28px; }
+.spring-inner .page-header h1 { font-size:clamp(36px,5vw,64px); line-height:1.2; letter-spacing:-.04em; }
+.spring-inner .page-header p { font-size:16px; line-height:1.85; max-width:60ch; }
+.spring-inner :is(.page-kicker,.archive-year__count,.spring-writing-card__meta,.spring-writing-card__bottom,.spring-writing-card__tags,.proj__owner) { font-size:12px; }
+.spring-writing-card__body { padding:clamp(24px,3vw,36px); }
+.spring-writing-card__body>p,.spring-inner .proj__desc { font-size:15px; line-height:1.85; }
+.spring-writing-card__link { min-height:17rem; }
+.spring-inner :is(.term-list,.term-switcher) a { min-height:44px; display:inline-flex; align-items:center; font-size:13px; }
+.article__body { font-size:17px; line-height:1.9; overflow-wrap:anywhere; }
+.article__main .post-content { font-family:var(--font-body); font-size:17px; line-height:1.9; }
+.article__main .post-content> :is(p,ul,ol,blockquote) { max-width:var(--editorial-measure); }
+.article__body :is(h2,h3,h4) { line-height:1.45; scroll-margin-top:110px; }
+.article__body p { margin-block:1.35em; }
+.article__body :is(pre,table) { max-width:100%; overflow:auto; }
+.article__aside .toc { font-size:13px; line-height:1.8; }
+dialog.atlas-console { width:min(620px,calc(100vw - 32px)); max-height:calc(100dvh - 40px); overflow:auto; padding:clamp(22px,4vw,36px); overscroll-behavior:contain; }
+.atlas-console__description { font-size:14px; line-height:1.8; }
+.atlas-console .atlas-style-grid { gap:8px; }
+.atlas-console .atlas-style-grid button { min-width:0; padding:10px 6px; }
+.atlas-console :is(.atlas-style-grid small,.atlas-console__hint,.atlas-style-reset,.atlas-mode button) { font-size:12px; }
+.atlas-style-toggle,.atlas-icon { min-width:44px; min-height:44px; }
+/* 平板宽度也使用探索菜单，避免桌面快捷链接挤压工具栏。 */
+@media(min-width:768px) and (max-width:1023px) { .atlas-nav__links { display:none; } }
+@media(max-width:767px) {
+  .atlas-section { padding-block:48px; }
+  .atlas-brand { min-width:0; flex:1; }
+  .atlas-brand>span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .atlas-brand small { max-width:110px; overflow:hidden; text-overflow:ellipsis; letter-spacing:.08em; }
+  .atlas-nav__tools { flex-shrink:0; }
+  .atlas-menu-toggle { white-space:nowrap; flex-shrink:0; min-height:44px; }
+  .atlas-section__split { gap:28px; }
+  .atlas-section-intro p { max-width:42ch; font-size:15px; }
+  .atlas-hero__inner { padding-block:160px 190px; justify-content:flex-start; }
+  .atlas-hero__identity { font-size:12px; max-width:100%; flex-wrap:wrap; }
+  .atlas-hero__eyebrow { font-size:11px; }
+  .atlas-hero__bio { font-size:15px; max-width:36ch; }
+  .atlas-hero__title { min-height:2.4em; }
+  .atlas-hero__bottom { font-size:12px; }
+  .atlas-status-grid { grid-template-columns:minmax(0,1fr); }
+  .atlas-status-card { padding:24px; min-height:240px; }
+  .atlas-status-card:not(.atlas-status-card--wide) h3 { font-size:23px; }
+  .atlas-status-card .atlas-card-meta { font-size:12px; }
+  .atlas-status-card p { font-size:14px; }
+  .spring-inner .page-header p { font-size:15px; }
+  .spring-writing-card__link { min-height:0; }
+  .article__body { font-size:16px; }
+  .article__main .post-content { font-size:16px; }
+  .site-footer__bar { font-size:12px; }
+  .atlas-console .atlas-style-grid { grid-template-columns:repeat(3,minmax(0,1fr)); }
+}
+@media(prefers-reduced-motion:reduce) { :is(.atlas-button,.atlas-icon,.atlas-text-link,.atlas-nav__links a) { transition:none; } }

@@ -88,8 +88,16 @@ try {
     });
     await rail.screenshot({path:path.join(out,'reading-progressive-blur-both.png')});
   });
-  await check('壁纸按钮维持对比度，作者透明背景通过字边阴影保持可读', async () => {
+  await check('渐变与壁纸按钮分别保持对比度，作者透明背景通过字边阴影保持可读', async () => {
     await page.goto(base);
+    // 无壁纸时新版使用浅色光场与深色文字；媒体场景仍要独立验证原来的白字遮罩。
+    if (!await page.locator('[data-hero-media]').count()) {
+      assert.equal(await page.locator('.atlas-button--ghost').evaluate((el) => getComputedStyle(el).color), await page.locator('html').evaluate((el) => getComputedStyle(el).color));
+      await page.evaluate(() => {
+        const image=document.createElement('img'); image.src='/avatars/ui-fixture.svg'; image.alt=''; image.dataset.heroMedia='';
+        document.querySelector('.atlas-hero__background').prepend(image);
+      });
+    }
     await page.locator('.atlas-button--ghost').hover();
     await page.waitForFunction(() => [...document.querySelectorAll('[data-hero-reveal]')].every((el) => Number(getComputedStyle(el).opacity) > .99));
     assert.equal(await page.locator('.atlas-button--ghost').evaluate((el) => getComputedStyle(el).color), 'rgb(250, 249, 245)');

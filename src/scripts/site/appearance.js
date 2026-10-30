@@ -1,14 +1,15 @@
 import gsap from 'gsap';
-import { normalizeAppearance, styleForTime, styleForScroll } from '../../lib/appearance.js';
+import { normalizeAppearance, normalizePalette, styleForTime, styleForScroll } from '../../lib/appearance.js';
 
 export function initAppearance(signal) {
   // 保存的是用户选择的风格与模式；时间/滚动模式算出的临时风格不覆盖手动选择。
   // 这样跨页、刷新和回到手动模式时，仍能恢复用户原先选中的外观。
   const root = document.documentElement;
   let { style, mode } = normalizeAppearance(root.dataset.style, root.dataset.styleMode);
+  let palette = normalizePalette(root.dataset.palette);
   const reduced = matchMedia('(prefers-reduced-motion: reduce)');
   let scrollFrame = 0;
-  const store = () => { try { localStorage.setItem('akiro-appearance', JSON.stringify({ style, mode })); } catch {} };
+  const store = () => { try { localStorage.setItem('akiro-appearance', JSON.stringify({ style, mode, palette })); } catch {} };
   const sync = () => {
     let selected = style;
     if (mode === 'time') selected = styleForTime(new Date().getHours());
@@ -18,6 +19,8 @@ export function initAppearance(signal) {
     }
     root.dataset.style = selected;
     root.dataset.styleMode = mode;
+    root.dataset.palette = palette;
+    document.querySelectorAll('[data-palette-choice]').forEach((el) => el.setAttribute('aria-pressed', String(el.dataset.paletteChoice === palette)));
     document.querySelectorAll('[data-style-choice]').forEach((el) => el.setAttribute('aria-pressed', String(el.dataset.styleChoice === selected)));
     document.querySelectorAll('button[data-style-mode]').forEach((el) => el.setAttribute('aria-pressed', String(el.dataset.styleMode === mode)));
     const hint = document.querySelector('[data-style-hint]');
@@ -25,6 +28,7 @@ export function initAppearance(signal) {
   };
   document.querySelector('[data-style-reset]')?.addEventListener('click', () => {
     ({ style, mode } = normalizeAppearance(root.dataset.defaultStyle, root.dataset.defaultMode));
+    palette = normalizePalette(root.dataset.defaultPalette);
     try { localStorage.removeItem('akiro-appearance'); localStorage.removeItem('blog-theme'); } catch {}
     sync();
     window.dispatchEvent(new Event('akiro:theme-default'));
@@ -33,6 +37,10 @@ export function initAppearance(signal) {
   document.querySelectorAll('[data-style-choice]').forEach((el) => el.addEventListener('click', () => {
     style = normalizeAppearance(el.dataset.styleChoice, 'manual').style;
     mode = 'manual'; store(); sync(); window.dispatchEvent(new Event('akiro:appearance'));
+  }, { signal }));
+  document.querySelectorAll('[data-palette-choice]').forEach((el) => el.addEventListener('click', () => {
+    palette = normalizePalette(el.dataset.paletteChoice);
+    store(); sync(); window.dispatchEvent(new Event('akiro:appearance'));
   }, { signal }));
   document.querySelectorAll('button[data-style-mode]').forEach((el) => el.addEventListener('click', () => {
     mode = normalizeAppearance(style, el.dataset.styleMode).mode;

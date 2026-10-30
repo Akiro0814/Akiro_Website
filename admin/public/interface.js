@@ -1,4 +1,4 @@
-import { normalizeAppearance, filterCommands } from './ui-model.js?v=20261024-notifications-1';
+import { normalizeAppearance, filterCommands } from './ui-model.js?v=20261030-editorial-1';
 import {
   appear,
   dismiss,
@@ -9,10 +9,11 @@ import {
   motionOff,
   tween,
   typeOut,
-} from './motion.js?v=20261024-notifications-1';
-import { initVisualizations } from './visualizations.js?v=20261024-notifications-1';
-import { initLoginScene } from './login-scene.js?v=20261024-notifications-1';
-import { enhanceStudio } from './studio-motion.js?v=20261024-notifications-1';
+} from './motion.js?v=20261030-editorial-1';
+import { initVisualizations } from './visualizations.js?v=20261030-editorial-1';
+import { initLoginScene } from './login-scene.js?v=20261030-editorial-1';
+import { PALETTES } from './shared/appearance.js';
+import { enhanceStudio } from './studio-motion.js?v=20261030-editorial-1';
 
 const make = (tag, cls, text) => {
   const el = document.createElement(tag);
@@ -32,6 +33,7 @@ function applyAppearance() {
   root.dataset.theme =
     appearance.theme === 'auto' ? (themeQuery.matches ? 'dark' : 'light') : appearance.theme;
   root.dataset.density = appearance.density;
+  root.dataset.palette = appearance.palette;
   document.querySelector('.app')?.classList.toggle('is-collapsed', appearance.collapsed);
   document.getElementById('rail-toggle')?.setAttribute('aria-expanded', String(!appearance.collapsed));
   try {
@@ -275,7 +277,7 @@ function showAppearance() {
   for (const [title, description, key, options] of [
     [
       '主题',
-      '暖色材质随外观自动适配',
+      '配色随浅色、深色或系统外观适配',
       'theme',
       [
         { label: '浅色', value: 'light' },
@@ -306,6 +308,28 @@ function showAppearance() {
     );
     dialog.body.append(row);
   }
+  const paletteField = make('fieldset', 'palette-field');
+  paletteField.append(make('legend', '', '色彩心情'));
+  const paletteGrid = make('div', 'palette-grid');
+  for (const palette of PALETTES) {
+    const button = make('button', 'palette-choice');
+    button.type = 'button';
+    button.dataset.paletteChoice = palette.id;
+    button.setAttribute('aria-pressed', String(appearance.palette === palette.id));
+    const swatches = make('span', 'palette-choice__colors');
+    swatches.setAttribute('aria-hidden', 'true');
+    for (const color of palette.colors) {
+      const swatch = make('i'); swatch.style.background = color; swatches.append(swatch);
+    }
+    const check = make('span', 'palette-choice__check', '✓'); check.setAttribute('aria-hidden', 'true');
+    button.append(swatches, make('span', '', palette.label), check);
+    button.addEventListener('click', () => {
+      appearance.palette = palette.id; applyAppearance();
+      paletteGrid.querySelectorAll('button').forEach((el) => el.setAttribute('aria-pressed', String(el === button)));
+    }, { signal: dialog.signal });
+    paletteGrid.append(button);
+  }
+  paletteField.append(paletteGrid); dialog.body.append(paletteField);
   dialog.body.append(
     make('p', 'field__hint', '偏好仅保存在当前浏览器。系统开启“减少动态效果”时自动简化动画。')
   );

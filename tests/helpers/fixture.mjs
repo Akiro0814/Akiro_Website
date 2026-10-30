@@ -26,7 +26,7 @@ export function createFixture(t) {
   fs.cpSync(path.join(PROJECT_ROOT, 'admin', 'lib'), path.join(root, 'admin', 'lib'), { recursive: true });
   // 后台与前台共用的配置契约也进入隔离夹具，避免测试误读真实工作区文件。
   fs.mkdirSync(path.join(root, 'src', 'lib'), { recursive: true });
-  for (const name of ['media-url.js', 'presentation.js', 'github-repos.js', 'project-catalog.js', 'wallpapers.mjs']) fs.copyFileSync(path.join(PROJECT_ROOT, 'src', 'lib', name), path.join(root, 'src', 'lib', name));
+  for (const name of ['appearance.js', 'media-url.js', 'presentation.js', 'github-repos.js', 'project-catalog.js', 'wallpapers.mjs']) fs.copyFileSync(path.join(PROJECT_ROOT, 'src', 'lib', name), path.join(root, 'src', 'lib', name));
   fs.mkdirSync(path.join(root, 'scripts'));
   fs.copyFileSync(path.join(PROJECT_ROOT, 'scripts/prepare-release.mjs'), path.join(root, 'scripts/prepare-release.mjs'));
   fs.writeFileSync(path.join(root, 'package.json'), JSON.stringify({

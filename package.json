@@ -20,6 +20,8 @@
     "test:admin-interactions": "node scripts/check-admin-interactions.mjs",
     "test:editor-ui": "node scripts/check-editor-improvements.mjs",
     "test:public-fixes": "node scripts/check-public-fixes.mjs",
+    "test:announcement-session": "node scripts/check-announcement-session.mjs",
+    "test:palette-ui": "node scripts/check-palette-ui.mjs",
     "test:refinement-ui": "node scripts/check-refinement-ui.mjs",
     "test:blog-workflows": "node --test tests/blog-workflows.test.mjs",
     "test:full": "node scripts/check-blog.mjs",
